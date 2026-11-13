@@ -253,7 +253,7 @@ const stress = await page.evaluate(() => {
     scrolls: list.scrollHeight > list.clientHeight,
     // A long list must scroll inside our list, not stretch the host's scroll area.
     hostScrolls: (() => { const a = document.querySelector('.scrollArea'); return a.scrollHeight > a.clientHeight + 1; })(),
-    shortestRow: Math.min(...[...document.querySelectorAll('.t3-row[data-variant=card]')].map(node => Math.round(node.getBoundingClientRect().height))),
+    shortestRow: Math.min(...[...document.querySelectorAll('.t3-row')].map(node => Math.round(node.getBoundingClientRect().height))),
     shelfGap: Math.round(shelf.getBoundingClientRect().top - document.querySelectorAll('.t3-group')[1].getBoundingClientRect().bottom),
   };
 });

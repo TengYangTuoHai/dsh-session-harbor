@@ -99,13 +99,17 @@ await act(async () => {
 
 const heading = text => [...document.querySelectorAll('.t3-heading')].find(node => node.textContent.includes(text));
 console.log('groups:', [...document.querySelectorAll('.t3-heading')].map(node => node.textContent).join(' | '));
-console.log('rows before expanding Settled:', [...document.querySelectorAll('.t3-row')].map(row => row.dataset.variant).join(', '));
+// Every row keeps the same shape: a workspace line over a title line, settled included.
+const rowShapes = [...document.querySelectorAll('.t3-row')].map(row => (row.querySelector('.t3-top') ? 'top' : 'NOTOP')
+  + (row.querySelector('.t3-line') ? '+line' : 'NOLINE') + (row.querySelector('.t3-proj') ? '+proj' : 'NOPROJ'));
+console.log('row shapes:', [...new Set(rowShapes)].join(' | '), '| rows:', rowShapes.length);
+console.log('rows before expanding Settled:', [...document.querySelectorAll('.t3-row')].map(row => row.dataset.current === 'true' ? 'current' : 'plain').join(', '));
 // Exactly one shelf header carries the push, and it is the first shelf.
 const shelves = [...document.querySelectorAll('.t3-group[data-shelf=true]')];
 console.log('shelf groups:', shelves.map(node => [...node.querySelectorAll('.t3-heading')][0]?.textContent).join(', '));
 await act(async () => { heading('settled').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })); });
 for (const row of document.querySelectorAll('.t3-row')) {
-  console.log('--- ' + row.dataset.variant + (row.dataset.current === 'true' ? ' (current)' : ''));
+  console.log('--- row' + (row.dataset.current === 'true' ? ' (current)' : '') + (row.dataset.working === 'true' ? ' (working)' : ''));
   console.log(row.innerHTML.replace(/<svg[\s\S]*?<\/svg>/g, '[svg]').replace(/></g, '>\n  <'));
 }
 // A live run names itself in the trailing slot instead of showing an age, and the

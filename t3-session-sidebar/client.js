@@ -56,9 +56,10 @@ window.__ModuleLoader__.load({
       .t3-count{margin-left:auto;font-weight:400;color:var(--dsw-alias-label-caption)}
       .t3-message{padding:8px 12px;color:var(--dsw-alias-label-secondary);font-size:12px}
       .t3-btn:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
-      /* T3 Code thread row: one rounded surface per session, two lines while it is
-         live (workspace label + age over the title) and one muted line once it is
-         settled. The trailing age swaps to the row actions on hover. */
+      /* T3 Code thread row: one rounded surface per session, two lines for every
+         session -- workspace label and age over the title. A settled session keeps
+         the same shape; only its status dot and age differ. The trailing age swaps
+         to the row actions on hover. */
       .t3-row{position:relative;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;min-width:0;margin:2px 0;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none;color:var(--dsw-alias-label-primary);outline:none}
       .t3-row:hover,.t3-row:focus-within{background:var(--dsw-alias-interactive-bg-hover)}
       .t3-row[data-current=true]{background:var(--dsw-alias-interactive-bg-active)}
@@ -69,9 +70,7 @@ window.__ModuleLoader__.load({
       .t3-pin{display:inline-flex;flex:none;color:var(--dsw-alias-label-caption)}
       .t3-proj{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .t3-line{display:flex;align-items:center;gap:6px;min-width:0}
-      .t3-open{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0;border:0;background:transparent;color:inherit;font:inherit;font-size:13px;line-height:18px;cursor:pointer}
-      .t3-row[data-variant=card] .t3-open{font-weight:500}
-      .t3-row[data-variant=slim] .t3-open{color:var(--dsw-alias-label-tertiary)}
+      .t3-open{flex:1;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0;border:0;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:500;line-height:18px;cursor:pointer}
       .t3-open:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px;border-radius:4px}
       .t3-status{display:inline-flex;flex:none;align-items:center}
       .t3-dot{position:relative;width:10px;height:10px}
@@ -100,7 +99,6 @@ window.__ModuleLoader__.load({
          :hover and would pin the action strip over the age label. */
       @media (hover:hover) and (pointer:fine){
         .t3-row:hover .t3-pin{display:none}
-        .t3-row[data-variant=slim]:hover .t3-open{color:var(--dsw-alias-label-primary)}
       }
       .t3-row:hover .t3-time,.t3-row:focus-within .t3-time,.t3-row:has([aria-expanded=true]) .t3-time{position:absolute;right:0;opacity:0}
       .t3-row:hover .t3-actions,.t3-row:focus-within .t3-actions,.t3-row:has([aria-expanded=true]) .t3-actions{position:static;opacity:1;pointer-events:auto}
@@ -423,9 +421,8 @@ window.__ModuleLoader__.load({
                 renderFactorySlot('contextMenu.button', { target, label: `${t('more')}: ${title}`, className: 't3-icon-button' })));
             const titleLine = h('div', { className: 't3-line' },
               h('button', { className: 't3-open', type: 'button', title }, title),
-              state && (isSettled || !live) && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })),
-              isSettled && slot);
-            const topLine = isSettled ? null : h('div', { className: 't3-top' },
+              state && (isSettled || !live) && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })));
+            const topLine = h('div', { className: 't3-top' },
               isPinned && h('span', { className: 't3-pin', 'aria-hidden': true }, h(PinIcon, { filled: true, size: 12 })),
               h('span', { className: 't3-proj' }, workspaceLabel.get(id) || pathLabel(session.cwd)),
               slot);
@@ -433,7 +430,6 @@ window.__ModuleLoader__.load({
             // carries the accessible name and keyboard focus.
             return h('div', {
               className: 't3-row', key: id, ...trigger,
-              'data-variant': isSettled ? 'slim' : 'card',
               'data-working': live,
               'data-current': !panelActive && (session.retainedBy?.mainView || 0) > 0,
               onClick: () => runUi(() => context.uiWorkspace.openSession(id), 'openFailed'),
