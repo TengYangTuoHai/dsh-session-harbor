@@ -328,7 +328,14 @@ window.__ModuleLoader__.load({
       groups.active.sort((a, b) => activity(b) - activity(a));
       groups.working.sort((a, b) => activity(b) - activity(a));
       groups.settled.sort((a, b) => (b.placement?.settledAt || 0) - (a.placement?.settledAt || 0));
-      const shown = ['pinned', 'active', 'working', 'settled'].filter(group => group !== 'pinned' || groups.pinned.length > 0);
+      // T3 Code only emits the Working shelf when something is working
+      // (Sidebar.tsx:1979 `if (workingThreads.length > 0)`); an empty shelf is a
+      // heading with a zero. Pinned follows the same rule. Active and Settled are
+      // always rendered: they are where sessions come from and where they go.
+      const shown = ['pinned', 'active', 'working', 'settled'].filter(group =>
+        group === 'active' || group === 'settled' || groups[group].length > 0);
+      // The first rendered shelf carries the free space above it, so with no
+      // running session the push moves from Working to Settled, as in T3.
       const shelf = shown.find(group => group === 'working' || group === 'settled');
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
       return h('div', { className: 't3-sidebar' }, h('style', null, css),

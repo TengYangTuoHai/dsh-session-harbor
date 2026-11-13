@@ -1,6 +1,6 @@
 # T3 会话侧边栏
 
-参考 [T3 Code 固定版本的分组逻辑](https://github.com/pingdotgg/t3code/blob/095611d1b55930ba23e22068b6659df4c4b53f83/apps/web/src/components/Sidebar.logic.ts#L194-L205)和 [Working 分组](https://github.com/pingdotgg/t3code/blob/095611d1b55930ba23e22068b6659df4c4b53f83/packages/client-runtime/src/state/threadInbox.ts#L17-L32)，按 Pinned、Active、Working、Settled 分组。支持标题搜索、折叠分组、打开会话，以及手动置顶、取消置顶、完成和重新激活。正在等待用户操作的会话归入 Active；普通运行结束有两秒缓冲。已完成分组默认折叠（仍显示数量），其他分组默认展开；折叠状态只保存在当前界面中，切换侧栏或刷新后恢复默认。Working 与 Settled 是 T3 的“搁架”：第一个搁架的标题吃掉上方剩余空间，所以这两组贴在列表底部，空白留在活跃会话之后；会话多到溢出时自动边距归零，列表照常滚动，行不会被压扁。
+参考 [T3 Code 固定版本的分组逻辑](https://github.com/pingdotgg/t3code/blob/095611d1b55930ba23e22068b6659df4c4b53f83/apps/web/src/components/Sidebar.logic.ts#L194-L205)和 [Working 分组](https://github.com/pingdotgg/t3code/blob/095611d1b55930ba23e22068b6659df4c4b53f83/packages/client-runtime/src/state/threadInbox.ts#L17-L32)，按 Pinned、Active、Working、Settled 分组。支持标题搜索、折叠分组、打开会话，以及手动置顶、取消置顶、完成和重新激活。正在等待用户操作的会话归入 Active；普通运行结束有两秒缓冲。已完成分组默认折叠（仍显示数量），其他分组默认展开；折叠状态只保存在当前界面中，切换侧栏或刷新后恢复默认。Working 与 Settled 是 T3 的“搁架”：第一个搁架的标题吃掉上方剩余空间，所以这两组贴在列表底部，空白留在活跃会话之后；会话多到溢出时自动边距归零，列表照常滚动，行不会被压扁。空分组不占位：没有运行中的会话时整个“工作中”组不渲染（T3 的 `workingThreads.length > 0`），贴底标记随之移到“已完成”；“已置顶”为空时同样不渲染，“活跃”与“已完成”始终显示。
 
 会话行沿用 T3 Code 的行样式：Pinned、Active、Working 是两行卡片（上行为工作区名与相对时间，下行为标题与状态标记），Settled 是单行灰化样式，悬停时标题恢复主色。整行都可以点击打开会话；悬停或键盘聚焦时右侧的时间位置淡出，换成置顶、完成与“更多”按钮（悬停切换只对精确指针生效，避免触屏点按后卡在悬停态）。相对时间分桶与原生侧栏一致（刚刚/5分钟/9小时…）。
 

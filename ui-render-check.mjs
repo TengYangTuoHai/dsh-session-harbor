@@ -108,13 +108,42 @@ for (const row of document.querySelectorAll('.t3-row')) {
   console.log('--- ' + row.dataset.variant + (row.dataset.current === 'true' ? ' (current)' : ''));
   console.log(row.innerHTML.replace(/<svg[\s\S]*?<\/svg>/g, '[svg]').replace(/></g, '>\n  <'));
 }
-// A live run names itself in the trailing slot instead of showing an age, and
-// its row carries the tint hook; the settled row keeps the plain age.
+// A live run names itself in the trailing slot instead of showing an age, and the
+// row keeps data-working as a state hook; the settled row keeps the plain age.
 const live = [...document.querySelectorAll('.t3-row[data-working=true] .t3-live')];
 console.log('working rows:', document.querySelectorAll('.t3-row[data-working=true]').length,
   '| live labels:', live.map(node => node.textContent).join(' / '));
 const rules = document.styleSheets[0]?.cssRules ? [...document.styleSheets[0].cssRules] : [];
 console.log('parsed css rules:', rules.length, '| media:', rules.filter(rule => rule.type === 4).map(rule => rule.conditionText + ' {' + rule.cssRules.length + '}').join(', '));
+// T3 Code only emits the Working shelf when something is working, and the Pinned
+// header only when something is pinned. Mount a second sidebar with nothing
+// running and nothing pinned: those headings must be gone, and the shelf push
+// must have moved to Settled.
+const idleHost = dom.window.document.createElement('div');
+idleHost.id = 'idle';
+dom.window.document.body.appendChild(idleHost);
+const idleList = { ids: list.ids, byId: Object.fromEntries(Object.entries(list.byId).map(([id, s]) => [id, { ...s, running: false }])) };
+const idleStatuses = new Map([...statuses].map(([id]) => [id, { running: false, pendingInteraction: undefined, completionUnread: false }]));
+// Hoisted: the hook compares by identity, so a fresh literal per render loops.
+const idleWorkspaces = { ...workspaces, pinnedSessionIds: [] };
+await act(async () => {
+  ReactDOMClient.createRoot(idleHost).render(React.createElement(Sidebar, {
+    wide: true,
+    expandSidebar: () => {},
+    useSessions: select => select(idleList),
+    useSessionStatus: select => select(idleStatuses),
+    useWorkspaces: select => select(idleWorkspaces),
+    usePanelInfo: select => select({ activePanelId: null }),
+    useContextMenu: () => ({ getTriggerProps: (_target, extra) => extra ?? {} }),
+    renderFactorySlot: (name, props) => React.createElement('i', { 'data-slot': name, 'data-label': props.label }),
+    t: key => key,
+  }));
+});
+const idleHeadings = [...idleHost.querySelectorAll('.t3-heading')].map(node => node.textContent.trim());
+const idleShelf = [...idleHost.querySelectorAll('.t3-group[data-shelf=true] .t3-heading')].map(node => node.textContent.trim());
+console.log('idle sidebar headings:', idleHeadings.join(' | '), '| shelf:', idleShelf.join(', '));
 // Two running sessions: the pinned one and the Working group's one.
 process.exit(live.length === 2 && live.every(node => /statusOngoing/.test(node.textContent))
-  && shelves.length === 1 && shelves[0].textContent.includes('working') ? 0 : 1);
+  && shelves.length === 1 && shelves[0].textContent.includes('working')
+  && idleHeadings.length === 2 && !idleHeadings.join(' ').includes('working') && !idleHeadings.join(' ').includes('pinned')
+  && idleShelf.length === 1 && idleShelf[0].includes('settled') ? 0 : 1);
