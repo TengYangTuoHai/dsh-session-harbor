@@ -100,6 +100,9 @@ await act(async () => {
 const heading = text => [...document.querySelectorAll('.t3-heading')].find(node => node.textContent.includes(text));
 console.log('groups:', [...document.querySelectorAll('.t3-heading')].map(node => node.textContent).join(' | '));
 console.log('rows before expanding Settled:', [...document.querySelectorAll('.t3-row')].map(row => row.dataset.variant).join(', '));
+// Exactly one shelf header carries the push, and it is the first shelf.
+const shelves = [...document.querySelectorAll('.t3-group[data-shelf=true]')];
+console.log('shelf groups:', shelves.map(node => [...node.querySelectorAll('.t3-heading')][0]?.textContent).join(', '));
 await act(async () => { heading('settled').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })); });
 for (const row of document.querySelectorAll('.t3-row')) {
   console.log('--- ' + row.dataset.variant + (row.dataset.current === 'true' ? ' (current)' : ''));
@@ -113,4 +116,5 @@ console.log('working rows:', document.querySelectorAll('.t3-row[data-working=tru
 const rules = document.styleSheets[0]?.cssRules ? [...document.styleSheets[0].cssRules] : [];
 console.log('parsed css rules:', rules.length, '| media:', rules.filter(rule => rule.type === 4).map(rule => rule.conditionText + ' {' + rule.cssRules.length + '}').join(', '));
 // Two running sessions: the pinned one and the Working group's one.
-process.exit(live.length === 2 && live.every(node => /statusOngoing/.test(node.textContent)) ? 0 : 1);
+process.exit(live.length === 2 && live.every(node => /statusOngoing/.test(node.textContent))
+  && shelves.length === 1 && shelves[0].textContent.includes('working') ? 0 : 1);

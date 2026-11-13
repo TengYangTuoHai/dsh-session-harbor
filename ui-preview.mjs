@@ -139,7 +139,9 @@ const driver = `<script>
 const html = '<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#151517;'
   + Object.entries(palette).map(([k, v]) => k + ':' + v).join(';')
   + ';font-family:-apple-system,"PingFang SC",sans-serif;}'
-  + '.frame{width:296px;padding:10px}' + css + '</style></head><body><div class="frame">' + body + '</div>' + driver + '</body></html>';
+  // A panel-height frame, so the screenshot shows the shelves resting at the
+  // foot of the list instead of trailing the actionable rows.
+  + '.frame{width:296px;height:500px;padding:10px;display:flex;flex-direction:column}' + css + '</style></head><body><div class="frame">' + body + '</div>' + driver + '</body></html>';
 
 const outDir = path.join(here, '.preview');
 mkdirSync(outDir, { recursive: true });
@@ -182,5 +184,23 @@ const opened = await page.evaluate(() => document.querySelectorAll('[role="menu"
 await page.screenshot({ path: path.join(outDir, 'rows-menu.png') });
 console.log('element under the ellipsis:', hit);
 console.log('menus open after the click:', opened);
+// Overflow: the shelf push must never squash a row. A long list keeps every
+// row at its full height and scrolls instead.
+await page.evaluate(() => {
+  const group = document.querySelectorAll('.t3-group')[1];
+  const row = group.querySelector('.t3-row');
+  for (let i = 0; i < 24; i += 1) group.appendChild(row.cloneNode(true));
+});
+const stress = await page.evaluate(() => {
+  const list = document.querySelector('.t3-scroll');
+  const shelf = document.querySelector('.t3-group[data-shelf=true]');
+  return {
+    scrolls: list.scrollHeight > list.clientHeight,
+    shortestRow: Math.min(...[...document.querySelectorAll('.t3-row[data-variant=card]')].map(node => Math.round(node.getBoundingClientRect().height))),
+    shelfGap: Math.round(shelf.getBoundingClientRect().top - document.querySelectorAll('.t3-group')[1].getBoundingClientRect().bottom),
+  };
+});
+console.log('overflow stress:', JSON.stringify(stress));
+await page.screenshot({ path: path.join(outDir, 'rows-overflow.png') });
 await browser.close();
-process.exit(opened === 1 && String(hit).includes('t3-icon-button') ? 0 : 1);
+process.exit(opened === 1 && String(hit).includes('t3-icon-button') && stress.scrolls && stress.shortestRow >= 44 ? 0 : 1);

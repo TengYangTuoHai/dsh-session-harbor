@@ -38,8 +38,14 @@ window.__ModuleLoader__.load({
       .t3-btn{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:5px;padding:5px}
       .t3-btn:hover,.t3-btn:focus-visible{background:var(--dsw-alias-bg-layer-2)}
       .t3-btn:disabled{opacity:.45;cursor:default}
-      .t3-scroll{overflow:auto;min-height:0;padding:0 6px 10px}
-      .t3-group{margin-top:7px}.t3-heading{display:flex;width:100%;align-items:center;gap:6px;text-align:left;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600}
+      .t3-scroll{display:flex;flex-direction:column;flex:1 1 auto;overflow:auto;min-height:0;padding:0 6px 10px}
+      .t3-group{flex:none;margin-top:7px}
+      /* T3 hangs the Working and Settled shelves off the foot of the list: the
+         first shelf header takes the free space above it, so the gap opens under
+         the actionable rows rather than under the backlog. With nothing left
+         over, the auto margin collapses and the list simply scrolls. */
+      .t3-group[data-shelf=true]{margin-top:auto}
+      .t3-heading{display:flex;width:100%;align-items:center;gap:6px;text-align:left;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600}
       .t3-count{margin-left:auto;font-weight:400;color:var(--dsw-alias-label-caption)}
       .t3-message{padding:8px 12px;color:var(--dsw-alias-label-secondary);font-size:12px}
       .t3-btn:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
@@ -324,6 +330,8 @@ window.__ModuleLoader__.load({
       groups.active.sort((a, b) => activity(b) - activity(a));
       groups.working.sort((a, b) => activity(b) - activity(a));
       groups.settled.sort((a, b) => (b.placement?.settledAt || 0) - (a.placement?.settledAt || 0));
+      const shown = ['pinned', 'active', 'working', 'settled'].filter(group => group !== 'pinned' || groups.pinned.length > 0);
+      const shelf = shown.find(group => group === 'working' || group === 'settled');
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
       return h('div', { className: 't3-sidebar' }, h('style', null, css),
         h('div', { className: 't3-bar' },
@@ -331,7 +339,7 @@ window.__ModuleLoader__.load({
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
         !snapshot ? h('div', { className: 't3-message', role: 'status' }, t(syncError ? 'syncing' : 'loading')) :
-        h('div', { className: 't3-scroll' }, ['pinned', 'active', 'working', 'settled'].filter(group => group !== 'pinned' || groups.pinned.length > 0).map(group => h('section', { className: 't3-group', key: group },
+        h('div', { className: 't3-scroll' }, shown.map(group => h('section', { className: 't3-group', key: group, 'data-shelf': group === shelf },
           h('button', { className: 't3-btn t3-heading', type: 'button', 'aria-expanded': !collapsed[group], onClick: () => setCollapsed(value => ({ ...value, [group]: !value[group] })) },
             h('span', { 'aria-hidden': true }, collapsed[group] ? '▸' : '▾'), t(group), h('span', { className: 't3-count' }, String(groups[group].length))),
           !collapsed[group] && groups[group].map(({ id, title, session, placement }) => {
