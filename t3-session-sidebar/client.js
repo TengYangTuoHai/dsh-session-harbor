@@ -55,11 +55,9 @@ window.__ModuleLoader__.load({
       .t3-row{position:relative;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;min-width:0;margin:2px 0;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none;color:var(--dsw-alias-label-primary);outline:none}
       .t3-row:hover,.t3-row:focus-within{background:var(--dsw-alias-interactive-bg-hover)}
       .t3-row[data-current=true]{background:var(--dsw-alias-interactive-bg-active)}
-      /* A live run lifts its own surface so the eye lands on it before the
-         spinner does; the accent stays faint enough to read as a lit row. */
-      .t3-row[data-working=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent)}
-      .t3-row[data-working=true]:hover,.t3-row[data-working=true]:focus-within{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent)}
-      .t3-row[data-working=true][data-current=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 17%, transparent)}
+      /* A live run is named by its accent label alone. Background stays reserved
+         for hover, keyboard focus and the current session, so a running row that
+         is neither stays flat like every other unselected row. */
       .t3-top{display:flex;align-items:center;gap:6px;min-width:0;height:16px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
       .t3-pin{display:inline-flex;flex:none;color:var(--dsw-alias-label-caption)}
       .t3-proj{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
