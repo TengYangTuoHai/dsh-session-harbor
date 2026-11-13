@@ -49,6 +49,11 @@ window.__ModuleLoader__.load({
       .t3-row{position:relative;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;min-width:0;margin:2px 0;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none;color:var(--dsw-alias-label-primary);outline:none}
       .t3-row:hover,.t3-row:focus-within{background:var(--dsw-alias-interactive-bg-hover)}
       .t3-row[data-current=true]{background:var(--dsw-alias-interactive-bg-active)}
+      /* A live run lifts its own surface so the eye lands on it before the
+         spinner does; the accent stays faint enough to read as a lit row. */
+      .t3-row[data-working=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 10%, transparent)}
+      .t3-row[data-working=true]:hover,.t3-row[data-working=true]:focus-within{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent)}
+      .t3-row[data-working=true][data-current=true]{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 17%, transparent)}
       .t3-top{display:flex;align-items:center;gap:6px;min-width:0;height:16px;font-size:11px;line-height:16px;color:var(--dsw-alias-label-tertiary)}
       .t3-pin{display:inline-flex;flex:none;color:var(--dsw-alias-label-caption)}
       .t3-proj{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -63,12 +68,17 @@ window.__ModuleLoader__.load({
       .t3-dot[data-state=done]::after{background:var(--dsw-alias-state-success-primary)}
       .t3-dot[data-state=warning]::after{background:var(--dsw-alias-state-warn-primary)}
       .t3-spinner{width:12px;height:12px;color:var(--dsw-alias-label-tertiary);animation:t3-spin 1.5s linear infinite}
-      .t3-spinner circle{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+      .t3-live .t3-spinner{color:currentColor}
+      .t3-spinner circle{fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round}
       .t3-spinner .t3-track{opacity:.25}
-      .t3-spinner .t3-arc{stroke-dasharray:12 150}
+      .t3-spinner .t3-arc{stroke-dasharray:20 150}
       @keyframes t3-spin{to{transform:rotate(360deg)}}
+      @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}}
       .t3-slot{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:flex-end;min-width:26px;height:18px;margin-left:auto}
       .t3-time{font-size:11px;line-height:16px;color:var(--dsw-alias-label-caption);font-variant-numeric:tabular-nums;transition:opacity .12s ease;pointer-events:none}
+      /* T3 names the live run instead of the age: spinner + Working + elapsed,
+         in the accent colour, in the same slot the age vacates on hover. */
+      .t3-live{display:inline-flex;align-items:center;gap:4px;color:var(--dsw-alias-state-business-primary);font-weight:500}
       .t3-actions{position:absolute;right:0;top:0;display:inline-flex;align-items:center;gap:2px;opacity:0;pointer-events:none;transition:opacity .12s ease}
       /* 18px tall so the hover action strip never grows the slot it replaces. */
       .t3-icon-button{display:inline-flex;align-items:center;justify-content:center;width:20px;height:18px;padding:0;border:0;background:transparent;border-radius:5px;color:var(--dsw-alias-label-tertiary);cursor:pointer}
@@ -123,6 +133,14 @@ window.__ModuleLoader__.load({
     function timeLabel(t, at, now) {
       const [unit, n] = relativeUnit(at, now);
       if (unit === 'now') return t('timeNow');
+      return t('time' + unit[0].toUpperCase() + unit.slice(1)).replace('{n}', String(n));
+    }
+    /** Elapsed run time for the live label; the first minute shows the bare
+       status so the row never reads "工作中 刚刚". */
+    function workingDuration(t, since, now) {
+      if (!Number.isFinite(since)) return null;
+      const [unit, n] = relativeUnit(since, now);
+      if (unit === 'now') return null;
       return t('time' + unit[0].toUpperCase() + unit.slice(1)).replace('{n}', String(n));
     }
     function pathLabel(value) {
@@ -181,7 +199,12 @@ window.__ModuleLoader__.load({
           const canWait = !actual && previous?.working && !pendingInteraction && !pinned && !settled && previous.placement === placement;
           const deadline = canWait ? (previous.deadline ?? now + 2000) : null;
           const working = actual || (deadline !== null && deadline > now);
-          workingRef.current.set(id, { working, deadline: working ? deadline : null, placement });
+          // DSH publishes no run-start clock, so a run is anchored at the last
+          // recorded activity the moment the sidebar first sees it running.
+          const known = sessions.byId?.[id]?.updatedAt;
+          const anchor = Number.isFinite(known) ? Math.min(known, now) : now;
+          const since = working ? (previous?.working ? previous.since ?? anchor : anchor) : null;
+          workingRef.current.set(id, { working, deadline: working ? deadline : null, placement, since });
           if (working) next.add(id);
           if (working && deadline !== null) nextDeadline = Math.min(nextDeadline, deadline);
         }
@@ -197,6 +220,7 @@ window.__ModuleLoader__.load({
               if (state.deadline !== null && state.deadline <= at) {
                 state.working = false;
                 state.deadline = null;
+                state.since = null;
               }
               if (state.deadline !== null) following = Math.min(following, state.deadline);
             }
@@ -329,11 +353,19 @@ window.__ModuleLoader__.load({
               : workingIds.has(id) || status?.running ? 'ongoing'
               : status?.completionUnread ? 'done' : null;
             const stateLabel = state && t('status' + state[0].toUpperCase() + state.slice(1));
+            const live = state === 'ongoing';
+            const duration = live ? workingDuration(t, workingRef.current.get(id)?.since, nowMinute) : null;
             const busy = !!pending[id] || syncError;
-            // One trailing cell carries the age and, on hover, the row verbs.
+            // One trailing cell carries the age — or, while the agent runs, the
+            // live status and its elapsed time — and on hover the row verbs.
             // Clicks on the strip stay there instead of opening the session.
             const slot = session.blank ? null : h('span', { className: 't3-slot' },
-              h('span', { className: 't3-time', 'aria-hidden': true }, timeLabel(t, session.updatedAt, nowMinute)),
+              live
+                ? h('span', { className: 't3-time t3-live', title: stateLabel },
+                  h(StatusGlyph, { state: 'ongoing' }),
+                  h('span', null, stateLabel),
+                  duration && h('span', { className: 't3-duration' }, duration))
+                : h('span', { className: 't3-time', 'aria-hidden': true }, timeLabel(t, session.updatedAt, nowMinute)),
               // The menu trigger trails the row verbs, so it sits on the row's
               // right edge where the pointer already rests.
               h('span', { className: 't3-actions', onClick: event => event.stopPropagation() },
@@ -342,7 +374,7 @@ window.__ModuleLoader__.load({
                 renderFactorySlot('contextMenu.button', { target, label: `${t('more')}: ${title}`, className: 't3-icon-button' })));
             const titleLine = h('div', { className: 't3-line' },
               h('button', { className: 't3-open', type: 'button', title }, title),
-              state && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })),
+              state && (isSettled || !live) && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })),
               isSettled && slot);
             const topLine = isSettled ? null : h('div', { className: 't3-top' },
               isPinned && h('span', { className: 't3-pin', 'aria-hidden': true }, h(PinIcon, { filled: true, size: 12 })),
@@ -353,6 +385,7 @@ window.__ModuleLoader__.load({
             return h('div', {
               className: 't3-row', key: id, ...trigger,
               'data-variant': isSettled ? 'slim' : 'card',
+              'data-working': live,
               'data-current': !panelActive && (session.retainedBy?.mainView || 0) > 0,
               onClick: () => runUi(() => context.uiWorkspace.openSession(id), 'openFailed'),
             }, topLine, titleLine);

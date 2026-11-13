@@ -60,12 +60,13 @@ const Sidebar = registered[0].component;
 
 const now = Date.now();
 const list = {
-  ids: ['a', 'b', 'c', 'd'],
+  ids: ['a', 'b', 'c', 'd', 'e'],
   byId: {
     a: { id: 'a', displayTitle: 'Inspect Network Bridge Contract', cwd: '/repo/dsh-t3-code', running: true, blank: false, updatedAt: now - 9 * 3600000, retainedBy: { mainView: 1 } },
     b: { id: 'b', displayTitle: 'Rename settle group', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 3 * 60000, retainedBy: {} },
     c: { id: 'c', displayTitle: 'Old settled thread', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 2 * 86400000, retainedBy: {} },
     d: { id: 'd', displayTitle: 'Needs a decision', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 30 * 60000, retainedBy: {} },
+    e: { id: 'e', displayTitle: 'Refactor thread inbox sync', cwd: '/repo/dsh-t3-code', running: true, blank: false, updatedAt: now - 39 * 60000, retainedBy: {} },
   },
 };
 const statuses = new Map([
@@ -73,6 +74,7 @@ const statuses = new Map([
   ['b', { running: false, pendingInteraction: undefined, completionUnread: true }],
   ['c', { running: false, pendingInteraction: undefined, completionUnread: false }],
   ['d', { running: false, pendingInteraction: { key: 'k', kind: 'approval', sessionId: 'd' }, completionUnread: false }],
+  ['e', { running: true, pendingInteraction: undefined, completionUnread: false }],
 ]);
 const workspaces = {
   items: [{ workspaceId: 'w1', title: 'dsh-t3-code', path: '/repo/dsh-t3-code', sessionIds: ['a'] }],
@@ -103,6 +105,12 @@ for (const row of document.querySelectorAll('.t3-row')) {
   console.log('--- ' + row.dataset.variant + (row.dataset.current === 'true' ? ' (current)' : ''));
   console.log(row.innerHTML.replace(/<svg[\s\S]*?<\/svg>/g, '[svg]').replace(/></g, '>\n  <'));
 }
+// A live run names itself in the trailing slot instead of showing an age, and
+// its row carries the tint hook; the settled row keeps the plain age.
+const live = [...document.querySelectorAll('.t3-row[data-working=true] .t3-live')];
+console.log('working rows:', document.querySelectorAll('.t3-row[data-working=true]').length,
+  '| live labels:', live.map(node => node.textContent).join(' / '));
 const rules = document.styleSheets[0]?.cssRules ? [...document.styleSheets[0].cssRules] : [];
 console.log('parsed css rules:', rules.length, '| media:', rules.filter(rule => rule.type === 4).map(rule => rule.conditionText + ' {' + rule.cssRules.length + '}').join(', '));
-process.exit(0);
+// Two running sessions: the pinned one and the Working group's one.
+process.exit(live.length === 2 && live.every(node => /statusOngoing/.test(node.textContent)) ? 0 : 1);
