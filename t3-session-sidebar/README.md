@@ -13,3 +13,5 @@
 在会话行右键、点击“更多”按钮，或聚焦标题后按 Shift+F10，可以打开 DSH 原有会话菜单，其中保留置顶、重命名、分叉、复制 ID 和归档，并增加完成或重新激活。侧边栏底部的切换按钮可返回原生浏览器，以使用原有的工作区管理和完整搜索。这个初版没有实现 T3 Code 的自动 Settled、拖拽排序、Snooze 或 PR 联动。
 
 运行测试：`node --test logic.test.js placement-controller.test.js index.test.js migration.test.js`。界面结构可在 jsdom 中离线渲染：`node ../ui-render-check.mjs`；`node ../ui-preview.mjs` 还会用无头 Chromium 把静止态与悬停态截图写到 `../.preview/`。两者借用一份 DSH 检出的 react/react-dom/jsdom/playwright，可用 `DSH_CHECKOUT` 指定路径。
+
+分组规则（四组划分、两秒退出缓冲）与会话行的呈现改自 [T3 Code](https://github.com/pingdotgg/t3code) 在 `095611d1` 的实现（MIT, © T3 Tools Inc.）；存储、右键菜单、会话状态与侧栏插槽来自 DSH 自身的插件 API。许可见仓库根目录的 LICENSE。
