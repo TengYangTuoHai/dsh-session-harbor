@@ -142,8 +142,15 @@ await act(async () => {
 const idleHeadings = [...idleHost.querySelectorAll('.t3-heading')].map(node => node.textContent.trim());
 const idleShelf = [...idleHost.querySelectorAll('.t3-group[data-shelf=true] .t3-heading')].map(node => node.textContent.trim());
 console.log('idle sidebar headings:', idleHeadings.join(' | '), '| shelf:', idleShelf.join(', '));
+// The preview page re-runs the fill measurement on static markup, so the two
+// must not drift: pin the plugin side to the same pieces.
+const source = await import('node:fs').then(fs => fs.readFileSync(path.join(here, 't3-session-sidebar', 'client.js'), 'utf8'));
+const fillPieces = ['--t3-fill', 'overflowY', 'area.clientHeight - offset', 'ResizeObserver'];
+const missing = fillPieces.filter(piece => !source.includes(piece));
+console.log('fill measurement pieces:', missing.length ? 'MISSING ' + missing.join(', ') : 'all present');
 // Two running sessions: the pinned one and the Working group's one.
 process.exit(live.length === 2 && live.every(node => /statusOngoing/.test(node.textContent))
   && shelves.length === 1 && shelves[0].textContent.includes('working')
   && idleHeadings.length === 2 && !idleHeadings.join(' ').includes('working') && !idleHeadings.join(' ').includes('pinned')
-  && idleShelf.length === 1 && idleShelf[0].includes('settled') ? 0 : 1);
+  && idleShelf.length === 1 && idleShelf[0].includes('settled')
+  && missing.length === 0 ? 0 : 1);

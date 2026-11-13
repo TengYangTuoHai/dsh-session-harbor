@@ -33,6 +33,13 @@ window.__ModuleLoader__.load({
     };
     const css = `
       .t3-sidebar{display:flex;flex-direction:column;min-height:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px}
+      /* The shipped shell (0.2.2) seats this slot in a max-content grid row, so the
+         hole is content-sized and flex:1 has nothing to fill. The component walks
+         up to the host's scroll area, subtracts whatever the shell seats above us,
+         and hands the remainder to --t3-fill. min/max, not height: flex-basis wins
+         over height on a flex item. With --t3-fill unset (a shell that scrolls
+         elsewhere) the flex sizing above stands. */
+      .t3-sidebar{min-height:var(--t3-fill,0px);max-height:var(--t3-fill,none)}
       .t3-bar{display:flex;gap:6px;align-items:center;padding:8px 10px}
       .t3-search{min-width:0;flex:1;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;padding:6px 8px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font:inherit}
       .t3-btn{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:5px;padding:5px}
@@ -235,6 +242,35 @@ window.__ModuleLoader__.load({
         schedule(nextDeadline);
         return () => clearTimeout(timer);
       }, [sessions, statuses, workspaces, snapshot]);
+      // The shipped shell seats us in a max-content grid row, so the hole is
+      // content-sized and the shelf's auto margin has nothing to absorb. The space
+      // actually visible for us is the host's scroll area minus whatever it seats
+      // above us, and both move with the shell version -- so measure them and hand
+      // the number to CSS instead of hardcoding a grid's spacer rows.
+      const rootRef = React.useRef(null);
+      React.useEffect(() => {
+        const node = rootRef.current;
+        if (!wide || !node) return undefined;
+        let area = null;
+        for (let el = node.parentElement; el; el = el.parentElement) {
+          if (/(auto|scroll)/.test(window.getComputedStyle(el).overflowY)) { area = el; break; }
+        }
+        if (!area || !area.clientHeight) return undefined;
+        let last = -1;
+        const apply = () => {
+          const offset = node.getBoundingClientRect().top - area.getBoundingClientRect().top + area.scrollTop;
+          const next = Math.max(0, Math.round(area.clientHeight - offset));
+          if (next === last) return;
+          last = next;
+          node.style.setProperty('--t3-fill', next + 'px');
+        };
+        apply();
+        if (typeof ResizeObserver === 'undefined') return undefined;
+        const observer = new ResizeObserver(apply);
+        observer.observe(area);
+        observer.observe(node);
+        return () => observer.disconnect();
+      }, [wide]);
       const pollRef = React.useRef(null);
       const operations = React.useRef(new Set());
       const alive = React.useRef(false);
@@ -338,7 +374,7 @@ window.__ModuleLoader__.load({
       // running session the push moves from Working to Settled, as in T3.
       const shelf = shown.find(group => group === 'working' || group === 'settled');
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
-      return h('div', { className: 't3-sidebar' }, h('style', null, css),
+      return h('div', { className: 't3-sidebar', ref: rootRef }, h('style', null, css),
         h('div', { className: 't3-bar' },
           h('input', { className: 't3-search', type: 'search', value: query, placeholder: t('search'), 'aria-label': t('search'), onChange: event => setQuery(event.target.value) })),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),

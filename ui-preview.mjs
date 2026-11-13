@@ -130,6 +130,20 @@ const palette = {
 // Stands in for the host menu overlay: a portal popup anchored at the trigger's
 // bottom-left, plus the expanded flag the row keys its hover state on.
 const driver = `<script>
+  // Mirrors the plugin's fill measurement: nearest scrollable ancestor, minus
+  // whatever the shell seats above us. ui-render-check.mjs asserts the plugin
+  // source still carries the same pieces.
+  const sidebar = document.querySelector('.t3-sidebar');
+  let area = null;
+  for (let el = sidebar.parentElement; el; el = el.parentElement) {
+    if (/(auto|scroll)/.test(getComputedStyle(el).overflowY)) { area = el; break; }
+  }
+  const apply = () => {
+    const offset = sidebar.getBoundingClientRect().top - area.getBoundingClientRect().top + area.scrollTop;
+    sidebar.style.setProperty('--t3-fill', Math.max(0, Math.round(area.clientHeight - offset)) + 'px');
+  };
+  apply();
+  new ResizeObserver(apply).observe(area);
   document.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-context-menu-trigger]');
     if (!trigger) return;
@@ -145,12 +159,19 @@ const driver = `<script>
 const html = '<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#151517;'
   + Object.entries(palette).map(([k, v]) => k + ':' + v).join(';')
   + ';font-family:-apple-system,"PingFang SC",sans-serif;}'
-  // Sidebar shell stand-ins: the column, the browsing hole, and the chrome that
-  // eats height above and below it, at the widths the real sidebar uses.
+  // Sidebar shell stand-ins for the shipped 0.2.2 layout: the column, the
+  // scroll region (a size container), the grid it scrolls through, and the
+  // layout-neutral slot anchor our root lands inside. Row 4 is max-content, so
+  // the hole we render into is content-sized -- which is why the shelf push
+  // needs min-height:100cqh, not flex:1.
   + '.shell{display:flex;flex-direction:column;height:100%;box-sizing:border-box;width:296px;padding:6px 12px}'
   + '.shellHead{flex:none;height:40px}.shellFoot{flex:none;height:32px}'
-  + '.regionArea{flex:1;min-height:0;display:flex;flex-direction:column;margin-left:-4px;margin-right:-12px;padding-left:4px;overflow:hidden}'
-  + css + '</style></head><body><div class="shell"><div class="shellHead"></div><div class="regionArea">' + body + '</div><div class="shellFoot"></div></div>' + driver + '</body></html>';
+  + '.scrollRegion{flex:1;min-height:0;margin-top:4px;display:flex;flex-direction:column;container-type:size}'
+  + '.scrollArea{flex:1;min-height:0;display:grid;grid-template-columns:4px minmax(0,1fr) 10px;grid-template-rows:8px max-content 2px max-content;align-content:start;overflow:hidden auto;container-type:scroll-state}'
+  + '.hostChrome{grid-area:2/2;height:44px;flex:none}'
+  + '.regionArea{grid-area:4/2;display:flex;flex-direction:column;min-width:0;min-height:0}'
+  + '.slotAnchor{display:contents}'
+  + css + '</style></head><body><div class="shell"><div class="shellHead"></div><div class="scrollRegion"><div class="scrollArea"><div class="hostChrome"></div><div class="regionArea"><div class="slotAnchor">' + body + '</div></div></div></div><div class="shellFoot"></div></div>' + driver + '</body></html>';
 
 const outDir = path.join(here, '.preview');
 mkdirSync(outDir, { recursive: true });
@@ -175,18 +196,20 @@ console.log('layout chain:', await page.evaluate(() => {
   const groups = [...document.querySelectorAll('.t3-group')].map(g => (g.dataset.shelf === 'true' ? '[shelf]' : '')
     + g.querySelector('.t3-heading').textContent.replace(/\s+/g, '') + ' h=' + Math.round(g.getBoundingClientRect().height)
     + ' mt=' + getComputedStyle(g).marginTop);
-  return [box('.shell'), box('.regionArea'), box('.t3-sidebar'), box('.t3-scroll'), ...groups].join(' | ');
+  return [box('.shell'), box('.scrollRegion'), box('.scrollArea'), box('.regionArea'), box('.t3-sidebar'), box('.t3-scroll'), ...groups].join(' | ');
 }));
 // The shelves must hang at the foot of the hole: a real gap above the first
 // shelf, and the last group ending at the bottom of the region.
 const shelves = await page.evaluate(() => {
-  const region = document.querySelector('.regionArea').getBoundingClientRect();
+  const region = document.querySelector('.scrollRegion').getBoundingClientRect();
   const groups = [...document.querySelectorAll('.t3-group')];
   const shelf = document.querySelector('.t3-group[data-shelf=true]').getBoundingClientRect();
   const last = groups[groups.length - 1].getBoundingClientRect();
   return {
     gapAboveShelf: Math.round(shelf.top - groups[1].getBoundingClientRect().bottom),
     footGap: Math.round(region.bottom - last.bottom),
+    // The host's own area must not gain a scrollbar: our list scrolls, not it.
+    hostScrolls: (() => { const a = document.querySelector('.scrollArea'); return a.scrollHeight > a.clientHeight + 1; })(),
   };
 });
 console.log('shelf placement:', JSON.stringify(shelves));
@@ -228,6 +251,8 @@ const stress = await page.evaluate(() => {
   const shelf = document.querySelector('.t3-group[data-shelf=true]');
   return {
     scrolls: list.scrollHeight > list.clientHeight,
+    // A long list must scroll inside our list, not stretch the host's scroll area.
+    hostScrolls: (() => { const a = document.querySelector('.scrollArea'); return a.scrollHeight > a.clientHeight + 1; })(),
     shortestRow: Math.min(...[...document.querySelectorAll('.t3-row[data-variant=card]')].map(node => Math.round(node.getBoundingClientRect().height))),
     shelfGap: Math.round(shelf.getBoundingClientRect().top - document.querySelectorAll('.t3-group')[1].getBoundingClientRect().bottom),
   };
@@ -235,5 +260,5 @@ const stress = await page.evaluate(() => {
 console.log('overflow stress:', JSON.stringify(stress));
 await page.screenshot({ path: path.join(outDir, 'rows-overflow.png') });
 await browser.close();
-process.exit(opened === 1 && String(hit).includes('t3-icon-button') && stress.scrolls && stress.shortestRow >= 44
-  && shelves.gapAboveShelf > 40 && shelves.footGap <= 12 ? 0 : 1);
+process.exit(opened === 1 && String(hit).includes('t3-icon-button') && stress.scrolls && !stress.hostScrolls && stress.shortestRow >= 44
+  && shelves.gapAboveShelf > 40 && shelves.footGap <= 12 && !shelves.hostScrolls ? 0 : 1);
