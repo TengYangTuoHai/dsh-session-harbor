@@ -104,7 +104,13 @@ await act(async () => {
 });
 
 const css = document.querySelector('style').textContent;
-const body = document.querySelector('.t3-scroll').outerHTML;
+// The host mounts our root inside the sidebar shell's regionArea, so the
+// preview reproduces that chain (ui-sidebar SidebarRoot.module.css) rather than
+// a bare frame: the shelf push only works if the panel hands the hole a height,
+// and the shell spends part of it on the header above and the foot below.
+const sidebar = document.querySelector('.t3-sidebar');
+sidebar.querySelector('style')?.remove();
+const body = sidebar.outerHTML;
 console.log('markup check:', /data-context-menu-trigger/.test(body) ? 'trigger present' : 'TRIGGER MISSING');
 
 const palette = {
@@ -136,12 +142,15 @@ const driver = `<script>
     document.body.appendChild(menu);
   });
 </script>`;
-const html = '<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#151517;'
+const html = '<!doctype html><html><head><meta charset="utf-8"><style>html,body{margin:0;height:100%;background:#151517;'
   + Object.entries(palette).map(([k, v]) => k + ':' + v).join(';')
   + ';font-family:-apple-system,"PingFang SC",sans-serif;}'
-  // A panel-height frame, so the screenshot shows the shelves resting at the
-  // foot of the list instead of trailing the actionable rows.
-  + '.frame{width:296px;height:500px;padding:10px;display:flex;flex-direction:column}' + css + '</style></head><body><div class="frame">' + body + '</div>' + driver + '</body></html>';
+  // Sidebar shell stand-ins: the column, the browsing hole, and the chrome that
+  // eats height above and below it, at the widths the real sidebar uses.
+  + '.shell{display:flex;flex-direction:column;height:100%;box-sizing:border-box;width:296px;padding:6px 12px}'
+  + '.shellHead{flex:none;height:40px}.shellFoot{flex:none;height:32px}'
+  + '.regionArea{flex:1;min-height:0;display:flex;flex-direction:column;margin-left:-4px;margin-right:-12px;padding-left:4px;overflow:hidden}'
+  + css + '</style></head><body><div class="shell"><div class="shellHead"></div><div class="regionArea">' + body + '</div><div class="shellFoot"></div></div>' + driver + '</body></html>';
 
 const outDir = path.join(here, '.preview');
 mkdirSync(outDir, { recursive: true });
@@ -155,9 +164,32 @@ const executable = cached && readdirSync(path.join(process.env.HOME, 'Library/Ca
   .map(dir => path.join(process.env.HOME, 'Library/Caches/ms-playwright', cached, dir, 'chrome-headless-shell'))
   .find(file => existsSync(file));
 const browser = await chromium.launch(executable ? { executablePath: executable } : {});
-const page = await browser.newPage({ viewport: { width: 340, height: 520 }, deviceScaleFactor: 2 });
+const page = await browser.newPage({ viewport: { width: 340, height: 760 }, deviceScaleFactor: 2 });
 await page.setContent(html);
 console.log('chromium dom:', await page.evaluate(() => document.querySelectorAll('.t3-row').length + ' rows, ' + document.querySelectorAll('[data-context-menu-trigger]').length + ' triggers, ' + document.querySelectorAll('.t3-actions').length + ' strips'));
+// Height chain, because the shelf push depends on every link in it: the shell
+// has to hand the hole a height, and each group's resolved margin shows whether
+// the auto margin had anything left to absorb.
+console.log('layout chain:', await page.evaluate(() => {
+  const box = sel => sel + ' h=' + Math.round(document.querySelector(sel).getBoundingClientRect().height);
+  const groups = [...document.querySelectorAll('.t3-group')].map(g => (g.dataset.shelf === 'true' ? '[shelf]' : '')
+    + g.querySelector('.t3-heading').textContent.replace(/\s+/g, '') + ' h=' + Math.round(g.getBoundingClientRect().height)
+    + ' mt=' + getComputedStyle(g).marginTop);
+  return [box('.shell'), box('.regionArea'), box('.t3-sidebar'), box('.t3-scroll'), ...groups].join(' | ');
+}));
+// The shelves must hang at the foot of the hole: a real gap above the first
+// shelf, and the last group ending at the bottom of the region.
+const shelves = await page.evaluate(() => {
+  const region = document.querySelector('.regionArea').getBoundingClientRect();
+  const groups = [...document.querySelectorAll('.t3-group')];
+  const shelf = document.querySelector('.t3-group[data-shelf=true]').getBoundingClientRect();
+  const last = groups[groups.length - 1].getBoundingClientRect();
+  return {
+    gapAboveShelf: Math.round(shelf.top - groups[1].getBoundingClientRect().bottom),
+    footGap: Math.round(region.bottom - last.bottom),
+  };
+});
+console.log('shelf placement:', JSON.stringify(shelves));
 await page.screenshot({ path: path.join(outDir, 'rows-rest.png') });
 await page.hover('.t3-row');
 await page.waitForTimeout(200);
@@ -203,4 +235,5 @@ const stress = await page.evaluate(() => {
 console.log('overflow stress:', JSON.stringify(stress));
 await page.screenshot({ path: path.join(outDir, 'rows-overflow.png') });
 await browser.close();
-process.exit(opened === 1 && String(hit).includes('t3-icon-button') && stress.scrolls && stress.shortestRow >= 44 ? 0 : 1);
+process.exit(opened === 1 && String(hit).includes('t3-icon-button') && stress.scrolls && stress.shortestRow >= 44
+  && shelves.gapAboveShelf > 40 && shelves.footGap <= 12 ? 0 : 1);
