@@ -168,7 +168,7 @@ const html = '<!doctype html><html><head><meta charset="utf-8"><style>html,body{
   + '.shellHead{flex:none;height:40px}.shellFoot{flex:none;height:32px}'
   + '.scrollRegion{flex:1;min-height:0;margin-top:4px;display:flex;flex-direction:column;container-type:size}'
   + '.scrollArea{flex:1;min-height:0;display:grid;grid-template-columns:4px minmax(0,1fr) 10px;grid-template-rows:8px max-content 2px max-content;align-content:start;overflow:hidden auto;container-type:scroll-state}'
-  + '.hostChrome{grid-area:2/2;height:44px;flex:none}'
+  + `.hostChrome{grid-area:2/2;height:${process.env.HOST_CHROME ?? '44'}px;flex:none}`
   + '.regionArea{grid-area:4/2;display:flex;flex-direction:column;min-width:0;min-height:0}'
   + '.slotAnchor{display:contents}'
   + css + '</style></head><body><div class="shell"><div class="shellHead"></div><div class="scrollRegion"><div class="scrollArea"><div class="hostChrome"></div><div class="regionArea"><div class="slotAnchor">' + body + '</div></div></div></div><div class="shellFoot"></div></div>' + driver + '</body></html>';
