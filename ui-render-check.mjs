@@ -19,16 +19,17 @@ const pick = (name) => {
   return path.join(pnpm, dir, 'node_modules', name);
 };
 const { JSDOM } = nodeRequire(pick('jsdom'));
-const React = nodeRequire(pick('react'));
-const reactDom = pick('react-dom');
-const ReactDOMClient = nodeRequire(path.join(reactDom, 'client.js'));
-const { act } = nodeRequire(path.join(reactDom, 'test-utils.js'));
-
 const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body>', { pretendToBeVisual: true });
 const loaded = {};
 dom.window.__ModuleLoader__ = { load(spec) { loaded.factory = spec.factory; } };
 globalThis.window = dom.window;
 globalThis.document = dom.window.document;
+// react-dom chooses its text-input strategy — the real `input` event or the IE
+// polyfill — while it is being required, so the DOM has to exist before it.
+const React = nodeRequire(pick('react'));
+const reactDom = pick('react-dom');
+const ReactDOMClient = nodeRequire(path.join(reactDom, 'client.js'));
+const { act } = nodeRequire(path.join(reactDom, 'test-utils.js'));
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 await import(path.join(here, 't3-session-sidebar', 'client.js'));
@@ -104,6 +105,37 @@ const rowShapes = [...document.querySelectorAll('.t3-row')].map(row => (row.quer
   + (row.querySelector('.t3-line') ? '+line' : 'NOLINE') + (row.querySelector('.t3-proj') ? '+proj' : 'NOPROJ'));
 console.log('row shapes:', [...new Set(rowShapes)].join(' | '), '| rows:', rowShapes.length);
 console.log('rows before expanding Settled:', [...document.querySelectorAll('.t3-row')].map(row => row.dataset.current === 'true' ? 'current' : 'plain').join(', '));
+// The header search is the native control: one 28px button until it is opened,
+// then the title folds away, the frame grows around the field, and the caret
+// lands in it. Escape clears the filter and folds the field back.
+const searchState = () => ({
+  expanded: document.querySelector('.t3-search-button').getAttribute('aria-expanded'),
+  tab: document.querySelector('.t3-search-input').tabIndex,
+  clear: document.querySelectorAll('.t3-clear').length,
+  hidden: document.querySelector('.t3-title').dataset.hidden,
+  focused: document.activeElement === document.querySelector('.t3-search-input'),
+  rows: document.querySelectorAll('.t3-row').length,
+});
+const closed = searchState();
+await act(async () => { document.querySelector('.t3-search-button').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })); });
+const open = searchState();
+await act(async () => {
+  const input = document.querySelector('.t3-search-input');
+  // React remembers the value it wrote, so an assignment alone reads as no
+  // change to its onChange; reset the tracker the way a keystroke would.
+  input.value = 'rename';
+  input._valueTracker.setValue('');
+  input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+});
+const filtered = [...document.querySelectorAll('.t3-row .t3-open')].map(node => node.textContent);
+// A click outside the control keeps a live filter, exactly as the native header
+// does; only Escape folds it away.
+await act(async () => { document.body.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })); });
+const outsideClick = { ...searchState(), rows: document.querySelectorAll('.t3-row').length };
+await act(async () => { document.querySelector('.t3-search-input').dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+const escaped = searchState();
+console.log('search closed:', JSON.stringify(closed), '| open:', JSON.stringify(open));
+console.log('filtered by "rename":', filtered.join(', '), '| outside click:', JSON.stringify(outsideClick), '| escape:', JSON.stringify(escaped));
 // Exactly one shelf header carries the push, and it is the first shelf.
 const shelves = [...document.querySelectorAll('.t3-group[data-shelf=true]')];
 console.log('shelf groups:', shelves.map(node => [...node.querySelectorAll('.t3-heading')][0]?.textContent).join(', '));
@@ -157,4 +189,12 @@ process.exit(live.length === 2 && live.every(node => /statusOngoing/.test(node.t
   && shelves.length === 1 && shelves[0].textContent.includes('working')
   && idleHeadings.length === 2 && !idleHeadings.join(' ').includes('working') && !idleHeadings.join(' ').includes('pinned')
   && idleShelf.length === 1 && idleShelf[0].includes('settled')
-  && missing.length === 0 ? 0 : 1);
+  && missing.length === 0
+  // Search: folded to one button, opened into a focused field with a clear
+  // button, filtering live, surviving an outside click, folded by Escape.
+  && closed.expanded === 'false' && closed.tab === -1 && closed.clear === 0 && closed.hidden === 'false' && !closed.focused
+  && open.expanded === 'true' && open.tab === 0 && open.clear === 1 && open.hidden === 'true' && open.focused && open.rows === closed.rows
+  && filtered.length === 1 && /Rename settle group/.test(filtered.join(' '))
+  && outsideClick.expanded === 'true' && outsideClick.rows === 1 && !outsideClick.focused
+  && escaped.expanded === 'false' && escaped.clear === 0 && escaped.hidden === 'false'
+  ? 0 : 1);

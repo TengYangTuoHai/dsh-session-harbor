@@ -49,6 +49,7 @@ plugin.apply({
 });
 
 const dict = {
+  sessions: '会话', search: '搜索会话', searchPlaceholder: '搜索会话名称', searchClear: '清除搜索',
   pinned: '已置顶', active: '活跃', working: '工作中', settled: '已完成',
   pin: '置顶', unpin: '取消置顶', settle: '完成', unsettle: '重新激活', more: '会话操作',
   timeNow: '刚刚', timeMinutes: '{n}分钟', timeHours: '{n}小时', timeDays: '{n}天',
@@ -126,6 +127,8 @@ const palette = {
   '--dsw-alias-bg-layer-2': '#2c2c2e',
   '--dsw-alias-brand-primary': '#f9fafb',
   '--dsw-alias-border-l1': '#ffffff1f',
+  '--dsw-alias-border-l4': '#ffffff33',
+  '--ds-ease-in-out': 'cubic-bezier(0.4, 0, 0.2, 1)',
 };
 // Stands in for the host menu overlay: a portal popup anchored at the trigger's
 // bottom-left, plus the expanded flag the row keys its hover state on.
@@ -144,6 +147,50 @@ const driver = `<script>
   };
   apply();
   new ResizeObserver(apply).observe(area);
+  // Stands in for the plugin's search state, which React does not run in this
+  // page: the header folds open on click, the field filters titles the way the
+  // plugin does, and Escape clears the query and folds the field back.
+  const slot = document.querySelector('.t3-search-slot');
+  const frame = document.querySelector('.t3-search');
+  const title = document.querySelector('.t3-title');
+  const button = document.querySelector('.t3-search-button');
+  const input = document.querySelector('.t3-search-input');
+  const setExpanded = (open) => {
+    slot.dataset.expanded = open;
+    frame.dataset.expanded = open;
+    title.dataset.hidden = open;
+    button.setAttribute('aria-expanded', String(open));
+    input.tabIndex = open ? 0 : -1;
+    frame.querySelector('.t3-clear')?.remove();
+    if (!open) return;
+    const clear = document.createElement('button');
+    clear.className = 't3-clear';
+    clear.setAttribute('aria-label', '清除搜索');
+    clear.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke-width="1">'
+      + '<path d="M3.5 3.5L12.5 12.5" stroke="currentColor"/><path d="M12.5 3.5L3.5 12.5" stroke="currentColor"/></svg>';
+    frame.appendChild(clear);
+    input.focus();
+  };
+  frame.addEventListener('click', () => setExpanded(true));
+  input.addEventListener('input', () => {
+    const needle = input.value.trim().toLowerCase();
+    for (const group of document.querySelectorAll('.t3-group')) {
+      let shown = 0;
+      for (const row of group.querySelectorAll('.t3-row')) {
+        const hit = !needle || row.querySelector('.t3-open').textContent.toLowerCase().includes(needle);
+        row.style.display = hit ? '' : 'none';
+        if (hit) shown += 1;
+      }
+      // The plugin counts the filtered rows; the driver has to recount them.
+      group.querySelector('.t3-count').textContent = String(shown);
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape') return;
+    input.value = '';
+    input.dispatchEvent(new Event('input'));
+    setExpanded(false);
+  });
   document.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-context-menu-trigger]');
     if (!trigger) return;
@@ -214,6 +261,64 @@ const shelves = await page.evaluate(() => {
 });
 console.log('shelf placement:', JSON.stringify(shelves));
 await page.screenshot({ path: path.join(outDir, 'rows-rest.png') });
+// The header search, measured against the native browser's numbers: a 36px row
+// with the control folded to one 28px button; opening it folds the title away,
+// grows the frame to a 30px bordered field and lands the caret in it, and the
+// list below never moves.
+const searchRest = await page.evaluate(() => {
+  const header = document.querySelector('.t3-header').getBoundingClientRect();
+  const frame = document.querySelector('.t3-search').getBoundingClientRect();
+  return {
+    header: Math.round(header.height),
+    frameW: Math.round(frame.width), frameH: Math.round(frame.height),
+    borderW: parseFloat(getComputedStyle(document.querySelector('.t3-search')).borderTopWidth),
+    radius: getComputedStyle(document.querySelector('.t3-search')).borderTopLeftRadius,
+    title: getComputedStyle(document.querySelector('.t3-title')).opacity,
+    input: getComputedStyle(document.querySelector('.t3-search-input')).opacity,
+    clear: document.querySelectorAll('.t3-clear').length,
+    listTop: Math.round(document.querySelector('.t3-scroll').getBoundingClientRect().top),
+    box: { x: header.x, y: header.y, width: header.width, height: header.height },
+  };
+});
+await page.screenshot({ path: path.join(outDir, 'search-rest.png'), clip: { x: searchRest.box.x - 4, y: searchRest.box.y - 4, width: searchRest.box.width + 8, height: searchRest.box.height + 8 } });
+await page.click('.t3-search-button');
+await page.waitForTimeout(300);
+const searchOpen = await page.evaluate(() => {
+  const frame = document.querySelector('.t3-search');
+  const style = getComputedStyle(frame);
+  const box = frame.getBoundingClientRect();
+  return {
+    frameW: Math.round(box.width), frameH: Math.round(box.height),
+    borderW: parseFloat(style.borderTopWidth), radius: style.borderTopLeftRadius,
+    borderColor: style.borderTopColor,
+    title: getComputedStyle(document.querySelector('.t3-title')).opacity,
+    input: getComputedStyle(document.querySelector('.t3-search-input')).opacity,
+    focused: document.activeElement === document.querySelector('.t3-search-input'),
+    clear: document.querySelectorAll('.t3-clear').length,
+    listTop: Math.round(document.querySelector('.t3-scroll').getBoundingClientRect().top),
+  };
+});
+await page.screenshot({ path: path.join(outDir, 'search-expanded.png'), clip: { x: searchRest.box.x - 4, y: searchRest.box.y - 4, width: searchRest.box.width + 8, height: searchRest.box.height + 8 } });
+await page.type('.t3-search-input', 'refactor');
+await page.waitForTimeout(150);
+const filtered = await page.evaluate(() => ({
+  rows: [...document.querySelectorAll('.t3-row')].filter(row => row.style.display !== 'none')
+    .map(row => row.querySelector('.t3-open').textContent),
+  header: Math.round(document.querySelector('.t3-header').getBoundingClientRect().height),
+  listTop: Math.round(document.querySelector('.t3-scroll').getBoundingClientRect().top),
+}));
+await page.screenshot({ path: path.join(outDir, 'search-filtered.png') });
+await page.keyboard.press('Escape');
+await page.waitForTimeout(300);
+const afterEscape = await page.evaluate(() => ({
+  expanded: document.querySelector('.t3-search-button').getAttribute('aria-expanded'),
+  value: document.querySelector('.t3-search-input').value,
+  clear: document.querySelectorAll('.t3-clear').length,
+  rows: [...document.querySelectorAll('.t3-row')].filter(row => row.style.display !== 'none').length,
+}));
+console.log('search rest:', JSON.stringify(searchRest));
+console.log('search open:', JSON.stringify(searchOpen));
+console.log('filtered:', JSON.stringify(filtered), '| after Escape:', JSON.stringify(afterEscape));
 await page.hover('.t3-row');
 await page.waitForTimeout(200);
 await page.screenshot({ path: path.join(outDir, 'rows-hover.png') });
@@ -261,4 +366,15 @@ console.log('overflow stress:', JSON.stringify(stress));
 await page.screenshot({ path: path.join(outDir, 'rows-overflow.png') });
 await browser.close();
 process.exit(opened === 1 && String(hit).includes('t3-icon-button') && stress.scrolls && !stress.hostScrolls && stress.shortestRow >= 44
-  && shelves.gapAboveShelf > 40 && shelves.footGap <= 12 && !shelves.hostScrolls ? 0 : 1);
+  && shelves.gapAboveShelf > 40 && shelves.footGap <= 12 && !shelves.hostScrolls
+  // Search: folded to a 28px button in a 36px row, opened into a 30px bordered
+  // field that filters without moving the list, folded again by Escape.
+  && searchRest.header === 36 && searchRest.frameW === 28 && searchRest.frameH === 28
+  && searchRest.borderW === 0 && searchRest.radius === '50%' && searchRest.title === '1' && searchRest.input === '0' && searchRest.clear === 0
+  && searchOpen.frameH === 30 && searchOpen.frameW > 200 && searchOpen.borderW >= 0.5
+  && searchOpen.radius === '10px' && searchOpen.borderColor === 'rgba(255, 255, 255, 0.2)'
+  && searchOpen.title === '0' && searchOpen.input === '1' && searchOpen.focused && searchOpen.clear === 1
+  && searchOpen.listTop === searchRest.listTop
+  && filtered.rows.length === 1 && filtered.rows[0] === 'Refactor thread inbox sync' && filtered.listTop === searchRest.listTop
+  && afterEscape.expanded === 'false' && afterEscape.value === '' && afterEscape.clear === 0 && afterEscape.rows === 5
+  ? 0 : 1);

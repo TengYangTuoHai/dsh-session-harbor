@@ -9,7 +9,8 @@ window.__ModuleLoader__.load({
     const DEFAULT_COLLAPSED = Object.freeze({ settled: true });
     const dictionaries = {
       en: {
-        enable: 'Use T3 sidebar', native: 'Use native sidebar', nativeShort: 'Use native', t3Short: 'Use T3', search: 'Search session titles',
+        enable: 'Use T3 sidebar', native: 'Use native sidebar', nativeShort: 'Use native', t3Short: 'Use T3',
+        sessions: 'Sessions', search: 'Search sessions', searchPlaceholder: 'Search session names', searchClear: 'Clear search',
         pinned: 'Pinned', active: 'Active', working: 'Working', settled: 'Settled',
         pin: 'Pin', unpin: 'Unpin', settle: 'Settle', unsettle: 'Unsettle', untitled: 'Untitled session',
         empty: 'No sessions', loading: 'Loading sessions…', syncing: 'Session placement unavailable. Retrying…',
@@ -20,7 +21,8 @@ window.__ModuleLoader__.load({
         statusOngoing: 'Working', statusWarning: 'Waiting for you', statusDone: 'Finished'
       },
       ['z' + 'h']: {
-        enable: '切换至 T3 侧栏', native: '切换至原生侧栏', nativeShort: '切换至原生', t3Short: '切换至 T3', search: '搜索会话标题',
+        enable: '切换至 T3 侧栏', native: '切换至原生侧栏', nativeShort: '切换至原生', t3Short: '切换至 T3',
+        sessions: '会话', search: '搜索会话', searchPlaceholder: '搜索会话名称', searchClear: '清除搜索',
         pinned: '已置顶', active: '活跃', working: '工作中', settled: '已完成',
         pin: '置顶', unpin: '取消置顶', settle: '完成', unsettle: '重新激活', untitled: '未命名会话',
         empty: '暂无会话', loading: '正在加载会话…', syncing: '无法同步会话状态，正在重试…',
@@ -40,8 +42,30 @@ window.__ModuleLoader__.load({
          over height on a flex item. With --t3-fill unset (a shell that scrolls
          elsewhere) the flex sizing above stands. */
       .t3-sidebar{min-height:var(--t3-fill,0px);max-height:var(--t3-fill,none)}
-      .t3-bar{display:flex;gap:6px;align-items:center;padding:8px 10px}
-      .t3-search{min-width:0;flex:1;box-sizing:border-box;border:1px solid var(--dsw-alias-border-l1);border-radius:6px;padding:6px 8px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font:inherit}
+      /* Section header, measured off the native browser's (ui-workspace
+         WorkspaceBrowser.module.css): a 36px row holding the section title, the
+         search control parked at one 28px button, and nothing else. Expanding
+         search folds the title away and lets the control take the row, so the
+         header never grows and the list below never moves. */
+      .t3-header{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:4px;height:36px;box-sizing:border-box;padding:0 6px 0 10px;margin-bottom:4px;border-radius:12px;overflow:hidden;color:var(--dsw-alias-label-tertiary)}
+      .t3-title{flex:none;max-width:45%;min-width:0;overflow:hidden;white-space:nowrap;line-height:20px;opacity:1;visibility:visible;transition:max-width 180ms var(--ds-ease-in-out),margin-right 180ms var(--ds-ease-in-out),opacity 120ms var(--ds-ease-in-out),transform 180ms var(--ds-ease-in-out),visibility 0s linear}
+      .t3-title[data-hidden=true]{max-width:0;margin-right:-4px;opacity:0;transform:translateX(-4px);visibility:hidden;transition-delay:0s,0s,0s,0s,180ms}
+      .t3-search-slot{flex:1;max-width:28px;min-width:0;display:flex;align-items:center;margin-left:auto;box-sizing:border-box;transition:max-width 180ms var(--ds-ease-in-out),padding-left 180ms var(--ds-ease-in-out)}
+      .t3-search-slot[data-expanded=true]{max-width:100%}
+      /* Collapsed the frame is invisible and only clips the button's hover;
+         expanded it becomes the bordered field, 30px tall, 2px past its slot. */
+      .t3-search{flex:none;display:flex;align-items:center;gap:0;width:100%;height:28px;margin:0;padding:0;box-sizing:border-box;border:0 solid var(--dsw-alias-border-l4);border-radius:50%;corner-shape:round;background:transparent;cursor:text;color:var(--dsw-alias-label-secondary);overflow:hidden;transition:width 180ms var(--ds-ease-in-out),padding 180ms var(--ds-ease-in-out),border-color 180ms var(--ds-ease-in-out),background-color 180ms var(--ds-ease-in-out)}
+      .t3-search[data-expanded=true]{width:calc(100% + 4px);height:30px;margin-inline:-2px;padding:0 4px 0 0;border-width:.5px;border-radius:10px;color:var(--dsw-alias-label-caption)}
+      .t3-search-button{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:inherit}
+      .t3-search[data-expanded=true] .t3-search-button{height:30px}
+      .t3-search-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-search[data-expanded=true] .t3-search-button:hover{background:transparent}
+      .t3-search-input{flex:1;width:0;min-width:0;border:0;outline:none;background:transparent;opacity:0;pointer-events:none;font:inherit;font-size:13px;line-height:18px;color:var(--dsw-alias-label-primary);transition:opacity 120ms var(--ds-ease-in-out)}
+      .t3-search[data-expanded=true] .t3-search-input{margin-left:-2px;opacity:1;pointer-events:auto}
+      .t3-search-input::placeholder{color:var(--dsw-alias-label-tertiary)}
+      .t3-clear{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:var(--dsw-alias-label-secondary)}
+      .t3-clear:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-clear:focus-visible,.t3-search-button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
       .t3-btn{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:5px;padding:5px}
       .t3-btn:hover,.t3-btn:focus-visible{background:var(--dsw-alias-bg-layer-2)}
       .t3-btn:disabled{opacity:.45;cursor:default}
@@ -83,7 +107,7 @@ window.__ModuleLoader__.load({
       .t3-spinner .t3-track{opacity:.25}
       .t3-spinner .t3-arc{stroke-dasharray:20 150}
       @keyframes t3-spin{to{transform:rotate(360deg)}}
-      @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}}
+      @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}.t3-title,.t3-search-slot,.t3-search,.t3-search-input{transition:none}}
       .t3-slot{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:flex-end;min-width:26px;height:18px;margin-left:auto}
       .t3-time{font-size:11px;line-height:16px;color:var(--dsw-alias-label-caption);font-variant-numeric:tabular-nums;transition:opacity .12s ease;pointer-events:none}
       /* T3 names the live run instead of the age: spinner + Working + elapsed,
@@ -108,6 +132,20 @@ window.__ModuleLoader__.load({
       .t3-footer[data-wide=false]{flex:none;width:32px;justify-content:center;padding:0}
       .t3-footer-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     `;
+    // The header's glyphs are the host's own artwork (ui-primitives
+    // IconSearchOutline / IconCloseFill, a 16-unit grid at a 1px stroke) copied
+    // rather than imported, so the plugin still requires nothing but react while
+    // reading identically to the native section header.
+    function SearchIcon({ size = 14 }) {
+      return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
+        h('path', { d: 'M6.58727 11.8586C9.55061 11.8586 11.9529 9.45637 11.9529 6.49304C11.9529 3.5297 9.55061 1.12744 6.58727 1.12744C3.62394 1.12744 1.22168 3.5297 1.22168 6.49304C1.22168 9.45637 3.62394 11.8586 6.58727 11.8586Z', stroke: 'currentColor' }),
+        h('path', { d: 'M10.2991 10.3933L14.7783 14.8725', stroke: 'currentColor' }));
+    }
+    function ClearIcon({ size = 14 }) {
+      return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
+        h('path', { d: 'M3.5 3.5L12.5 12.5', stroke: 'currentColor' }),
+        h('path', { d: 'M12.5 3.5L3.5 12.5', stroke: 'currentColor' }));
+    }
     function PinIcon({ filled = false, size = 15 }) {
       return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
         h('path', { d: 'M16 4v5l3 3v2H5v-2l3-3V4', fill: filled ? 'currentColor' : 'none' }),
@@ -186,6 +224,11 @@ window.__ModuleLoader__.load({
       const [actionError, setActionError] = React.useState(false);
       const [uiError, setUiError] = React.useState('');
       const [query, setQuery] = React.useState('');
+      // The query outlives the input the way the native browser keeps it: the
+      // control collapses, the filter stays until the user clears it.
+      const [searchExpanded, setSearchExpanded] = React.useState(false);
+      const searchRoot = React.useRef(null);
+      const searchInput = React.useRef(null);
       const [collapsed, setCollapsed] = React.useState(() => ({ ...DEFAULT_COLLAPSED }));
       const [pending, setPending] = React.useState({});
       const [workingIds, setWorkingIds] = React.useState(() => new Set());
@@ -269,6 +312,24 @@ window.__ModuleLoader__.load({
         observer.observe(node);
         return () => observer.disconnect();
       }, [wide]);
+      // Same landing as the native header: expanding puts the caret in the field,
+      // and a click outside the control gives it up — collapsing only while
+      // nothing is filtered, so a hidden input never hides a live filter.
+      React.useEffect(() => {
+        if (!wide || !searchExpanded) return undefined;
+        searchInput.current?.focus({ preventScroll: true });
+        return undefined;
+      }, [wide, searchExpanded]);
+      React.useEffect(() => {
+        if (!wide || !searchExpanded) return undefined;
+        const onClick = event => {
+          if (!(event.target instanceof window.Node) || searchRoot.current?.contains(event.target) === true) return;
+          searchInput.current?.blur();
+          if (query.trim() === '') setSearchExpanded(false);
+        };
+        document.addEventListener('click', onClick);
+        return () => document.removeEventListener('click', onClick);
+      }, [query, wide, searchExpanded]);
       const pollRef = React.useRef(null);
       const operations = React.useRef(new Set());
       const alive = React.useRef(false);
@@ -373,8 +434,33 @@ window.__ModuleLoader__.load({
       const shelf = shown.find(group => group === 'working' || group === 'settled');
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
       return h('div', { className: 't3-sidebar', ref: rootRef }, h('style', null, css),
-        h('div', { className: 't3-bar' },
-          h('input', { className: 't3-search', type: 'search', value: query, placeholder: t('search'), 'aria-label': t('search'), onChange: event => setQuery(event.target.value) })),
+        h('div', { className: 't3-header' },
+          h('span', { className: 't3-title', 'data-hidden': searchExpanded }, t('sessions')),
+          h('div', { className: 't3-search-slot', 'data-expanded': searchExpanded },
+            h('div', {
+              className: 't3-search', ref: searchRoot, 'data-expanded': searchExpanded,
+              onClick: () => { setSearchExpanded(true); searchInput.current?.focus(); },
+            },
+              h('button', {
+                type: 'button', className: 't3-search-button', title: searchExpanded ? undefined : t('search'),
+                'aria-label': t('search'), 'aria-expanded': searchExpanded,
+                onClick: () => setSearchExpanded(true),
+              }, h(SearchIcon, { size: searchExpanded ? 11 : 14 })),
+              h('input', {
+                ref: searchInput, className: 't3-search-input', type: 'text', value: query,
+                placeholder: t('searchPlaceholder'), 'aria-label': t('search'),
+                tabIndex: searchExpanded ? 0 : -1,
+                onChange: event => setQuery(event.target.value),
+                onKeyDown: event => {
+                  if (event.key !== 'Escape') return;
+                  setQuery('');
+                  setSearchExpanded(false);
+                },
+              }),
+              searchExpanded && h('button', {
+                type: 'button', className: 't3-clear', 'aria-label': t('searchClear'), title: t('searchClear'),
+                onClick: event => { event.stopPropagation(); setQuery(''); setSearchExpanded(false); },
+              }, h(ClearIcon))))),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
         !snapshot ? h('div', { className: 't3-message', role: 'status' }, t(syncError ? 'syncing' : 'loading')) :

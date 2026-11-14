@@ -2,6 +2,8 @@
 
 参考 [T3 Code 固定版本的分组逻辑](https://github.com/pingdotgg/t3code/blob/095611d1b55930ba23e22068b6659df4c4b53f83/apps/web/src/components/Sidebar.logic.ts#L194-L205)和 [Working 分组](https://github.com/pingdotgg/t3code/blob/095611d1b55930ba23e22068b6659df4c4b53f83/packages/client-runtime/src/state/threadInbox.ts#L17-L32)，按 Pinned、Active、Working、Settled 分组。支持标题搜索、折叠分组、打开会话，以及手动置顶、取消置顶、完成和重新激活。正在等待用户操作的会话归入 Active；普通运行结束有两秒缓冲。已完成分组默认折叠（仍显示数量），其他分组默认展开；折叠状态只保存在当前界面中，切换侧栏或刷新后恢复默认。Working 与 Settled 是 T3 的“搁架”：第一个搁架的标题吃掉上方剩余空间，所以这两组贴在列表底部，空白留在活跃会话之后；会话多到溢出时自动边距归零，列表照常滚动，行不会被压扁。贴底靠的是宿主给的空间：0.2.2 的宿主把浏览区换成了 grid（`grid-template-rows: 8px max-content 2px max-content`），我们的根落在 `max-content` 行里，洞是内容高度，`flex:1` 没有可填的空间。所以组件往上找最近的可滚动祖先（宿主的滚动区），减去它排在我们上面的东西，把剩下的空间写成 `--t3-fill`，CSS 用 `min-height`/`max-height: var(--t3-fill)` 把根钉住（用 min/max 而不是 `height`，因为 flex 项上 flex-basis 优先于 height），`ResizeObserver` 跟着窗口和宿主的变化重算。宿主改版、上面多排一行东西都自动跟上；找不到可滚动祖先时（宿主自己钉高度的旧版本）退回 `flex:1`。列表始终在我们内部滚动，不会把宿主的滚动区撑开。空分组不占位：没有运行中的会话时整个“工作中”组不渲染（T3 的 `workingThreads.length > 0`），贴底标记随之移到“已完成”；“已置顶”为空时同样不渲染，“活跃”与“已完成”始终显示。
 
+侧栏顶部沿用原生浏览器的分区标题：一行 36px 的标题栏，左边是“会话”，右边只收着一个 28px 的放大镜。点放大镜才展开成带边框的输入框——标题淡出让位，搜索框长到整行（30px 高、0.5px 边框、10px 圆角），光标自动落进去，右侧出现清除按钮，放大镜缩到 11px。Esc 清空并收起；点框外只让输入框失焦、保留已有筛选，跟原生一样。收起的输入框不参与 Tab 顺序。搜索仍只按标题过滤，不查会话内容——内容搜索在原生浏览器里，用底部的切换按钮过去。
+
 会话行沿用 T3 Code 的行样式，所有行形状一致：上行为工作区名与相对时间，下行为标题与状态标记，Settled 也不例外。T3 自己把 Settled 渲染成单行灰化的 slim 样式（`isCard = active | pinned | working`）来省纵向空间，我们这里刻意跟其他行保持一致，代价是已完成列表长的时候占的纵向空间更多。整行都可以点击打开会话；悬停或键盘聚焦时右侧的时间位置淡出，换成置顶、完成与“更多”按钮（悬停切换只对精确指针生效，避免触屏点按后卡在悬停态）。相对时间分桶与原生侧栏一致（刚刚/5分钟/9小时…）。
 
 正在运行的会话把右上角的相对时间换成强调色的“工作中 39分钟”（旋转图标 + 状态 + 已运行时长），靠颜色而不是靠底色在一排静止行里被看到；行底色仍然只属于悬停、键盘聚焦和当前会话，未选中的运行行与其他行一样是平的。标题行不再重复放旋转图标，等待操作与已完成仍用标题后的小圆点。DSH 没有对外的“本轮开始时间”，时长以侧栏首次看到该会话处于运行态时的最后活动时间起算，刷新页面后重新计时；不足一分钟只显示“工作中”。系统开启减弱动态效果时旋转图标不再转动。
@@ -12,6 +14,6 @@
 
 在会话行右键、点击“更多”按钮，或聚焦标题后按 Shift+F10，可以打开 DSH 原有会话菜单，其中保留置顶、重命名、分叉、复制 ID 和归档，并增加完成或重新激活。侧边栏底部的切换按钮可返回原生浏览器，以使用原有的工作区管理和完整搜索。这个初版没有实现 T3 Code 的自动 Settled、拖拽排序、Snooze 或 PR 联动。
 
-运行测试：`node --test logic.test.js placement-controller.test.js index.test.js migration.test.js`。界面结构可在 jsdom 中离线渲染：`node ../ui-render-check.mjs`；`node ../ui-preview.mjs` 还会用无头 Chromium 把静止态与悬停态截图写到 `../.preview/`。两者借用一份 DSH 检出的 react/react-dom/jsdom/playwright，可用 `DSH_CHECKOUT` 指定路径。
+运行测试：`node --test logic.test.js placement-controller.test.js index.test.js migration.test.js`。界面结构可在 jsdom 中离线渲染：`node ../ui-render-check.mjs`；`node ../ui-preview.mjs` 还会用无头 Chromium 把静止态、悬停态、搜索展开态与溢出态截图写到 `../.preview/`。两者借用一份 DSH 检出的 react/react-dom/jsdom/playwright，可用 `DSH_CHECKOUT` 指定路径。
 
 分组规则（四组划分、两秒退出缓冲）与会话行的呈现改自 [T3 Code](https://github.com/pingdotgg/t3code) 在 `095611d1` 的实现（MIT, © T3 Tools Inc.）；存储、右键菜单、会话状态与侧栏插槽来自 DSH 自身的插件 API。许可见仓库根目录的 LICENSE。
