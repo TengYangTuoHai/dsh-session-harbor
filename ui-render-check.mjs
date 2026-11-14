@@ -115,6 +115,8 @@ const searchState = () => ({
   hidden: document.querySelector('.t3-title').dataset.hidden,
   focused: document.activeElement === document.querySelector('.t3-search-input'),
   rows: document.querySelectorAll('.t3-row').length,
+  actions: document.querySelector('.t3-header-actions').dataset.hidden,
+  actionButtons: document.querySelectorAll('.t3-header-action').length,
 });
 const closed = searchState();
 await act(async () => { document.querySelector('.t3-search-button').dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true })); });
@@ -193,6 +195,8 @@ process.exit(live.length === 2 && live.every(node => /statusOngoing/.test(node.t
   // Search: folded to one button, opened into a focused field with a clear
   // button, filtering live, surviving an outside click, folded by Escape.
   && closed.expanded === 'false' && closed.tab === -1 && closed.clear === 0 && closed.hidden === 'false' && !closed.focused
+  // The native header's two trailing buttons are seated, and fold away with the title.
+  && closed.actionButtons === 2 && closed.actions === 'false' && open.actions === 'true' && escaped.actions === 'false'
   && open.expanded === 'true' && open.tab === 0 && open.clear === 1 && open.hidden === 'true' && open.focused && open.rows === closed.rows
   && filtered.length === 1 && /Rename settle group/.test(filtered.join(' '))
   && outsideClick.expanded === 'true' && outsideClick.rows === 1 && !outsideClick.focused

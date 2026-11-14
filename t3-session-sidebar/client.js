@@ -11,6 +11,7 @@ window.__ModuleLoader__.load({
       en: {
         enable: 'Use T3 sidebar', native: 'Use native sidebar', nativeShort: 'Use native', t3Short: 'Use T3',
         sessions: 'Sessions', search: 'Search sessions', searchPlaceholder: 'Search session names', searchClear: 'Clear search',
+        viewOptions: 'View options', addWorkspace: 'Add workspace',
         pinned: 'Pinned', active: 'Active', working: 'Working', settled: 'Settled',
         pin: 'Pin', unpin: 'Unpin', settle: 'Settle', unsettle: 'Unsettle', untitled: 'Untitled session',
         empty: 'No sessions', loading: 'Loading sessions…', syncing: 'Session placement unavailable. Retrying…',
@@ -23,6 +24,7 @@ window.__ModuleLoader__.load({
       ['z' + 'h']: {
         enable: '切换至 T3 侧栏', native: '切换至原生侧栏', nativeShort: '切换至原生', t3Short: '切换至 T3',
         sessions: '会话', search: '搜索会话', searchPlaceholder: '搜索会话名称', searchClear: '清除搜索',
+        viewOptions: '视图选项', addWorkspace: '添加工作区',
         pinned: '已置顶', active: '活跃', working: '工作中', settled: '已完成',
         pin: '置顶', unpin: '取消置顶', settle: '完成', unsettle: '重新激活', untitled: '未命名会话',
         empty: '暂无会话', loading: '正在加载会话…', syncing: '无法同步会话状态，正在重试…',
@@ -66,6 +68,13 @@ window.__ModuleLoader__.load({
       .t3-clear{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:var(--dsw-alias-label-secondary)}
       .t3-clear:hover{background:var(--dsw-alias-interactive-bg-hover)}
       .t3-clear:focus-visible,.t3-search-button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+      /* The native header's trailing cluster: two 28px circles that collapse
+         into nothing while search is open, so the field can take the row. */
+      .t3-header-actions{flex:none;display:flex;align-items:center;gap:4px;max-width:60px;opacity:1;overflow:hidden;visibility:visible;transition:max-width 180ms var(--ds-ease-in-out),opacity 120ms var(--ds-ease-in-out),transform 180ms var(--ds-ease-in-out),visibility 0s linear}
+      .t3-header-actions[data-hidden=true]{max-width:0;opacity:0;transform:translateX(4px);visibility:hidden;pointer-events:none;transition-delay:0s,0s,0s,180ms}
+      .t3-header-action{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:var(--dsw-alias-label-secondary)}
+      .t3-header-action:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-header-action:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
       .t3-btn{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:5px;padding:5px}
       .t3-btn:hover,.t3-btn:focus-visible{background:var(--dsw-alias-bg-layer-2)}
       .t3-btn:disabled{opacity:.45;cursor:default}
@@ -107,7 +116,7 @@ window.__ModuleLoader__.load({
       .t3-spinner .t3-track{opacity:.25}
       .t3-spinner .t3-arc{stroke-dasharray:20 150}
       @keyframes t3-spin{to{transform:rotate(360deg)}}
-      @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}.t3-title,.t3-search-slot,.t3-search,.t3-search-input{transition:none}}
+      @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}.t3-title,.t3-search-slot,.t3-search,.t3-search-input,.t3-header-actions{transition:none}}
       .t3-slot{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:flex-end;min-width:26px;height:18px;margin-left:auto}
       .t3-time{font-size:11px;line-height:16px;color:var(--dsw-alias-label-caption);font-variant-numeric:tabular-nums;transition:opacity .12s ease;pointer-events:none}
       /* T3 names the live run instead of the age: spinner + Working + elapsed,
@@ -133,9 +142,10 @@ window.__ModuleLoader__.load({
       .t3-footer-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     `;
     // The header's glyphs are the host's own artwork (ui-primitives
-    // IconSearchOutline / IconCloseFill, a 16-unit grid at a 1px stroke) copied
-    // rather than imported, so the plugin still requires nothing but react while
-    // reading identically to the native section header.
+    // IconSearchOutline, IconCloseFill, IconSlidersTwoOutline and
+    // IconProjectAddOutline — a 16-unit grid at a 1px stroke) copied rather than
+    // imported, so the plugin still requires nothing but react while reading
+    // identically to the native section header.
     function SearchIcon({ size = 14 }) {
       return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
         h('path', { d: 'M6.58727 11.8586C9.55061 11.8586 11.9529 9.45637 11.9529 6.49304C11.9529 3.5297 9.55061 1.12744 6.58727 1.12744C3.62394 1.12744 1.22168 3.5297 1.22168 6.49304C1.22168 9.45637 3.62394 11.8586 6.58727 11.8586Z', stroke: 'currentColor' }),
@@ -145,6 +155,19 @@ window.__ModuleLoader__.load({
       return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
         h('path', { d: 'M3.5 3.5L12.5 12.5', stroke: 'currentColor' }),
         h('path', { d: 'M12.5 3.5L3.5 12.5', stroke: 'currentColor' }));
+    }
+    function ViewOptionsIcon({ size = 16 }) {
+      return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeWidth: 1, 'aria-hidden': true },
+        h('path', { d: 'M2.3 5h5.85M12.05 5h1.65' }),
+        h('circle', { cx: 9.95, cy: 5, r: 1.45 }),
+        h('path', { d: 'M2.3 11h1.65M7.85 11h5.85' }),
+        h('circle', { cx: 5.75, cy: 11, r: 1.45 }));
+    }
+    function AddWorkspaceIcon({ size = 16 }) {
+      return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
+        h('path', { d: 'M5.54492 2.06738C5.91034 2.06754 6.26318 2.20149 6.53711 2.44336L7.94043 3.68164V4.7998C7.71462 4.74105 7.50367 4.63139 7.32617 4.47461L5.87598 3.19238C5.78477 3.11185 5.66658 3.06754 5.54492 3.06738H2.94922C2.67322 3.06738 2.44946 3.29145 2.44922 3.56738V12.4326C2.44927 12.7087 2.67311 12.9326 2.94922 12.9326H12.9326C13.2086 12.9325 13.4326 12.7086 13.4326 12.4326V8.53613H14.4326V12.4326C14.4326 13.2609 13.7609 13.9325 12.9326 13.9326H2.94922C2.12083 13.9326 1.44927 13.261 1.44922 12.4326V3.56738C1.44946 2.73916 2.12094 2.06738 2.94922 2.06738H5.54492Z', fill: 'currentColor' }),
+        h('path', { d: 'M9.75977 4.50208H14.5509', stroke: 'currentColor' }),
+        h('path', { d: 'M12.1492 6.89758L12.1492 2.10642', stroke: 'currentColor' }));
     }
     function PinIcon({ filled = false, size = 15 }) {
       return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
@@ -460,7 +483,14 @@ window.__ModuleLoader__.load({
               searchExpanded && h('button', {
                 type: 'button', className: 't3-clear', 'aria-label': t('searchClear'), title: t('searchClear'),
                 onClick: event => { event.stopPropagation(); setQuery(''); setSearchExpanded(false); },
-              }, h(ClearIcon))))),
+              }, h(ClearIcon)))),
+          h('div', { className: 't3-header-actions', 'data-hidden': searchExpanded },
+            // Seated and styled like the native header's trailing cluster, but
+            // deliberately inert: view options (grouping, ordering, archived)
+            // and the add-workspace flow are the native browser's, not wired
+            // into these shelves yet.
+            h('button', { type: 'button', className: 't3-header-action', 'aria-label': t('viewOptions'), title: t('viewOptions') }, h(ViewOptionsIcon)),
+            h('button', { type: 'button', className: 't3-header-action', 'aria-label': t('addWorkspace'), title: t('addWorkspace') }, h(AddWorkspaceIcon)))),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
         !snapshot ? h('div', { className: 't3-message', role: 'status' }, t(syncError ? 'syncing' : 'loading')) :

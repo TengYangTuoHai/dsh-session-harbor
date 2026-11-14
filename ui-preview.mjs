@@ -155,8 +155,10 @@ const driver = `<script>
   const title = document.querySelector('.t3-title');
   const button = document.querySelector('.t3-search-button');
   const input = document.querySelector('.t3-search-input');
+  const actions = document.querySelector('.t3-header-actions');
   const setExpanded = (open) => {
     slot.dataset.expanded = open;
+    actions.dataset.hidden = open;
     frame.dataset.expanded = open;
     title.dataset.hidden = open;
     button.setAttribute('aria-expanded', String(open));
@@ -276,6 +278,8 @@ const searchRest = await page.evaluate(() => {
     title: getComputedStyle(document.querySelector('.t3-title')).opacity,
     input: getComputedStyle(document.querySelector('.t3-search-input')).opacity,
     clear: document.querySelectorAll('.t3-clear').length,
+    actions: Math.round(document.querySelector('.t3-header-actions').getBoundingClientRect().width),
+    actionSize: [...document.querySelectorAll('.t3-header-action')].map(node => Math.round(node.getBoundingClientRect().width) + 'x' + Math.round(node.getBoundingClientRect().height)),
     listTop: Math.round(document.querySelector('.t3-scroll').getBoundingClientRect().top),
     box: { x: header.x, y: header.y, width: header.width, height: header.height },
   };
@@ -295,6 +299,7 @@ const searchOpen = await page.evaluate(() => {
     input: getComputedStyle(document.querySelector('.t3-search-input')).opacity,
     focused: document.activeElement === document.querySelector('.t3-search-input'),
     clear: document.querySelectorAll('.t3-clear').length,
+    actions: (() => { const s = getComputedStyle(document.querySelector('.t3-header-actions')); return s.maxWidth + ' ' + s.opacity + ' ' + s.visibility; })(),
     listTop: Math.round(document.querySelector('.t3-scroll').getBoundingClientRect().top),
   };
 });
@@ -374,6 +379,9 @@ process.exit(opened === 1 && String(hit).includes('t3-icon-button') && stress.sc
   && searchOpen.frameH === 30 && searchOpen.frameW > 200 && searchOpen.borderW >= 0.5
   && searchOpen.radius === '10px' && searchOpen.borderColor === 'rgba(255, 255, 255, 0.2)'
   && searchOpen.title === '0' && searchOpen.input === '1' && searchOpen.focused && searchOpen.clear === 1
+  // The trailing cluster is two 28px circles, and folds out of the row with the title.
+  && searchRest.actions === 60 && searchRest.actionSize.join(',') === '28x28,28x28'
+  && searchOpen.actions === '0px 0 hidden'
   && searchOpen.listTop === searchRest.listTop
   && filtered.rows.length === 1 && filtered.rows[0] === 'Refactor thread inbox sync' && filtered.listTop === searchRest.listTop
   && afterEscape.expanded === 'false' && afterEscape.value === '' && afterEscape.clear === 0 && afterEscape.rows === 5
