@@ -91,11 +91,7 @@ window.__ModuleLoader__.load({
     const css = `
       .t3-sidebar{display:flex;flex-direction:column;min-height:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px}
       .t3-sidebar[data-expanded=true]{flex:none;height:var(--t3-fill,100cqh);min-height:min(160px,100cqh)}
-      .t3-header{flex:none;display:flex;align-items:center;gap:4px;height:36px;box-sizing:border-box;padding:0 6px 0 10px;margin-bottom:4px;border-radius:12px;overflow:hidden;color:var(--dsw-alias-label-tertiary)}
-      .t3-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px}
-      .t3-header-action{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:var(--dsw-alias-label-secondary)}
-      .t3-header-action:hover{background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-header-action:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}
+      .t3-header{flex:none;display:flex;align-items:center;height:36px;box-sizing:border-box;padding:0 6px 0 10px;margin-bottom:4px;color:var(--dsw-alias-label-tertiary);line-height:20px}
       .t3-btn{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:5px;padding:5px}
       .t3-btn:hover,.t3-btn:focus-visible{background:var(--dsw-alias-bg-layer-2)}
       .t3-btn:disabled{opacity:.45;cursor:default}
@@ -146,7 +142,7 @@ window.__ModuleLoader__.load({
       .t3-spinner .t3-track{opacity:.25}
       .t3-spinner .t3-arc{stroke-dasharray:20 150}
       @keyframes t3-spin{to{transform:rotate(360deg)}}
-      @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}.t3-title,.t3-search-slot,.t3-search,.t3-search-input,.t3-header-actions{transition:none}}
+      @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}}
       .t3-slot{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:flex-end;height:18px;margin-left:auto}
       .t3-time{flex:none;font-size:11px;line-height:16px;color:var(--dsw-alias-label-caption);font-variant-numeric:tabular-nums;white-space:nowrap}
       .t3-slot[data-host]{max-width:50%;gap:4px}
@@ -400,11 +396,6 @@ window.__ModuleLoader__.load({
     /** One door onto the machine's own write surface; the machine decides the rest. */
     async function remoteCall(endpoint, payload, signal) {
       return unwrap(await Sidebar.context.connection.rpc.call('/api', endpoint, payload, signal));
-    }
-
-    function PlusIcon() {
-      return h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' },
-        h('path', { d: 'M12 5v14M5 12h14' }));
     }
 
     const DEVICE_PANEL = 't3-device-conversation';
@@ -1232,10 +1223,9 @@ window.__ModuleLoader__.load({
 
     function Sidebar({
       wide, expandSidebar, useSessions, useSessionStatus, useWorkspaces, usePanelInfo, useContextMenu,
-      useRemoteAccess = () => true, renderFactorySlot, t,
+      renderFactorySlot, t,
     }) {
       const { getTriggerProps } = useContextMenu();
-      const canStartSession = useRemoteAccess('session/create');
       const activePanelId = usePanelInfo(info => info.activePanelId);
       const panelActive = activePanelId !== null;
       const sessions = useSessions(s => s);
@@ -1494,15 +1484,7 @@ window.__ModuleLoader__.load({
       const sectionId = React.useId();
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
       return h('div', { className: 't3-sidebar', ref: rootRef, 'data-expanded': true }, h('style', null, css),
-        h('div', { className: 't3-header' },
-          h('span', { className: 't3-title' }, t('sessions')),
-          canStartSession && h('button', {
-            type: 'button', className: 't3-header-action', 'aria-label': t('newSession'), title: t('newSession'),
-            onClick: () => runUi(() => {
-              if (machines.length) chooseDeviceProject(deviceRuntime.active?.targetId);
-              else { deactivateDevice(); context.uiWorkspace.startSession(); }
-            }, 'openFailed'),
-          }, h(PlusIcon))),
+        h('div', { className: 't3-header' }, t('sessions')),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
         !!offline.length && h('div', { className: 't3-message', role: 'status' },
