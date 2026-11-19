@@ -15,7 +15,7 @@ window.__ModuleLoader__.load({
     const dictionaries = {
       en: {
         enable: 'Use Session Harbor', native: 'Use native sidebar', nativeShort: 'Use native',
-        sessions: 'Sessions', search: 'Search sessions', searchPlaceholder: 'Search session names', searchClear: 'Clear search',
+        sessions: 'Sessions',
         viewOptions: 'View options', addWorkspace: 'Add workspace',
         pinned: 'Pinned', active: 'Active', working: 'Working', settled: 'Settled',
         pin: 'Pin', unpin: 'Unpin', settle: 'Settle', unsettle: 'Unsettle', untitled: 'Untitled session',
@@ -49,7 +49,7 @@ window.__ModuleLoader__.load({
       },
       ['z' + 'h']: {
         enable: '切换至 Session Harbor', native: '切换至原生侧栏', nativeShort: '切换至原生',
-        sessions: '会话', search: '搜索会话', searchPlaceholder: '搜索会话名称', searchClear: '清除搜索',
+        sessions: '会话',
         viewOptions: '视图选项', addWorkspace: '添加工作区',
         pinned: '已置顶', active: '活跃', working: '工作中', settled: '已完成',
         pin: '置顶', unpin: '取消置顶', settle: '完成', unsettle: '重新激活', untitled: '未命名会话',
@@ -91,34 +91,8 @@ window.__ModuleLoader__.load({
     const css = `
       .t3-sidebar{display:flex;flex-direction:column;min-height:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px}
       .t3-sidebar[data-expanded=true]{flex:none;height:var(--t3-fill,100cqh);min-height:min(160px,100cqh)}
-      /* Section header, measured off the native browser's (ui-workspace
-         WorkspaceBrowser.module.css): a 36px row holding the section title, the
-         search control parked at one 28px button, and nothing else. Expanding
-         search folds the title away and lets the control take the row, so the
-         header never grows and the list below never moves. */
-      .t3-header{flex:none;display:flex;align-items:center;justify-content:flex-end;gap:4px;height:36px;box-sizing:border-box;padding:0 6px 0 10px;margin-bottom:4px;border-radius:12px;overflow:hidden;color:var(--dsw-alias-label-tertiary)}
-      .t3-title{flex:none;max-width:45%;min-width:0;overflow:hidden;white-space:nowrap;line-height:20px;opacity:1;visibility:visible;transition:max-width 180ms var(--ds-ease-in-out),margin-right 180ms var(--ds-ease-in-out),opacity 120ms var(--ds-ease-in-out),transform 180ms var(--ds-ease-in-out),visibility 0s linear}
-      .t3-title[data-hidden=true]{max-width:0;margin-right:-4px;opacity:0;transform:translateX(-4px);visibility:hidden;transition-delay:0s,0s,0s,0s,180ms}
-      .t3-search-slot{flex:1;max-width:28px;min-width:0;display:flex;align-items:center;margin-left:auto;box-sizing:border-box;transition:max-width 180ms var(--ds-ease-in-out),padding-left 180ms var(--ds-ease-in-out)}
-      .t3-search-slot[data-expanded=true]{max-width:100%}
-      /* Collapsed the frame is invisible and only clips the button's hover;
-         expanded it becomes the bordered field, 30px tall, 2px past its slot. */
-      .t3-search{flex:none;display:flex;align-items:center;gap:0;width:100%;height:28px;margin:0;padding:0;box-sizing:border-box;border:0 solid var(--dsw-alias-border-l4);border-radius:50%;corner-shape:round;background:transparent;cursor:text;color:var(--dsw-alias-label-secondary);overflow:hidden;transition:width 180ms var(--ds-ease-in-out),padding 180ms var(--ds-ease-in-out),border-color 180ms var(--ds-ease-in-out),background-color 180ms var(--ds-ease-in-out)}
-      .t3-search[data-expanded=true]{width:calc(100% + 4px);height:30px;margin-inline:-2px;padding:0 4px 0 0;border-width:.5px;border-radius:10px;color:var(--dsw-alias-label-caption)}
-      .t3-search-button{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:inherit}
-      .t3-search[data-expanded=true] .t3-search-button{height:30px}
-      .t3-search-button:hover{background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-search[data-expanded=true] .t3-search-button:hover{background:transparent}
-      .t3-search-input{flex:1;width:0;min-width:0;border:0;outline:none;background:transparent;opacity:0;pointer-events:none;font:inherit;font-size:13px;line-height:18px;color:var(--dsw-alias-label-primary);transition:opacity 120ms var(--ds-ease-in-out)}
-      .t3-search[data-expanded=true] .t3-search-input{margin-left:-2px;opacity:1;pointer-events:auto}
-      .t3-search-input::placeholder{color:var(--dsw-alias-label-tertiary)}
-      .t3-clear{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:var(--dsw-alias-label-secondary)}
-      .t3-clear:hover{background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-clear:focus-visible,.t3-search-button:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
-      /* The native header's trailing cluster: two 28px circles that collapse
-         into nothing while search is open, so the field can take the row. */
-      .t3-header-actions{flex:none;display:flex;align-items:center;gap:4px;max-width:60px;opacity:1;overflow:hidden;visibility:visible;transition:max-width 180ms var(--ds-ease-in-out),opacity 120ms var(--ds-ease-in-out),transform 180ms var(--ds-ease-in-out),visibility 0s linear}
-      .t3-header-actions[data-hidden=true]{max-width:0;opacity:0;transform:translateX(4px);visibility:hidden;pointer-events:none;transition-delay:0s,0s,0s,180ms}
+      .t3-header{flex:none;display:flex;align-items:center;gap:4px;height:36px;box-sizing:border-box;padding:0 6px 0 10px;margin-bottom:4px;border-radius:12px;overflow:hidden;color:var(--dsw-alias-label-tertiary)}
+      .t3-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:20px}
       .t3-header-action{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:var(--dsw-alias-label-secondary)}
       .t3-header-action:hover{background:var(--dsw-alias-interactive-bg-hover)}
       .t3-header-action:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}
@@ -242,33 +216,12 @@ window.__ModuleLoader__.load({
       .t3-folder-status{padding:4px 24px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;overflow-wrap:anywhere}
       .t3-folder-status[role=alert]{color:var(--dsw-alias-state-error-primary)}
     `;
-    // The header's glyphs are the host's own artwork (ui-primitives
-    // IconSearchOutline, IconCloseFill, IconSlidersTwoOutline and
-    // IconProjectAddOutline — a 16-unit grid at a 1px stroke) copied rather than
-    // imported, so the plugin still requires nothing but react while reading
-    // identically to the native section header.
-    function SearchIcon({ size = 14 }) {
-      return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
-        h('path', { d: 'M6.58727 11.8586C9.55061 11.8586 11.9529 9.45637 11.9529 6.49304C11.9529 3.5297 9.55061 1.12744 6.58727 1.12744C3.62394 1.12744 1.22168 3.5297 1.22168 6.49304C1.22168 9.45637 3.62394 11.8586 6.58727 11.8586Z', stroke: 'currentColor' }),
-        h('path', { d: 'M10.2991 10.3933L14.7783 14.8725', stroke: 'currentColor' }));
-    }
-    function ClearIcon({ size = 14 }) {
-      return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
-        h('path', { d: 'M3.5 3.5L12.5 12.5', stroke: 'currentColor' }),
-        h('path', { d: 'M12.5 3.5L3.5 12.5', stroke: 'currentColor' }));
-    }
     function ViewOptionsIcon({ size = 16 }) {
       return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeWidth: 1, 'aria-hidden': true },
         h('path', { d: 'M2.3 5h5.85M12.05 5h1.65' }),
         h('circle', { cx: 9.95, cy: 5, r: 1.45 }),
         h('path', { d: 'M2.3 11h1.65M7.85 11h5.85' }),
         h('circle', { cx: 5.75, cy: 11, r: 1.45 }));
-    }
-    function AddWorkspaceIcon({ size = 16 }) {
-      return h('svg', { width: size, height: size, viewBox: '0 0 16 16', fill: 'none', strokeWidth: 1, 'aria-hidden': true },
-        h('path', { d: 'M5.54492 2.06738C5.91034 2.06754 6.26318 2.20149 6.53711 2.44336L7.94043 3.68164V4.7998C7.71462 4.74105 7.50367 4.63139 7.32617 4.47461L5.87598 3.19238C5.78477 3.11185 5.66658 3.06754 5.54492 3.06738H2.94922C2.67322 3.06738 2.44946 3.29145 2.44922 3.56738V12.4326C2.44927 12.7087 2.67311 12.9326 2.94922 12.9326H12.9326C13.2086 12.9325 13.4326 12.7086 13.4326 12.4326V8.53613H14.4326V12.4326C14.4326 13.2609 13.7609 13.9325 12.9326 13.9326H2.94922C2.12083 13.9326 1.44927 13.261 1.44922 12.4326V3.56738C1.44946 2.73916 2.12094 2.06738 2.94922 2.06738H5.54492Z', fill: 'currentColor' }),
-        h('path', { d: 'M9.75977 4.50208H14.5509', stroke: 'currentColor' }),
-        h('path', { d: 'M12.1492 6.89758L12.1492 2.10642', stroke: 'currentColor' }));
     }
     function PinIcon({ filled = false, size = 15 }) {
       return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
@@ -1251,10 +1204,9 @@ window.__ModuleLoader__.load({
           h(FolderButton, { action: true, primary: true, disabled: !ready || !online, onClick: () => void choose() }, t(busy ? 'remoteWorking' : 'remoteChoose')))),
         newFolder && h(NewFolderDialog, { path, create, close: () => setNewFolder(false), t }));
     }
-    function AddProjectDialog({ machines, initialTargetId, close, t, onPicked, busy }) {
+    function AddProjectDialog({ machines, close, t, onPicked, busy }) {
       const [targetId, setTargetId] = React.useState(() =>
-        (machines.find(machine => machine.targetId === initialTargetId)
-          ?? machines.find(machine => machine.status === 'ready') ?? machines[0])?.targetId);
+        (machines.find(machine => machine.status === 'ready') ?? machines[0])?.targetId);
       // Keep the selected device when it disconnects. An existing selection
       // must never start browsing or writing on another machine implicitly.
       const target = machines.find(machine => machine.targetId === targetId);
@@ -1284,7 +1236,6 @@ window.__ModuleLoader__.load({
     }) {
       const { getTriggerProps } = useContextMenu();
       const canStartSession = useRemoteAccess('session/create');
-      const canCreateLocal = useRemoteAccess('workspace/create');
       const activePanelId = usePanelInfo(info => info.activePanelId);
       const panelActive = activePanelId !== null;
       const sessions = useSessions(s => s);
@@ -1292,19 +1243,11 @@ window.__ModuleLoader__.load({
       const workspaces = useWorkspaces(s => s);
       const remote = useRemoteMachines(Sidebar.context);
       const deviceRuntime = useDeviceRuntime();
-      // The two writes this feature offers, each behind its own dialog.
-      const [dialog, setDialog] = React.useState(null);
       const nowMinute = useNowMinute();
       const [snapshot, setSnapshot] = React.useState(null);
       const [syncError, setSyncError] = React.useState(false);
       const [actionError, setActionError] = React.useState(false);
       const [uiError, setUiError] = React.useState('');
-      const [query, setQuery] = React.useState('');
-      // The query outlives the input the way the native browser keeps it: the
-      // control collapses, the filter stays until the user clears it.
-      const [searchExpanded, setSearchExpanded] = React.useState(false);
-      const searchRoot = React.useRef(null);
-      const searchInput = React.useRef(null);
       const [collapsed, setCollapsed] = React.useState(() => ({ ...DEFAULT_COLLAPSED }));
       const [pending, setPending] = React.useState({});
       const [workingIds, setWorkingIds] = React.useState(() => new Set());
@@ -1389,24 +1332,6 @@ window.__ModuleLoader__.load({
         }
         return () => observer.disconnect();
       }, [wide]);
-      // Same landing as the native header: expanding puts the caret in the field,
-      // and a click outside the control gives it up — collapsing only while
-      // nothing is filtered, so a hidden input never hides a live filter.
-      React.useEffect(() => {
-        if (!wide || !searchExpanded) return undefined;
-        searchInput.current?.focus({ preventScroll: true });
-        return undefined;
-      }, [wide, searchExpanded]);
-      React.useEffect(() => {
-        if (!wide || !searchExpanded) return undefined;
-        const onClick = event => {
-          if (!(event.target instanceof window.Node) || searchRoot.current?.contains(event.target) === true) return;
-          searchInput.current?.blur();
-          if (query.trim() === '') setSearchExpanded(false);
-        };
-        document.addEventListener('click', onClick);
-        return () => document.removeEventListener('click', onClick);
-      }, [query, wide, searchExpanded]);
       const pollRef = React.useRef(null);
       const operations = React.useRef(new Set());
       const alive = React.useRef(false);
@@ -1506,7 +1431,6 @@ window.__ModuleLoader__.load({
       const archived = new Set(workspaces?.archivedSessionIds || []);
       const pinned = new Set(workspaces?.pinnedSessionIds || []);
       const groups = Object.fromEntries(GROUPS.map(group => [group, []]));
-      const needle = query.trim().toLocaleLowerCase();
       let hasWorking = false;
       const addRow = (row, status, { pinned, settled, running }) => {
         const state = status?.pendingInteraction ? 'warning'
@@ -1515,7 +1439,6 @@ window.__ModuleLoader__.load({
         // A pin from the native sidebar can coexist with our settled flag.
         const group = pinned ? 'pinned' : settled ? 'settled' : state === 'ongoing' ? 'working' : 'active';
         if (group === 'working') hasWorking = true;
-        if (needle && !row.title.toLocaleLowerCase().includes(needle)) return;
         groups[group].push({ ...row, state });
       };
       // The main view can keep a new draft open until its first turn.
@@ -1572,45 +1495,14 @@ window.__ModuleLoader__.load({
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
       return h('div', { className: 't3-sidebar', ref: rootRef, 'data-expanded': true }, h('style', null, css),
         h('div', { className: 't3-header' },
-          h('span', { className: 't3-title', 'data-hidden': searchExpanded }, t('sessions')),
-          h('div', { className: 't3-search-slot', 'data-expanded': searchExpanded },
-            h('div', {
-              className: 't3-search', ref: searchRoot, 'data-expanded': searchExpanded,
-              onClick: () => { setSearchExpanded(true); searchInput.current?.focus(); },
-            },
-              h('button', {
-                type: 'button', className: 't3-search-button', title: searchExpanded ? undefined : t('search'),
-                'aria-label': t('search'), 'aria-expanded': searchExpanded,
-                onClick: () => setSearchExpanded(true),
-              }, h(SearchIcon, { size: searchExpanded ? 11 : 14 })),
-              h('input', {
-                ref: searchInput, className: 't3-search-input', type: 'text', value: query,
-                placeholder: t('searchPlaceholder'), 'aria-label': t('search'),
-                tabIndex: searchExpanded ? 0 : -1,
-                onChange: event => setQuery(event.target.value),
-                onKeyDown: event => {
-                  if (event.key !== 'Escape') return;
-                  setQuery('');
-                  setSearchExpanded(false);
-                },
-              }),
-              searchExpanded && h('button', {
-                type: 'button', className: 't3-clear', 'aria-label': t('searchClear'), title: t('searchClear'),
-                onClick: event => { event.stopPropagation(); setQuery(''); setSearchExpanded(false); },
-              }, h(ClearIcon)))),
-          h('div', { className: 't3-header-actions', 'data-hidden': searchExpanded },
-            canStartSession && h('button', {
-              type: 'button', className: 't3-header-action', 'aria-label': t('newSession'), title: t('newSession'),
-              onClick: () => runUi(() => {
-                if (machines.length) chooseDeviceProject(deviceRuntime.active?.targetId);
-                else { deactivateDevice(); context.uiWorkspace.startSession(); }
-              }, 'openFailed'),
-            }, h(PlusIcon)),
-            (canCreateLocal || machines.length > 0) && h('button', {
-              type: 'button', className: 't3-header-action', 'aria-label': t('addWorkspace'), title: t('addWorkspace'),
-              disabled: !canCreateLocal && !machines.some(machine => canManageDevice(machine.targetId)),
-              onClick: () => setDialog({ kind: 'add' }),
-            }, h(AddWorkspaceIcon)))),
+          h('span', { className: 't3-title' }, t('sessions')),
+          canStartSession && h('button', {
+            type: 'button', className: 't3-header-action', 'aria-label': t('newSession'), title: t('newSession'),
+            onClick: () => runUi(() => {
+              if (machines.length) chooseDeviceProject(deviceRuntime.active?.targetId);
+              else { deactivateDevice(); context.uiWorkspace.startSession(); }
+            }, 'openFailed'),
+          }, h(PlusIcon))),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
         !!offline.length && h('div', { className: 't3-message', role: 'status' },
@@ -1702,11 +1594,7 @@ window.__ModuleLoader__.load({
               'data-current': !panelActive && (session.retainedBy?.mainView || 0) > 0,
               onClick: () => runUi(() => { context.uiWorkspace.openSession(id); deactivateDevice(); }, 'openFailed'),
             }, topLine, titleLine());
-          })))))),
-        dialog?.kind === 'add' && h(AddProjectDialog, {
-          machines: [...(canCreateLocal ? [deviceForFolder(null, null, t)] : []), ...machines],
-          initialTargetId: deviceRuntime.active?.targetId, t, close: () => setDialog(null),
-        }));
+          })))))));
     }
     const SSH_SETTINGS_ID = 't3-ssh';
     const sshCopy = {
