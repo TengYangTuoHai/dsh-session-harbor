@@ -8,11 +8,11 @@
 
 ![Session Harbor 在 DeepSeek Harness 中混排本机和 SSH 会话，按状态分组，并在右侧展示对话](docs/session-harbor.png)
 
-*开发版实机界面，使用示例会话和设备。*
+*实机界面，使用示例会话和设备。*
 
 ## 直接安装
 
-**插件 v0.2.6** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
+**插件 v0.2.7** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
 
 1. 在 DSH 左侧打开「插件」，点击「添加插件」。
 2. 在「包名或地址」输入以下包名，点击「安装」。
