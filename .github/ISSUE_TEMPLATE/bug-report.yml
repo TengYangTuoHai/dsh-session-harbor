@@ -1,0 +1,45 @@
+name: 报告问题
+description: 请告诉我们 Session Harbor 在哪里出了问题。
+body:
+  - type: input
+    id: dsh-version
+    attributes:
+      label: DeepSeek Harness 版本
+      placeholder: '例如 0.2.2-rc.5'
+    validations:
+      required: true
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Session Harbor 版本
+      placeholder: '例如 0.2.6'
+    validations:
+      required: true
+  - type: dropdown
+    id: device
+    attributes:
+      label: 出问题的设备
+      options:
+        - 本机
+        - SSH 设备
+        - 本机和 SSH 设备都有
+        - 不确定
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: 实际结果和预期结果
+      description: 可以附上错误信息或截图。请先去掉令牌、SSH 地址和私人会话内容。
+    validations:
+      required: true

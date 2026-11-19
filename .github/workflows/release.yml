@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: ./.github/workflows/ci.yml
+
+  publish:
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Pack the tagged version
+        run: |
+          git merge-base --is-ancestor HEAD origin/main
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          version=$(node -p 'require("./dsh-session-harbor/package.json").version')
+          if [[ "v$version" != "$GITHUB_REF_NAME" ]]; then
+            echo 'The tag must match dsh-session-harbor/package.json.' >&2
+            exit 1
+          fi
+          mkdir -p dist
+          npm pack ./dsh-session-harbor --ignore-scripts --pack-destination dist
+          echo "ARCHIVE=dist/dsh-session-harbor-$version.tgz" >> "$GITHUB_ENV"
+      - name: Publish the archive to npm
+        run: |
+          version=${GITHUB_REF_NAME#v}
+          published=$(curl --fail --silent --show-error --max-time 30 https://registry.npmjs.org/dsh-session-harbor |
+            jq --arg version "$version" -r '.versions[$version].dist.integrity // empty')
+          if [[ -z "$published" ]]; then
+            npm publish "$ARCHIVE" --access public --ignore-scripts
+          else
+            integrity="sha512-$(openssl dgst -sha512 -binary "$ARCHIVE" | openssl base64 -A)"
+            if [[ "$published" != "$integrity" ]]; then
+              echo 'The published npm version has a different archive.' >&2
+              exit 1
+            fi
+            echo 'The matching archive is already on npm.'
+          fi
+      - name: Attach the same archive to GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if release=$(gh release view "$GITHUB_REF_NAME" --json assets,isDraft); then
+            asset=${ARCHIVE##*/}
+            digest=$(jq --arg asset "$asset" -r '.assets[] | select(.name == $asset) | .digest // "unavailable"' <<< "$release")
+            if [[ -z "$digest" ]]; then
+              gh release upload "$GITHUB_REF_NAME" "$ARCHIVE"
+            elif [[ "$digest" != "sha256:$(sha256sum "$ARCHIVE" | cut -d ' ' -f 1)" ]]; then
+              echo 'The GitHub Release already contains a different archive.' >&2
+              exit 1
+            fi
+            if [[ $(jq -r '.isDraft' <<< "$release") == true ]]; then
+              gh release edit "$GITHUB_REF_NAME" --draft=false
+            fi
+          else
+            gh release create "$GITHUB_REF_NAME" "$ARCHIVE" --verify-tag --generate-notes \
+              --title "Session Harbor ${GITHUB_REF_NAME#v}" \
+              --notes '在 DeepSeek Harness 的「插件 → 添加插件」中输入 `dsh-session-harbor`，也可粘贴下方 `.tgz` 下载链接。'
+          fi

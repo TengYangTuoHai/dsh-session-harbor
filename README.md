@@ -1,8 +1,14 @@
 # Session Harbor
 
+[![CI](https://github.com/TengYangTuoHai/dsh-session-harbor/actions/workflows/ci.yml/badge.svg)](https://github.com/TengYangTuoHai/dsh-session-harbor/actions/workflows/ci.yml)
+
 在一个 DeepSeek Harness 窗口里管理本机和多台 SSH 设备的会话。侧栏按「已置顶」「活跃」「工作中」「已完成」分组，点开远端会话就能在主区域继续对话。
 
-[直接安装](#直接安装) · [连接 SSH 设备](#连接-ssh-设备) · [版本发布](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
+[直接安装](#直接安装) · [连接 SSH 设备](#连接-ssh-设备) · [版本发布](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest) · [报告问题](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
+
+![Session Harbor 在 DeepSeek Harness 中混排本机和 SSH 会话，按状态分组，并在右侧展示对话](docs/session-harbor.png)
+
+*开发版实机界面，使用示例会话和设备。*
 
 ## 直接安装
 
@@ -39,12 +45,14 @@
 
 SSH 登录沿用本机 OpenSSH 配置和 SSH agent。**打开远端原生会话需要远端安装与本机相同版本的 DSH。** 要在本机标记远端会话为「已完成」并同步该状态，也请在远端安装本插件。
 
+安装或连接遇到问题时，可以附上版本信息和复现步骤。[报告问题](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
+
 ## 从源码安装
 
 在仓库根目录执行以下命令安装依赖、构建及验证。
 
 ```sh
-npm --prefix dsh-session-harbor install --no-package-lock
+npm --prefix dsh-session-harbor ci
 node tools/build-client.mjs
 node tools/build-client.mjs --check
 node --test dsh-session-harbor/*.test.js
@@ -52,7 +60,7 @@ node --test dsh-session-harbor/*.test.js
 
 在 DSH「添加插件」里输入 `dsh-session-harbor/` 的绝对路径并启用。
 
-[插件说明](dsh-session-harbor/README.md) · [远端会话设计](docs/remote-aggregation-design.md)
+[插件说明](dsh-session-harbor/README.md) · [远端会话设计](docs/remote-aggregation-design.md) · [维护者发版流程](docs/releasing.md)
 
 ## 许可
 
