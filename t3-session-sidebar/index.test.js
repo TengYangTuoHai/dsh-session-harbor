@@ -14,6 +14,7 @@ async function fixture(options = {}) {
   let tool;
   const emit = (name, ...args) => { for (const fn of [...(listeners.get(name) ?? [])]) fn(...args); };
   const ctx = {
+    get: name => options.services?.[name],
     effect(fn) { effects.push(fn()); },
     on(name, fn) {
       const list = listeners.get(name) ?? [];
@@ -69,6 +70,30 @@ async function fixture(options = {}) {
 }
 
 const signal = () => new AbortController().signal;
+
+test('local folder requests use the local browse capability without SSH and validate folder names', async () => {
+  const calls = [];
+  const browser = {
+    kind: 'browse',
+    async list(path, signal) { calls.push([path, signal.aborted]); return { path: path ?? '/fixture', entries: [] }; },
+    async createDirectory(path, name) { calls.push([path, name]); return `${path}/${name}`; },
+  };
+  const f = await fixture({ services: { directoryPicker: { capability: () => browser } } });
+  try {
+    assert.deepEqual(await f.call('t3-project-directory/list', {}, signal()), { ok: true, value: { path: '/fixture', entries: [] } });
+    assert.deepEqual(await f.call('t3-project-directory/create', { path: '/fixture', name: 'New folder' }, signal()), { ok: true, value: '/fixture/New folder' });
+    const route = f.routes.get('/api/t3-project-directory/create');
+    for (const name of ['..', 'a/b', 'a\\b', 'a\0b']) {
+      const response = await route.fetch(new Request('http://localhost/api/t3-project-directory/create', {
+        method: 'POST', body: JSON.stringify({ type: 'client-request', rpcId: 'test-id', method: 't3-project-directory/create', payload: { path: '/fixture', name } }),
+      }));
+      assert.equal(response.status, 400);
+    }
+    const cancelled = await f.call('t3-project-directory/list', {}, AbortSignal.abort());
+    assert.equal(cancelled.ok, false);
+    assert.deepEqual(calls, [[undefined, false], ['/fixture', 'New folder']]);
+  } finally { await f.close(); }
+});
 
 test('requests retain arrival order and cancelled queued requests do not write', async () => {
   let release;

@@ -578,14 +578,17 @@ export class TargetSupervisor {
 
   async browse(targetId, path, { refresh = false, signal } = {}) {
     const task = this.#live(targetId);
+    const browseSignal = signal ? AbortSignal.any([signal, task.abort.signal]) : task.abort.signal;
+    browseSignal.throwIfAborted();
     const wanted = typeof path === 'string' && path ? path : '';
     const key = targetId + '|' + wanted;
     if (!refresh) {
       const cached = this.#browseCache.get(key);
       if (cached && Date.now() - cached.at < BROWSE_TTL_MS) return cached.value;
     }
-    const listing = await task.client.call('directoryPicker/list', wanted ? { path: wanted } : {}, { signal: signal ?? task.abort.signal });
+    const listing = await task.client.call('directoryPicker/list', wanted ? { path: wanted } : {}, { signal: browseSignal });
     this.#assertCurrent(task);
+    browseSignal.throwIfAborted();
     this.#browseCache.set(key, { at: Date.now(), value: listing });
     return listing;
   }

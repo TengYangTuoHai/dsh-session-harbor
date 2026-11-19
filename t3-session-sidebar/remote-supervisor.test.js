@@ -312,6 +312,31 @@ test('a directory level is read once and cached until refreshed', async t => {
   assert.deepEqual(levelCalls().slice(0, probe).map(([, args]) => args), [{}]);
 });
 
+test('an abandoned browse aborts the remote call and leaves the directory cache unchanged', async t => {
+  const { index, client, supervisor, waitFor } = await harness({ sessions: [] }, { connections: [connection] });
+  t.after(() => supervisor.stop());
+  await waitFor(() => index.getTarget('target-1')?.status === 'ready');
+  const path = '/home/dev/project';
+  const original = client.call.bind(client);
+  const started = deferred();
+  const delayed = deferred();
+  client.call = (method, args, options) => {
+    if (method !== 'directoryPicker/list' || args.path !== path) return original(method, args, options);
+    started.resolve(options.signal);
+    return delayed.promise;
+  };
+  const controller = new AbortController();
+  const abandoned = supervisor.browse('target-1', path, { signal: controller.signal });
+  const remoteSignal = await started.promise;
+  controller.abort();
+  assert.equal(remoteSignal.aborted, true);
+  delayed.resolve({ path: '/stale', entries: [] });
+  await assert.rejects(abandoned, { name: 'AbortError' });
+
+  client.call = original;
+  assert.equal((await supervisor.browse('target-1', path)).path, path);
+});
+
 test('a machine that is not connected cannot be browsed or written', async t => {
   const { supervisor } = await harness({ sessions: [] }, { connections: [] });
   t.after(() => supervisor.stop());

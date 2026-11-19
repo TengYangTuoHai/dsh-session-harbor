@@ -186,7 +186,7 @@ function waitForSource(source, predicate, signal, timeoutMs = 15000) {
 
 /** Keeps the local application resident while native Client trees address devices. */
 export function createDeviceRuntimePool({
-  context, React, platformRequire, describe, onChooseDevice,
+  context, React, platformRequire, describe, onChooseDevice, installWorkspacePicker,
   onStatusChange = () => {}, pageGlobal = globalThis, fetch: suppliedFetch,
   loadScript: suppliedScriptLoader, buildRuntime: suppliedBuilder,
 }) {
@@ -300,18 +300,6 @@ export function createDeviceRuntimePool({
     }, Root);
   }
 
-  function installDeviceQuestion(instance) {
-    const device = instance.ctx;
-    const HOC = ({ hero, children }) => h(React.Fragment, null,
-      hero && h('div', { className: 't3-device-before-project' }, h('button', {
-        type: 'button', className: 't3-device-chip',
-        onClick: () => onChooseDevice?.(instance.descriptor.targetId),
-      }, instance.label || instance.descriptor.targetId)), children);
-    device.slots.inject('conversation.hero.frame', () => device.slots.register({
-      name: 'conversation.hero.frame', id: 't3-device-before-project', order: -100,
-    }, HOC));
-  }
-
   async function build(descriptor, { signal } = {}) {
     signal?.throwIfAborted();
     nativePlatform ??= await platformImport('@deepseek-ai/cordis');
@@ -323,7 +311,7 @@ export function createDeviceRuntimePool({
     const realm = createDeviceRealm({ descriptor, platformImport, loadScript, pageGlobal,
       shortcuts: context.shortcuts, externalKeyboard: true,
       fetch: pageFetch, createWebSocket: path => context.connection.openWebSocket(path), signal: abort.signal });
-    const instance = { descriptor, abort, realm, ctx: null, subscriptions: [], closed: false, label: '', status: null };
+    const instance = { descriptor, abort, realm, ctx: null, subscriptions: [], closed: false, status: null };
     const cancel = () => abort.abort(signal.reason);
     if (signal?.aborted) cancel(); else signal?.addEventListener('abort', cancel, { once: true });
     instance.subscriptions.push(() => signal?.removeEventListener('abort', cancel));
@@ -358,7 +346,7 @@ export function createDeviceRuntimePool({
         }));
       }
       installEmbeddedRoot(instance);
-      installDeviceQuestion(instance);
+      if (installWorkspacePicker) instance.subscriptions.push(installWorkspacePicker(device, descriptor.targetId));
       const navigationRow = roster.find(row => row.id === OFFICIAL + 'dsh-client-ui-workspace');
       if (!navigationRow) throw new Error('The device has no compatible native project navigation');
       instance.navigation = createDeferredNavigation({
@@ -576,7 +564,6 @@ export function createDeviceRuntimePool({
     state,
     ensure,
     open,
-    setLabel(targetId, label) { const instance = instances.get(targetId); if (instance) instance.label = label; },
     deactivate() {
       navigation++;
       for (const instance of instances.values()) instance.realm.active = false;

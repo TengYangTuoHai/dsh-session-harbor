@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { createPlacementController } from './placement-controller.js';
 import { createRemoteIndex, REMOTE_INDEX_DOMAIN, remoteIndexSpec } from './remote-index.js';
@@ -247,6 +249,55 @@ export async function apply(ctx) {
     });
     ctx.effect(() => dispose);
   }
+  // Desktop may have only the native OS chooser. Use the installed browse
+  // backend in a private scope to leave the application's chooser available.
+  let folderBrowser;
+  function localFolderBrowser() {
+    return folderBrowser ??= (async () => {
+      const configured = ctx.get('directoryPicker')?.capability();
+      if (configured?.kind === 'browse') return configured;
+      const anchor = ctx.get('profileContext')?.installAnchor;
+      const require = createRequire(anchor ?? import.meta.url);
+      const source = require.resolve('@deepseek-ai/dsh-host-directory-picker-browse');
+      const { default: BrowseDirectoryPicker } = await import(pathToFileURL(source).href);
+      if (closed) throw new Error('Directory browser is closed');
+      const scoped = ctx.isolate('directoryPicker');
+      await scoped.plugin(BrowseDirectoryPicker, { maxEntries: 1000 });
+      return scoped.get('directoryPicker').capability();
+    })().catch(error => { folderBrowser = undefined; throw error; });
+  }
+  const folderPath = z.string().min(1).max(4096).regex(/^[^\0]+$/);
+  const folderList = z.object({ path: folderPath.optional() }).strict();
+  const folderCreate = z.object({ path: folderPath, name: z.string().trim().min(1).max(200)
+    .regex(/^[^/\\\0]+$/).refine(name => name !== '.' && name !== '..') }).strict();
+  for (const endpoint of ['t3-project-directory/list', 't3-project-directory/create']) {
+    const list = endpoint.endsWith('/list');
+    const dispose = ctx.connection.fetch.register({
+      path: `/api/${endpoint}`, methods: ['POST'], requestBody: 'buffered',
+      async fetch(request) {
+        let message, input;
+        try {
+          message = envelopeSchema.parse(await request.json());
+          if (message.method !== endpoint) throw new Error('Unexpected endpoint');
+          input = (list ? folderList : folderCreate).parse(message.payload);
+        } catch {
+          return new Response('Invalid request', { status: 400 });
+        }
+        let result;
+        try {
+          request.signal.throwIfAborted();
+          const browser = await localFolderBrowser();
+          request.signal.throwIfAborted();
+          const value = list ? await browser.list(input.path, request.signal) : await browser.createDirectory(input.path, input.name);
+          result = { ok: true, value };
+        } catch (error) {
+          result = { ok: false, error: { code: 't3-project-directory/error', message: error?.message ?? String(error), details: {} } };
+        }
+        return Response.json({ type: 'server-response', rpcId: message.rpcId, result });
+      },
+    });
+    ctx.effect(() => dispose);
+  }
   // Wake pending long polls before withdrawing their transport and storage.
   ctx.effect(() => () => { closed = true; notify(); });
 
@@ -391,7 +442,7 @@ export async function apply(ctx) {
       if (!nativeBroker) throw Object.assign(new Error('The installed SSH service cannot provide native device conversations.'), { code: 't3-native/unavailable' });
       return nativeBroker.describe(call.targetId, { signal });
     }
-    if (endpoint === 't3-remote/browse') return supervisor.browse(call.targetId, call.path, { refresh: call.refresh === true }).then(listing => ({ listing }));
+    if (endpoint === 't3-remote/browse') return supervisor.browse(call.targetId, call.path, { refresh: call.refresh === true, signal }).then(listing => ({ listing }));
     if (endpoint === 't3-remote/create-directory') return supervisor.createDirectory(call.targetId, call.path, call.name).then(path => ({ path }));
     if (endpoint === 't3-remote/workspace-create') return supervisor.createWorkspace(call.targetId, call.path).then(value => ({ workspace: value?.workspace ?? null }));
     if (endpoint === 't3-remote/action') return supervisor.act(call.targetId, call.sessionId, call.action, { signal }).then(done => ({ done: done ?? null }));

@@ -2,6 +2,7 @@ window.__ModuleLoader__.load({
   id: '@local/dsh-t3-session-sidebar',
   factory(require) {
     const React = require('react');
+    const { createPortal } = require('react-dom');
     const h = React.createElement;
     const NS = 't3-session-sidebar';
     const GROUPS = ['pinned', 'active', 'working', 'settled'];
@@ -36,7 +37,7 @@ window.__ModuleLoader__.load({
         remoteStreamReconnecting: 'Reconnecting to the session…',
         rename: 'Rename', renameTitle: 'Session name', save: 'Save', fork: 'Fork session', archive: 'Archive', copyId: 'Copy session ID',
         copyDone: 'Session ID copied.', close: 'Close', localNoProjects: 'Add a project to start a session.' ,
-        remoteChoose: 'Use this folder', remoteGo: 'Go', remotePath: 'Path', remoteHome: 'Home',
+        remoteChoose: 'Open', remotePath: 'Edit path', remoteHome: 'Home', projectFolderTitle: 'Select Workspace Directory', folderName: 'Folder name',
         remoteShowHidden: 'Show hidden folders', remoteTruncated: 'Too many folders to list here — filter or type a path.', remoteEmptyLevel: 'No folders here', remoteLoading: 'Loading…',
         remoteNewFolder: 'New folder', remoteCreate: 'Create', remoteCancel: 'Cancel', remoteWorking: 'Working…',
         remoteDeleteTitle: 'Delete project', remoteDeleteBody: 'This cannot be undone. The folder itself stays on the machine.',
@@ -71,7 +72,7 @@ window.__ModuleLoader__.load({
         remoteStreamReconnecting: '正在重新连接会话…',
         rename: '重命名', renameTitle: '会话名称', save: '保存', fork: '分叉会话', archive: '归档', copyId: '复制会话 ID',
         copyDone: '已复制会话 ID。', close: '关闭', localNoProjects: '添加项目后即可开始会话。',
-        remoteChoose: '选择此目录', remoteGo: '转到', remotePath: '路径', remoteHome: '主目录',
+        remoteChoose: '打开', remotePath: '编辑路径', remoteHome: '主目录', projectFolderTitle: '选择工作区目录', folderName: '文件夹名称',
         remoteShowHidden: '显示隐藏文件夹', remoteTruncated: '该层目录过多，请用输入框过滤或直接输入路径。', remoteEmptyLevel: '这里没有子目录', remoteLoading: '正在加载…',
         remoteNewFolder: '新建文件夹', remoteCreate: '创建', remoteCancel: '取消', remoteWorking: '处理中…',
         remoteDeleteTitle: '删除项目', remoteDeleteBody: '此操作不可撤销。机器上的目录本身不会被删除。',
@@ -183,15 +184,21 @@ window.__ModuleLoader__.load({
       .t3-footer svg{flex:none}
       .t3-footer[data-wide=false]{flex:none;width:32px;justify-content:center;padding:0}
       .t3-footer-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      /* Device picker colours distinguish the machines in the dialog. */
-      .t3-hue-0{color:hsl(210 62% 58%);color:color-mix(in oklab, hsl(210 62% 58%) 72%, currentColor)}
-      .t3-hue-1{color:hsl(150 45% 50%);color:color-mix(in oklab, hsl(150 45% 50%) 72%, currentColor)}
-      .t3-hue-2{color:hsl(22 70% 58%);color:color-mix(in oklab, hsl(22 70% 58%) 72%, currentColor)}
-      .t3-hue-3{color:hsl(272 55% 62%);color:color-mix(in oklab, hsl(272 55% 62%) 72%, currentColor)}
-      .t3-hue-4{color:hsl(330 60% 58%);color:color-mix(in oklab, hsl(330 60% 58%) 72%, currentColor)}
-      .t3-hue-5{color:hsl(190 55% 50%);color:color-mix(in oklab, hsl(190 55% 50%) 72%, currentColor)}
       .t3-row[data-open-disabled=true]{cursor:default}
-      .t3-device-before-project{display:flex;justify-content:center;gap:8px;padding:12px;flex:none}
+      .t3-hero-seat{display:contents}
+      .t3-hero-pickers{display:flex;align-items:center;min-width:0;gap:2px}
+      .t3-hero-picker{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:min(100%,360px);min-height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px;font-weight:500;cursor:pointer}
+      .t3-hero-picker svg{flex:none}
+      .t3-hero-picker svg:last-of-type{color:var(--dsw-alias-label-caption)}
+      .t3-hero-picker-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .t3-hero-picker[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover)}
+      @media (hover:hover){.t3-hero-picker:not([aria-disabled=true]):hover{background:var(--dsw-alias-interactive-bg-hover)}}
+      .t3-hero-picker[aria-disabled=true]{cursor:default;color:var(--dsw-alias-label-secondary)}
+      .t3-hero-picker-status{min-width:0;margin-inline-start:6px;color:var(--dsw-alias-label-secondary);font-size:12px;overflow-wrap:anywhere}
+      .t3-hero-seat:has([data-staged=true]) ~ *{display:none}
+      [data-composer-card][data-t3-device-inert]{opacity:.55}
+      [role=menuitem]:has(.t3-hero-menu-check){position:relative;padding-inline-end:32px}
+      .t3-hero-menu-check{position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);color:var(--dsw-alias-label-primary)}
       .t3-native-portals{position:fixed;inset:0;z-index:100;pointer-events:none}.t3-native-portals>*{pointer-events:auto}
       .t3-device-main,.t3-device-main-content,.t3-native-region,.t3-native-body,.t3-native-conversation{display:flex;flex:1;min-height:0;min-width:0;overflow:hidden}
       .t3-device-main,.t3-device-main-content,.t3-native-region,.t3-native-conversation{flex-direction:column}
@@ -210,24 +217,6 @@ window.__ModuleLoader__.load({
       .t3-device-error{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:24px;font-size:13px;color:var(--dsw-alias-label-secondary)}
       .t3-device-error p{margin:0}
       .t3-rename-form{display:flex;flex-direction:column;gap:12px}
-      .t3-machine-pick{display:flex;flex-wrap:wrap;gap:6px;flex:none}
-      .t3-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--dsw-alias-border-l4);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;cursor:pointer}
-      .t3-chip svg{flex:none}
-      .t3-chip[data-current=true]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
-      .t3-chip[data-status=down]{opacity:.55}
-      .t3-device{position:relative;display:inline-flex;flex:none}
-      .t3-device-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--dsw-alias-border-l4);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;cursor:pointer}
-      .t3-device-chip[data-open=true]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
-      .t3-device-caret{font-size:10px;opacity:.7}
-      .t3-device-menu{position:absolute;z-index:30;top:calc(100% + 6px);left:0;min-width:230px;max-height:280px;overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid var(--dsw-alias-border-l4);border-radius:10px;background:var(--dsw-alias-bg-elevated,var(--dsw-alias-bg-primary));box-shadow:0 8px 24px rgba(0,0,0,.28)}
-      .t3-device-item{display:flex;align-items:center;gap:8px;text-align:left;padding:6px 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:13px;cursor:pointer;overflow:hidden;white-space:nowrap}
-      .t3-device-item:hover{background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-device-item:disabled{opacity:.55;cursor:default}
-      .t3-device-item:disabled:hover{background:transparent}
-      .t3-device-item[data-back=true]{color:var(--dsw-alias-label-secondary)}
-      .t3-device-label{overflow:hidden;text-overflow:ellipsis}
-      .t3-device-busy{margin-left:auto;font-size:11px;color:var(--dsw-alias-label-tertiary)}
-      .t3-device-note{padding:6px 8px;font-size:12px;color:var(--dsw-alias-label-tertiary)}
       /* The two writes this feature offers sit behind dialogs of our own: the host's
          approval dialog carries agent-approval semantics, which choosing a folder has
          nothing to do with. */
@@ -242,17 +231,43 @@ window.__ModuleLoader__.load({
       .t3-dialog .t3-btn:disabled{opacity:.5;cursor:default}
       .t3-btn-primary{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
       .t3-btn-danger{border-color:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-state-warn-primary)}
-      .t3-browser-path{display:flex;gap:6px;flex:none}
-      .t3-browser-input{flex:1;min-width:0;padding:5px 8px;border:1px solid var(--dsw-alias-border-l4);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:12px}
-      .t3-crumbs{display:flex;flex-wrap:wrap;gap:2px;font-size:11px;flex:none}
-      .t3-crumb{padding:2px 6px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:11px;cursor:pointer}
-      .t3-crumb:hover{background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-browser-list{display:flex;flex-direction:column;gap:1px;min-height:110px;max-height:240px;overflow:auto}
-      .t3-browser-entry{text-align:left;padding:5px 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .t3-browser-entry:hover{background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-browser-entry[data-hidden=true]{color:var(--dsw-alias-label-tertiary)}
-      .t3-browser-foot,.t3-browser-new{display:flex;align-items:center;gap:8px;flex:none}
-      .t3-browser-hidden{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--dsw-alias-label-secondary)}
+      .t3-folder-dialog{box-sizing:border-box;width:min(680px,calc(100vw - 32px));height:min(500px,calc(100dvh - 32px));max-width:none;max-height:none;inset:0;margin:auto;padding:0;overflow:hidden;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-xl,16px);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);box-shadow:0 18px 48px color-mix(in srgb,var(--dsw-alias-label-primary) 18%,transparent)}
+      .t3-folder-dialog[open]{display:flex;flex-direction:column}
+      .t3-folder-dialog::backdrop{background:var(--dsw-alias-bg-mask,rgba(0,0,0,.32))}
+      .t3-folder-head{display:grid;gap:8px;flex:none;padding:16px 24px 8px;border-bottom:.5px solid var(--dsw-alias-border-l3)}
+      .t3-folder-title{margin:0;font-size:16px;line-height:24px;font-weight:510}
+      .t3-folder-heading,.t3-folder-path,.t3-folder-footer{display:flex;align-items:center;gap:8px;min-width:0}
+      .t3-folder-heading>.t3-folder-title,.t3-folder-gap{flex:1}
+      .t3-folder-heading select{max-width:45%;padding:3px 6px;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-2);color:inherit;font:inherit;font-size:13px}
+      .t3-folder-machine{display:inline-flex;align-items:center;gap:4px;max-width:45%;color:var(--dsw-alias-label-secondary);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .t3-folder-path{min-height:26px;border:1px solid transparent;border-radius:var(--dsw-radius-sm)}
+      .t3-folder-path:has(input),.t3-folder-path:has(.t3-folder-edit:hover){border-color:var(--dsw-alias-border-l2)}
+      .t3-folder-crumbs{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none;color:var(--dsw-alias-label-secondary)}
+      .t3-folder-crumbs button,.t3-folder-edit,.t3-folder-hidden{flex:none;padding:2px 4px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+      .t3-folder-crumbs button[aria-current=true],.t3-folder-hidden[aria-pressed=true]{color:var(--dsw-alias-label-primary)}
+      .t3-folder-edit{display:flex;justify-content:flex-end;flex:1;min-width:26px;color:var(--dsw-alias-label-secondary)}
+      .t3-folder-path input,.t3-folder-name{box-sizing:border-box;width:100%;min-width:0;padding:4px 8px;border:0;background:transparent;color:inherit;font:inherit;font-size:13px}
+      .t3-folder-columns{display:flex;flex:1;min-height:0;overflow-x:auto;scrollbar-width:none}
+      .t3-folder-column{flex:1 0 min(256px,100%);min-height:0;box-sizing:border-box;overflow:auto;padding:8px 12px}
+      .t3-folder-column+.t3-folder-column{border-inline-start:.5px solid var(--dsw-alias-border-l3)}
+      .t3-folder-row{display:flex;align-items:center;gap:8px;width:100%;min-height:30px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:500;text-align:start;cursor:pointer}
+      .t3-folder-row svg{flex:none}
+      .t3-folder-row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .t3-folder-row[aria-pressed=true],.t3-folder-row:hover,.t3-folder-crumbs button:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-folder-footer{flex-wrap:wrap;flex:none;padding:16px 24px;border-top:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary)}
+      .t3-folder-button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:32px;padding:0 12px;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
+      .t3-folder-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-folder-button[data-primary]{border-color:transparent;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-inverse,#fff)}
+      .t3-folder-button[data-primary]:hover:not(:disabled){background:var(--dsw-alias-brand-primary);filter:brightness(.94)}
+      .t3-folder-button:disabled,.t3-folder-hidden:disabled{opacity:.5;cursor:default}
+      .t3-folder-action{min-width:72px}
+      .t3-folder-status{padding:4px 24px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;overflow-wrap:anywhere}
+      .t3-folder-status[role=alert]{color:var(--dsw-alias-state-error-primary)}
+      .t3-folder-dialog.t3-folder-create{width:min(380px,calc(100vw - 32px));height:auto;overflow:auto}
+      .t3-folder-create form{display:grid;gap:12px;padding:22px 24px 20px}
+      .t3-folder-name{height:44px;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md)}
+      .t3-folder-create .t3-folder-status{padding:0}
+      .t3-folder-create .t3-folder-footer{justify-content:flex-end;padding:0;border:0}
       .t3-confirm-body{font-size:12px;color:var(--dsw-alias-label-secondary)}
       .t3-confirm-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;margin:0;font-size:12px}
       .t3-confirm-facts dt{color:var(--dsw-alias-label-tertiary)}
@@ -432,37 +447,6 @@ window.__ModuleLoader__.load({
       ? 'remote' + status[0].toUpperCase() + status.slice(1)
       : 'remoteUnknown';
 
-    // One glyph for every machine means two machines look identical until you hover, so
-    // each one also carries a stable identity hue, derived from its target id: the same
-    // colour in every list, and it survives a machine coming and going.
-    const MACHINE_HUE_COUNT = 6;
-    function machineHue(targetId) {
-      let hash = 2166136261;
-      for (const char of String(targetId)) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
-      return hash % MACHINE_HUE_COUNT;
-    }
-
-    /**
-     * A hue is only an identity signal if two machines do not share one, so a collision
-     * walks to the next free hue. With at most six machines everyone stays distinct, and
-     * a machine keeps its colour as long as the set around it does not change.
-     */
-    function assignHues(machines) {
-      const taken = new Set();
-      const hues = new Map();
-      for (const machine of machines) {
-        const start = machineHue(machine.targetId);
-        let hue = start;
-        for (let step = 0; step < MACHINE_HUE_COUNT; step += 1) {
-          hue = (start + step) % MACHINE_HUE_COUNT;
-          if (!taken.has(hue)) break;
-        }
-        taken.add(hue);
-        hues.set(machine.targetId, hue);
-      }
-      return hues;
-    }
-
     // T3 Code tells machines apart by the shape of the glyph (server / linux / laptop /
     // cloud …). We know far less about a machine over a tunnel, but the shape of its home
     // directory separates the three families that matter, and Linux and WSL share one
@@ -584,6 +568,7 @@ window.__ModuleLoader__.load({
           context, React, platformRequire: require,
           describe: (targetId, { signal } = {}) => remoteCall('t3-remote/runtime', { targetId }, signal),
           onChooseDevice: chooseDeviceProject,
+          installWorkspacePicker: installDeviceWorkspacePicker,
           onStatusChange: () => publishRuntime({}),
         });
         stopPool = pool.state.subscribe(() => {
@@ -626,7 +611,6 @@ window.__ModuleLoader__.load({
         awaitingOpen = null;
         await opening;
         if (token !== navigation) return;
-        next.setLabel(reference.targetId, currentMachine(reference.targetId)?.label ?? reference.targetId);
         publishRuntime({});
       } catch (error) {
         if (token !== navigation || runtimeClosed) return;
@@ -778,79 +762,221 @@ window.__ModuleLoader__.load({
               type: 'button', className: 't3-btn', onClick: () => { void openDeviceSession(reference, { refresh: true }).catch(() => {}); },
             }, t('retry'))));
     }
-    function DeviceHeroFrame({ hero, children, t }) {
-      const remote = useRemoteMachines(Sidebar.context);
-      return h(React.Fragment, null,
-        hero && remoteTargetsOf(remote.snapshot).length > 0 && h('div', { className: 't3-device-before-project' },
-          h('style', null, css),
-          h('button', { type: 'button', className: 't3-device-chip', title: t('chooseDeviceProject'), onClick: () => chooseDeviceProject(null) },
-            h(MachineIcon, { kind: 'server' }), t('remoteDeviceThisMachine'))),
-        children);
+    function deviceLabel({ label, status }, t) {
+      return status === 'ready' ? label : `${label} · ${t(remoteStatusKey(status))}`;
     }
-    function NewDeviceSession({ t, useWorkspaces }) {
-      const choice = React.useSyncExternalStore(choiceSubscribe, () => deviceChoice, () => deviceChoice);
-      const remote = useRemoteMachines(Sidebar.context);
-      const workspaces = useWorkspaces(value => value);
+    function deviceOptions(machines, t) {
+      return [h('option', { key: '', value: '' }, t('remoteDeviceThisMachine')),
+        ...machines.map(machine => h('option', { key: machine.targetId, value: machine.targetId }, deviceLabel(machine, t)))];
+    }
+    function projectOptions(projects) {
+      return projects.map(project => h('option', { key: project.workspaceId, value: project.workspaceId },
+        `${project.title || pathLabel(project.path)} · ${project.path}`));
+    }
+    function useDeviceProjects(targetId, workspaces, snapshot) {
       const [busy, setBusy] = React.useState(false);
       const [error, setError] = React.useState('');
       const [adding, setAdding] = React.useState(false);
       const request = React.useRef(null);
-      const locked = React.useRef(false);
       React.useEffect(() => () => request.current?.abort(), []);
-      const machines = remoteTargetsOf(remote.snapshot).sort((a, b) => String(a.label).localeCompare(String(b.label)));
-      const machine = machines.find(item => item.targetId === choice.targetId);
-      const local = choice.targetId === null;
-      const online = local || canManageDevice(choice.targetId);
-      const projects = (local ? workspaces?.items ?? [] : Object.values(remote.snapshot?.workspaces ?? {}).filter(item => item.targetId === choice.targetId))
-        .slice().sort((a, b) => (a.title || a.path).localeCompare(b.title || b.path));
+      const local = targetId === null;
+      const machine = snapshot?.targets?.[targetId];
+      const online = local || canManageDevice(targetId);
+      const projects = (local ? (workspaces?.items ?? []).slice() : Object.values(snapshot?.workspaces ?? {}).filter(item => item.targetId === targetId))
+        .sort((a, b) => (a.title || a.path).localeCompare(b.title || b.path));
       const start = async workspaceId => {
-        if (!workspaceId || locked.current || !online) return;
-        locked.current = true;
-        setBusy(true);
-        setError('');
+        if (request.current || !online) return;
         const controller = new AbortController();
         request.current = controller;
+        setBusy(true);
+        setError('');
         try {
-          if (local) {
-            deactivateDevice();
-            await Sidebar.context.uiWorkspace.openWorkspace(workspaceId);
-          } else {
-            await createAndOpenDeviceSession(choice.targetId, workspaceId, controller.signal);
-          }
-        } catch (reason) {
-          if (!controller.signal.aborted) setError(reason?.message ?? String(reason));
+          if (local) await Sidebar.context.uiWorkspace.openWorkspace(workspaceId);
+          else await createAndOpenDeviceSession(targetId, workspaceId, controller.signal);
+        } catch (error) {
+          if (!controller.signal.aborted) setError(error?.message ?? String(error));
         } finally {
-          locked.current = false;
+          request.current = null;
           if (!controller.signal.aborted) setBusy(false);
         }
       };
-      const add = async () => {
-        if (!local) { setAdding(true); return; }
-        setError('');
-        try {
-          const path = await Sidebar.context.uiWorkspace.pickDirectory();
-          if (path) await Sidebar.context.workspaces.create({ path });
-        } catch (reason) { setError(reason?.message ?? String(reason)); }
+      return {
+        busy, error, adding, local, machine, online, projects, start,
+        clearError: () => setError(''),
+        add() { setError(''); setAdding(true); },
+        closeAdd() { setAdding(false); },
       };
+    }
+    function PickerLabel({ icon, text }) {
+      return h(React.Fragment, null, icon,
+        h('span', { className: 't3-hero-picker-label' }, text),
+        h('svg', { width: 12, height: 12, viewBox: '0 0 12 12', 'aria-hidden': true },
+          h('path', { d: 'm3 4.5 3 3 3-3', fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round' })));
+    }
+    function ProjectIcon({ open = false } = {}) {
+      return h('svg', { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
+        h('path', { d: open
+          ? 'M2.2 12.5V4.6a1 1 0 0 1 1-1h3.25l1.35 1.5h4.1a1 1 0 0 1 1 1v.6M2.2 12.5l1.4-5.1a.8.8 0 0 1 .77-.59h9.14a.7.7 0 0 1 .67.88l-1.15 4.31a1 1 0 0 1-.97.74H2.2z'
+          : 'M2.5 4a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z' }));
+    }
+    function SelectedPickerIcon({ children }) {
+      const mark = React.useRef(null);
+      React.useLayoutEffect(() => {
+        const row = mark.current?.closest('[role=menuitem]');
+        if (!row) return;
+        row.setAttribute('aria-current', 'true');
+        return () => row.removeAttribute('aria-current');
+      }, []);
+      return h(React.Fragment, null, children,
+        h('svg', { ref: mark, className: 't3-hero-menu-check', width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', 'aria-hidden': true },
+          h('path', { d: 'm4 8 2.5 2.5L12 5', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round' })));
+    }
+    const HERO_MENU_KIND = 't3-hero-picker';
+    const HERO_MENU_ICONS = NS + '.picker.';
+    const heroMenus = new Map();
+    function HeroMenuButton({ text, icon, label, items, disabled, statusId, beforeOpen }) {
+      const id = React.useId();
+      const menus = Sidebar.context.contextMenus;
+      const actions = React.useRef(items);
+      const owns = () => {
+        const target = menus.active.getSnapshot();
+        return target?.kind === HERO_MENU_KIND && target.value.id === id;
+      };
+      const expanded = React.useSyncExternalStore(menus.active.subscribe, owns);
+      React.useLayoutEffect(() => { actions.current = items; }, [items]);
+      React.useLayoutEffect(() => {
+        heroMenus.set(id, actions);
+        return () => {
+          if (owns()) menus.close();
+          heroMenus.delete(id);
+        };
+      }, [id, menus]);
+      React.useEffect(() => {
+        if (disabled && expanded) menus.close();
+      }, [disabled, expanded, menus]);
+      return h('button', {
+        type: 'button', className: 't3-hero-picker',
+        'data-context-menu-trigger': '', 'aria-haspopup': 'menu', 'aria-expanded': expanded,
+        'aria-label': label, 'aria-describedby': statusId, 'aria-disabled': disabled || undefined,
+        onClick: event => {
+          if (disabled) return;
+          if (expanded) { menus.close(); return; }
+          beforeOpen?.();
+          event.currentTarget.focus({ preventScroll: true });
+          const rect = event.currentTarget.getBoundingClientRect();
+          menus.open({ kind: HERO_MENU_KIND, value: { id } }, { x: rect.left, y: rect.bottom }, { button: id });
+        },
+      }, h(PickerLabel, { icon, text }));
+    }
+    function DeviceProjectPicker({ targetName, flow, statusId, t }) {
+      const projects = flow.projects.map(project => ({ ...project, label: project.title || pathLabel(project.path) }));
+      const items = projects.map(({ workspaceId, label, path }) => ({
+        id: workspaceId,
+        label: projects.some(project => project.workspaceId !== workspaceId && project.label === label) ? `${label} · ${path}` : label,
+        icon: { key: HERO_MENU_ICONS + 'project' },
+        run: () => flow.start(workspaceId),
+      }));
+      items.push({ id: '::add-project', label: t('addWorkspace'), icon: { key: HERO_MENU_ICONS + 'add' }, afterContent: items.length > 0, run: flow.add });
+      return h(HeroMenuButton, {
+        text: t(flow.busy ? 'remoteDeviceStarting' : 'chooseProject'), icon: h(ProjectIcon), items,
+        label: `${t('chooseProject')} · ${targetName}`, statusId, disabled: !flow.online || flow.adding || flow.busy,
+      });
+    }
+    function DeviceHeroWorkspace({ currentTargetId, open, anchorRef, selectedId, onPick, onClose, renderFactorySlot }) {
+      const context = Sidebar.context;
+      React.useSyncExternalStore(listener => context.locale.subscribe(listener), () => context.locale.getSnapshot());
+      const t = context.locale.bind(NS);
+      const workspaces = React.useSyncExternalStore(listener => context.workspaces.list.subscribe(listener), () => context.workspaces.list.getSnapshot());
+      const { snapshot } = useRemoteMachines(context);
+      const [selection, setSelection] = React.useState(null);
+      const [seat, setSeat] = React.useState(null);
+      const targetId = selection ? selection.targetId : currentTargetId;
+      const staged = targetId !== currentTargetId;
+      const flow = useDeviceProjects(targetId, workspaces, snapshot);
+      const machines = remoteTargetsOf(snapshot).sort((a, b) => a.label.localeCompare(b.label));
+      if (targetId && !flow.machine) machines.push({ targetId, label: selection?.label ?? targetId, status: 'down' });
+      const t3StatusId = React.useId();
+      React.useLayoutEffect(() => {
+        const anchor = anchorRef?.current;
+        if (!anchor?.parentElement) return;
+        // The workspace slot sits after the trigger. Use its owner ref to mount
+        // before the trigger in both tab order and layout.
+        const node = anchor.ownerDocument.createElement('div');
+        node.className = 't3-hero-seat';
+        anchor.before(node);
+        setSeat(node);
+        return () => node.remove();
+      }, [anchorRef]);
+      React.useLayoutEffect(() => {
+        if (!staged || !seat) return;
+        const card = seat.closest('[data-composer-seat]')?.querySelector('[data-composer-card]');
+        if (!card || card.inert) return;
+        card.inert = true;
+        card.setAttribute('data-t3-device-inert', '');
+        return () => {
+          card.inert = false;
+          card.removeAttribute('data-t3-device-inert');
+        };
+      }, [staged, seat]);
+      const targetName = flow.machine?.label ?? (targetId ? selection?.label ?? targetId : t('remoteDeviceThisMachine'));
+      const deviceItems = [{ targetId: null, label: t('remoteDeviceThisMachine'), status: 'ready' }, ...machines].map(machine => ({
+        id: machine.targetId ?? '::local', label: deviceLabel(machine, t),
+        icon: { key: HERO_MENU_ICONS + (machine.kind || 'server') + (machine.targetId === targetId ? '.selected' : '') },
+        run: () => {
+          setSelection({ targetId: machine.targetId, label: machine.label });
+          flow.clearError();
+        },
+      }));
+      let status = flow.error;
+      if (!status && !flow.online) status = t(flow.machine?.status === 'connecting' ? 'remoteConnecting' : 'remoteDeviceUnreachable');
+      if (!status && !flow.projects.length) status = t(flow.local && workspaces?.phase !== 'ready'
+        ? 'remoteLoading' : flow.local ? 'localNoProjects' : 'remoteDeviceNoProjects');
+      return h(React.Fragment, null,
+        !staged && renderFactorySlot('workspace.picker', { open, anchorRef, selectedId, onPick, onClose }),
+        seat && machines.length > 0 && createPortal(h(React.Fragment, null, h('style', null, css),
+          h('div', { className: 't3-hero-pickers', 'data-staged': staged },
+            h(HeroMenuButton, {
+              text: targetName, icon: h(MachineIcon, { kind: flow.machine?.kind, size: 16 }),
+              label: `${t('remoteDeviceChip')} · ${targetName}`, items: deviceItems, disabled: flow.busy || flow.adding,
+              beforeOpen: open ? onClose : undefined,
+            }),
+            staged && h(DeviceProjectPicker, { key: targetId, targetName, flow, statusId: status ? t3StatusId : undefined, t }),
+            staged && status && h('span', { className: 't3-hero-picker-status', id: t3StatusId, role: flow.error ? 'alert' : 'status' }, status))), seat),
+        flow.adding && h(AddProjectDialog, { machines: [deviceForFolder(targetId, snapshot, t)], t, close: flow.closeAdd }));
+    }
+    function installDeviceWorkspacePicker(context, targetId = null) {
+      const slots = ['conversation.hero.workspace.directoryFlow', 'workspace.picker.directoryFlow', 'sidebar.workspaces.directoryFlow'];
+      const disposers = slots.map(name => context.slots.inject(name, () => context.slots.register({ name, priority: -1000 },
+        props => h(DirectoryFlowDialog, { ...props, targetId }))));
+      disposers.push(context.slots.inject('conversation.hero.workspace', () => context.slots.register({
+        name: 'conversation.hero.workspace', priority: -1000,
+      }, props => h(DeviceHeroWorkspace, { ...props, currentTargetId: targetId }))));
+      return () => { for (const dispose of disposers) dispose(); };
+    }
+    function NewDeviceSession({ t, useWorkspaces }) {
+      const choice = React.useSyncExternalStore(choiceSubscribe, () => deviceChoice, () => deviceChoice);
+      const { snapshot } = useRemoteMachines(Sidebar.context);
+      const workspaces = useWorkspaces(value => value);
+      const flow = useDeviceProjects(choice.targetId, workspaces, snapshot);
+      const machines = remoteTargetsOf(snapshot).sort((a, b) => a.label.localeCompare(b.label));
       return h('section', { className: 't3-new-session' }, h('style', null, css),
         h('div', { className: 't3-new-card' },
           h('h1', null, t('newSession')),
           h('p', { className: 't3-new-hint' }, t('deviceHint')),
           h('div', { className: 't3-new-fields' },
             h('label', { className: 't3-new-field' }, t('remoteDeviceChip'),
-              h('select', { value: choice.targetId ?? '', disabled: busy, onChange: event => { pickDevice(event.target.value || null); setError(''); } },
-                h('option', { value: '' }, t('remoteDeviceThisMachine')),
-                ...machines.map(item => h('option', { key: item.targetId, value: item.targetId }, item.label + (item.status === 'ready' ? '' : ' · ' + t(remoteStatusKey(item.status))))))),
+              h('select', { value: choice.targetId ?? '', disabled: flow.busy || flow.adding, onChange: event => { pickDevice(event.target.value || null); flow.clearError(); } },
+                deviceOptions(machines, t))),
             h('label', { className: 't3-new-field' }, t('project'),
-              h('select', { key: choice.targetId ?? 'local', value: '', disabled: busy || !online || !projects.length, onChange: event => { void start(event.target.value); } },
-                h('option', { value: '' }, busy ? t('remoteDeviceStarting') : t('chooseProject')),
-                ...projects.map(project => h('option', { key: project.workspaceId, value: project.workspaceId }, `${project.title || pathLabel(project.path)} · ${project.path}`))))),
-          !online && h('p', { className: 't3-new-hint', role: 'status' }, t('remoteDeviceUnreachable')),
-          online && !projects.length && h('p', { className: 't3-new-hint' }, t(local ? 'localNoProjects' : 'remoteDeviceNoProjects')),
-          error && h('p', { className: 't3-new-hint', role: 'alert' }, error),
+              h('select', { value: '', disabled: flow.busy || !flow.online || !flow.projects.length, onChange: event => { if (event.target.value) void flow.start(event.target.value); } },
+                h('option', { value: '' }, flow.busy ? t('remoteDeviceStarting') : t('chooseProject')),
+                ...projectOptions(flow.projects)))),
+          !flow.online && h('p', { className: 't3-new-hint', role: 'status' }, t('remoteDeviceUnreachable')),
+          flow.online && !flow.projects.length && h('p', { className: 't3-new-hint' }, t(flow.local ? 'localNoProjects' : 'remoteDeviceNoProjects')),
+          flow.error && h('p', { className: 't3-new-hint', role: 'alert' }, flow.error),
           h('div', { className: 't3-new-actions' },
-            h('button', { type: 'button', className: 't3-btn', disabled: busy || !online, onClick: () => { void add(); } }, h(AddWorkspaceIcon), ' ', t('addWorkspace')))),
-        adding && machine && h(AddProjectDialog, { machines: [machine], hues: assignHues([machine]), t, close: () => { setAdding(false); refreshMirror(); } }));
+            h('button', { type: 'button', className: 't3-btn', disabled: flow.busy || !flow.online, onClick: () => { void flow.add(); } }, h(AddWorkspaceIcon), ' ', t('addWorkspace')))),
+        flow.adding && h(AddProjectDialog, { machines: [deviceForFolder(choice.targetId, snapshot, t)], t, close: flow.closeAdd }));
     }
 
     let renameTarget = null;
@@ -919,126 +1045,341 @@ window.__ModuleLoader__.load({
           h('div', { className: 't3-dialog-body', ref: body }, children)));
     }
 
-    /**
-     * The path-first project picker: one level at a time, breadcrumbs to jump, and a
-     * field that both filters the level and — when it holds an absolute path — jumps
-     * straight to it. The machine's own directoryPicker answers each level; the only
-     * caching is the supervisor's short-lived one.
-     */
-    function BrowserBody({ target, close, t }) {
-      const [level, setLevel] = React.useState(null);
-      const [listing, setListing] = React.useState(null);
-      const [draft, setDraft] = React.useState('');
-      const [showHidden, setShowHidden] = React.useState(false);
-      const [folder, setFolder] = React.useState('');
-      const [status, setStatus] = React.useState(null);
-      const request = React.useRef(null);
-      const busy = status?.kind === 'busy';
-      const load = async (path, refresh) => {
-        request.current?.abort();
-        const active = new AbortController();
-        request.current = active;
-        setStatus(previous => (previous?.kind === 'error' ? null : previous));
-        try {
-          const value = await remoteCall('t3-remote/browse', { targetId: target.targetId, ...(path ? { path } : {}), ...(refresh ? { refresh: true } : {}) }, active.signal);
-          if (active.signal.aborted) return;
-          setListing(value.listing ?? null);
-          setDraft('');
-        } catch (error) {
-          if (active.signal.aborted) return;
-          setStatus({ kind: 'error', text: error?.message ?? String(error) });
-        }
+    function folderOperations(targetId) {
+      if (targetId === null) return {
+        list: (path, signal) => remoteCall('t3-project-directory/list', path === undefined ? {} : { path }, signal),
+        mkdir: (path, name) => remoteCall('t3-project-directory/create', { path, name }),
+        add: path => Sidebar.context.workspaces.create({ path }),
       };
-      React.useEffect(() => {
-        void load(level, false);
-        return () => request.current?.abort();
-      }, [level]);
-      const jump = path => { setListing(null); setLevel(path); };
-      const filter = draft.startsWith('/') ? '' : draft.trim().toLowerCase();
-      const entries = (listing?.entries ?? []).filter(entry => (showHidden || !entry.hidden) && (!filter || entry.name.toLowerCase().includes(filter)));
-      const choose = async () => {
-        if (!listing || busy) return;
-        setStatus({ kind: 'busy' });
-        try {
-          requireRemoteReady(target.targetId);
-          await remoteCall('t3-remote/workspace-create', { targetId: target.targetId, path: listing.path });
+      return {
+        async list(path, signal, refresh) {
+          const { listing } = await remoteCall('t3-remote/browse', { targetId, ...(path ? { path } : {}), ...(refresh ? { refresh } : {}) }, signal);
+          return listing;
+        },
+        async mkdir(path, name) {
+          const result = await remoteCall('t3-remote/create-directory', { targetId, path, name });
+          return result.path;
+        },
+        async add(path) {
+          await remoteCall('t3-remote/workspace-create', { targetId, path });
           refreshMirror();
-          close();
-        } catch (error) {
-          setStatus({ kind: 'error', text: error?.message ?? String(error) });
-        }
+        },
       };
-      const createFolder = async () => {
-        const name = folder.trim();
-        if (!listing || !name || busy) return;
-        setStatus({ kind: 'busy' });
-        try {
-          requireRemoteReady(target.targetId);
-          const value = await remoteCall('t3-remote/create-directory', { targetId: target.targetId, path: listing.path, name });
-          setFolder('');
-          if (typeof value?.path === 'string') jump(value.path);
-          else await load(listing.path, true);
-        } catch (error) {
-          setStatus({ kind: 'error', text: error?.message ?? String(error) });
-        }
-      };
-      const go = () => { if (draft.startsWith('/')) jump(draft.trim()); };
-      return h(React.Fragment, null,
-        h('div', { className: 't3-browser-path' },
-          h('input', {
-            className: 't3-browser-input', type: 'text', value: draft, spellCheck: false,
-            'aria-label': t('remotePath'), placeholder: listing?.path ?? target.label,
-            onChange: event => setDraft(event.target.value),
-            onKeyDown: event => { if (event.key === 'Enter') { event.preventDefault(); go(); } },
-          }),
-          draft.startsWith('/') && h('button', { type: 'button', className: 't3-btn t3-browser-go', onClick: go }, t('remoteGo'))),
-        h('div', { className: 't3-crumbs' },
-          h('button', { type: 'button', className: 't3-crumb', onClick: () => jump(null) }, t('remoteHome')),
-          ...(listing?.crumbs ?? []).map(crumb => h('button', { key: crumb.path, type: 'button', className: 't3-crumb', title: crumb.path, onClick: () => jump(crumb.path) }, crumb.name))),
-        h('div', { className: 't3-browser-level' },
-          !listing && !status && h('div', { className: 't3-message' }, t('remoteLoading')),
-          listing && !entries.length && h('div', { className: 't3-message' }, t('remoteEmptyLevel')),
-          listing?.truncated && h('div', { className: 't3-message' }, t('remoteTruncated'))),
-        h('div', { className: 't3-browser-list' }, entries.map(entry => h('button', {
-          key: entry.path, type: 'button', className: 't3-browser-entry', 'data-hidden': entry.hidden,
-          title: entry.path, onClick: () => jump(entry.path),
-        }, entry.name))),
-        h('div', { className: 't3-browser-foot' },
-          h('label', { className: 't3-browser-hidden' },
-            h('input', { type: 'checkbox', checked: showHidden, onChange: event => setShowHidden(event.target.checked) }),
-            t('remoteShowHidden'))),
-        h('div', { className: 't3-browser-new' },
-          h('input', {
-            className: 't3-browser-input', type: 'text', value: folder, maxLength: 200,
-            'aria-label': t('remoteNewFolder'), placeholder: t('remoteNewFolder'), disabled: busy || !canManageDevice(target.targetId),
-            onChange: event => setFolder(event.target.value),
-            onKeyDown: event => { if (event.key === 'Enter') { event.preventDefault(); void createFolder(); } },
-          }),
-          h('button', { type: 'button', className: 't3-btn', disabled: !listing || !folder.trim() || busy || !canManageDevice(target.targetId), onClick: () => void createFolder() }, t('remoteCreate'))),
-        status?.kind === 'error' && h('div', { className: 't3-message', role: 'alert' }, status.text),
-        h('div', { className: 't3-dialog-actions' },
-          h('button', { type: 'button', className: 't3-btn', onClick: close }, t('remoteCancel')),
-          h('button', { type: 'button', className: 't3-btn t3-btn-primary', disabled: !listing || busy || !canManageDevice(target.targetId), onClick: () => void choose() }, busy ? t('remoteWorking') : t('remoteChoose'))));
     }
-
-    /**
-     * Adding a project to another machine, in one dialog: pick the machine, then walk
-     * its own filesystem. T3 Code's AddProjectToMachineDialog has the same shape — the
-     * machine is a choice inside the dialog, not a separate place you have to visit.
-     */
-    function AddProjectDialog({ machines, hues, close, t }) {
-      const [targetId, setTargetId] = React.useState(() => (machines.find(machine => machine.status === 'ready') ?? machines[0])?.targetId);
-      const target = machines.find(machine => machine.targetId === targetId) ?? machines[0];
-      if (!target) return null;
-      return h(Modal, { title: t('remoteAddProject'), close, t },
-        machines.length > 1 && h('div', { className: 't3-machine-pick', role: 'group', 'aria-label': t('remotePickMachine') },
-          machines.map(machine => h('button', {
-            key: machine.targetId, type: 'button', className: 't3-chip t3-hue-' + (hues.get(machine.targetId) ?? machineHue(machine.targetId)),
-            'data-current': machine.targetId === target.targetId, 'data-status': machine.status, disabled: machine.status !== 'ready',
-            onClick: () => setTargetId(machine.targetId),
-          }, h(MachineIcon, { kind: machine.kind ?? 'server', size: 12 }), machine.label))),
-        // A level belongs to one machine, so switching machines starts the browser over.
-        h(BrowserBody, { key: target.targetId, target, close, t }));
+    function FolderModal({ titleId, className = '', close, children, onKeyDown }) {
+      const dialog = React.useRef(null);
+      const backdropPress = React.useRef(false);
+      React.useLayoutEffect(() => {
+        const node = dialog.current;
+        node.showModal();
+        return () => node.close();
+      }, []);
+      return h('dialog', {
+        ref: dialog, className: 't3-folder-dialog ' + className, 'aria-labelledby': titleId,
+        onCancel: event => { event.preventDefault(); event.stopPropagation(); close(); },
+        onPointerDown: event => { backdropPress.current = event.target === event.currentTarget; },
+        onClick: event => { if (backdropPress.current && event.target === event.currentTarget) close(); },
+        onKeyDown,
+      }, children);
+    }
+    function FolderButton({ primary, action, children, ...props }) {
+      return h('button', { type: 'button', ...props, className: 't3-folder-button' + (action ? ' t3-folder-action' : ''), 'data-primary': primary || undefined }, children);
+    }
+    function FolderChevron() {
+      return h('svg', { width: 12, height: 12, viewBox: '0 0 12 12', fill: 'none', stroke: 'currentColor', 'aria-hidden': true }, h('path', { d: 'm4.5 2.5 3 3.5-3 3.5' }));
+    }
+    function pathEditorParts(draft, windows) {
+      const end = windows ? Math.max(draft.lastIndexOf('/'), draft.lastIndexOf('\\')) : draft.lastIndexOf('/');
+      const directory = draft.slice(0, end + 1);
+      const absolute = windows ? /^(?:[A-Za-z]:[\\/]|[\\/]{2}[^\\/]+[\\/]+[^\\/]+)/.test(directory) : directory.startsWith('/');
+      return absolute ? { directory, prefix: draft.slice(end + 1).toLowerCase() } : null;
+    }
+    function sameFolderPath(left, right, windows) {
+      if (!right) return false;
+      const normalize = path => (windows ? path.replaceAll('\\', '/').toLowerCase() : path).replace(/\/+$/, '');
+      return normalize(left) === normalize(right);
+    }
+    function FolderColumn({ listing, selected, showHidden, prefix, editing, onPick, disabled, t }) {
+      const matches = entry => (showHidden || !entry.hidden || prefix.startsWith('.')) && entry.name.toLowerCase().startsWith(prefix);
+      const narrow = Boolean(prefix) && listing.entries.some(matches);
+      const entries = listing.entries.filter(entry => entry.path === selected || (narrow ? matches(entry) : showHidden || !entry.hidden));
+      return h('div', { className: 't3-folder-column', 'aria-label': listing.path },
+        entries.length === 0 && h('div', { className: 't3-folder-status' }, t('remoteEmptyLevel')),
+        entries.map(entry => {
+          const active = entry.path === selected;
+          return h('button', {
+            key: entry.path, type: 'button', className: 't3-folder-row', disabled, title: entry.path,
+            'aria-pressed': active,
+            onMouseDown: editing ? event => { if (event.button === 0) event.preventDefault(); } : undefined,
+            onClick: () => onPick(entry.path, listing),
+          }, h(ProjectIcon, { open: active }), h('span', null, entry.name), h(FolderChevron));
+        }));
+    }
+    function NewFolderDialog({ path, create, close, t }) {
+      const titleId = React.useId();
+      const [name, setName] = React.useState('');
+      const [busy, setBusy] = React.useState(false);
+      const [error, setError] = React.useState('');
+      const request = React.useRef(false);
+      const submit = async event => {
+        event.preventDefault();
+        if (request.current || !name.trim()) return;
+        request.current = true;
+        setBusy(true);
+        setError('');
+        try { await create(name.trim()); }
+        catch (reason) { setError(reason?.message ?? String(reason)); }
+        finally { request.current = false; setBusy(false); }
+      };
+      return h(FolderModal, { titleId, className: 't3-folder-create', close: () => { if (!request.current) close(); } },
+        h('form', { onSubmit: submit },
+          h('h2', { id: titleId, className: 't3-folder-title' }, t('remoteNewFolder')),
+          h('span', { className: 't3-folder-status' }, path),
+          h('input', { className: 't3-folder-name', value: name, onChange: event => setName(event.target.value), autoFocus: true,
+            'aria-label': t('folderName'), placeholder: t('folderName'), maxLength: 200, disabled: busy }),
+          error && h('div', { className: 't3-folder-status', role: 'alert' }, error),
+          h('div', { className: 't3-folder-footer' },
+            h(FolderButton, { action: true, onClick: close, disabled: busy }, t('remoteCancel')),
+            h(FolderButton, { action: true, primary: true, type: 'submit', disabled: busy || !name.trim() }, t(busy ? 'remoteWorking' : 'remoteCreate')))));
+    }
+    function ProjectDirectoryDialog({ target, machines, onTarget, close, onPicked, busy: adopting = false, t }) {
+      const titleId = React.useId();
+      const [view, setView] = React.useState({ parent: null, selected: null, child: null });
+      const [draft, setDraft] = React.useState(null);
+      const [showHidden, setShowHidden] = React.useState(false);
+      const [newFolder, setNewFolder] = React.useState(false);
+      const [loading, setLoading] = React.useState(true);
+      const [saving, setSaving] = React.useState(false);
+      const [error, setError] = React.useState('');
+      const request = React.useRef(null);
+      const previewTimer = React.useRef(null);
+      const previewSuspended = React.useRef(false);
+      const committing = React.useRef(false);
+      const columns = React.useRef(null);
+      const breadcrumbs = React.useRef(null);
+      const editButton = React.useRef(null);
+      const pathInput = React.useRef(null);
+      const restoreEditFocus = React.useRef(false);
+      const focusPicked = React.useRef(false);
+      const { parent, selected, child, previewPath } = view;
+      const activeListing = child ?? parent;
+      const path = selected ?? parent?.path;
+      const windows = target.kind === 'windows' || /^[a-z]:[\\/]|^\\\\/i.test(activeListing?.home ?? draft ?? '');
+      const parts = draft === null ? null : pathEditorParts(draft, windows);
+      const matchesLevel = parts !== null && (parts.directory === previewPath || sameFolderPath(parts.directory, activeListing?.path, windows));
+      const prefix = matchesLevel ? parts.prefix : '';
+      const previewDirectory = matchesLevel ? undefined : parts?.directory;
+      const busy = saving || adopting;
+      const ready = Boolean(path) && !busy && !loading && draft === null;
+      const online = target.targetId === null || canManageDevice(target.targetId);
+      const { list, mkdir, add } = React.useMemo(() => folderOperations(target.targetId), [target.targetId]);
+      const failed = t('actionFailed');
+      const load = React.useCallback(async (path, parent, { refresh = false, preview = false, pick = false } = {}) => {
+        clearTimeout(previewTimer.current);
+        request.current?.abort();
+        const controller = new AbortController();
+        request.current = controller;
+        setLoading(true);
+        setError('');
+        if (pick) {
+          setView({ parent, selected: path, child: null });
+          setDraft(null);
+        }
+        try {
+          const listing = await list(path, controller.signal, refresh);
+          if (!listing || typeof listing.path !== 'string') throw new Error(failed);
+          if (controller.signal.aborted) return;
+          const crumbs = listing.crumbs ?? [];
+          const windowsPath = /^[a-z]:[\\/]|^\\\\/i.test(listing.home ?? listing.path);
+          const land = level => {
+            if (controller.signal.aborted) return;
+            const match = level?.entries.find(entry => sameFolderPath(entry.path, listing.path, windowsPath));
+            setView({ parent: match ? level : listing, selected: match?.path ?? null, child: match ? listing : null,
+              previewPath: preview ? path : undefined });
+          };
+          const ancestor = path && !sameFolderPath(listing.path, listing.home, windowsPath) ? crumbs.at(-2)?.path : undefined;
+          if (!parent && ancestor) {
+            const parentScan = list(ancestor, controller.signal).catch(() => null);
+            if (preview) parent = await parentScan;
+            else {
+              let timer;
+              const limit = new Promise(resolve => { timer = setTimeout(() => resolve(undefined), 200); });
+              parent = await Promise.race([parentScan, limit]);
+              clearTimeout(timer);
+              if (parent === undefined) void parentScan.then(level => { if (level) land(level); });
+            }
+          }
+          if (controller.signal.aborted) return;
+          land(parent);
+          if (!preview) {
+            const focused = document.activeElement;
+            restoreEditFocus.current = pathInput.current !== null && (focused === pathInput.current || columns.current?.contains(focused));
+            setDraft(null);
+          }
+        } catch (reason) {
+          if (!controller.signal.aborted && !preview) {
+            if (pick) setView({ parent, selected: null, child: null });
+            setError(reason?.message ?? String(reason));
+          }
+        } finally {
+          if (!controller.signal.aborted) setLoading(false);
+        }
+      }, [list, failed]);
+      React.useEffect(() => {
+        void load();
+        return () => { clearTimeout(previewTimer.current); request.current?.abort(); };
+      }, [target.targetId]);
+      React.useEffect(() => {
+        if (!online || !previewDirectory || previewSuspended.current) return;
+        // Only the directory part needs a scan. The final segment filters
+        // the matching pane locally, including hidden names after a dot.
+        const timer = setTimeout(() => { void load(previewDirectory, undefined, { preview: true }); }, 250);
+        previewTimer.current = timer;
+        return () => clearTimeout(timer);
+      }, [draft, previewDirectory, online, load]);
+      React.useLayoutEffect(() => {
+        if (draft !== null) return;
+        if (focusPicked.current) {
+          focusPicked.current = false;
+          columns.current?.querySelector('.t3-folder-row[aria-pressed="true"]')?.focus({ preventScroll: true });
+        } else if (restoreEditFocus.current) {
+          restoreEditFocus.current = false;
+          editButton.current?.focus({ preventScroll: true });
+        }
+      }, [draft]);
+      React.useLayoutEffect(() => {
+        if (columns.current) columns.current.scrollLeft = child ? columns.current.scrollWidth : 0;
+        if (breadcrumbs.current) breadcrumbs.current.scrollLeft = breadcrumbs.current.scrollWidth;
+      }, [view]);
+      const choose = async () => {
+        if (!ready || committing.current || !online) return;
+        committing.current = true;
+        if (onPicked) { onPicked(path); return; }
+        setSaving(true);
+        setError('');
+        try { await add(path); close(); }
+        catch (reason) { setError(reason?.message ?? String(reason)); }
+        finally { committing.current = false; setSaving(false); }
+      };
+      const create = async name => {
+        request.current?.abort();
+        const controller = new AbortController();
+        request.current = controller;
+        const { signal } = controller;
+        const directory = await mkdir(path, name);
+        if (signal.aborted) return;
+        const updated = directory ? await list(path, signal, true).catch(() => null) : null;
+        if (signal.aborted) return;
+        await load(directory || path, updated, { refresh: true });
+        setNewFolder(false);
+      };
+      const crumbs = activeListing?.crumbs ?? [];
+      const homeIndex = crumbs.findIndex(crumb => crumb.path === activeListing.home);
+      const cancelScan = () => { clearTimeout(previewTimer.current); request.current?.abort(); setLoading(false); };
+      const pickFolder = (entry, listing) => {
+        focusPicked.current = draft !== null;
+        void load(entry, listing, { pick: true });
+      };
+      const editPath = () => {
+        cancelScan();
+        setError('');
+        previewSuspended.current = false;
+        if (selected && !child) setView({ parent, selected: null, child: null });
+        const separator = windows ? '\\' : '/';
+        const terminates = path?.endsWith(separator) || windows && path?.endsWith('/');
+        setDraft(path && !terminates ? path + separator : path ?? '');
+      };
+      return h(FolderModal, {
+        titleId, close: () => { if (!committing.current && !adopting) close(); },
+        onKeyDown: event => {
+          if (event.key === 'Escape' && !event.nativeEvent.isComposing && draft !== null) {
+            event.preventDefault();
+            event.stopPropagation();
+            cancelScan();
+            restoreEditFocus.current = true;
+            setError('');
+            setDraft(null);
+            if (!parent && online) void load();
+          }
+        },
+      },
+        h('style', null, css),
+        h('header', { className: 't3-folder-head' },
+          h('div', { className: 't3-folder-heading' },
+            h('h2', { id: titleId, className: 't3-folder-title' }, t('projectFolderTitle')),
+            machines?.length > 1 ? h('select', {
+              value: target.targetId ?? '', 'aria-label': t('remoteDeviceChip'), disabled: busy || newFolder,
+              onChange: event => onTarget(event.target.value || null),
+            }, machines.map(machine => h('option', { key: machine.targetId ?? '', value: machine.targetId ?? '' }, deviceLabel(machine, t))))
+              : target.targetId !== null && h('span', { className: 't3-folder-machine' }, h(MachineIcon, { kind: target.kind }), target.label)),
+          h('div', { className: 't3-folder-path' },
+            draft !== null ? h('input', {
+              value: draft, ref: pathInput, spellCheck: false, autoComplete: 'off', autoFocus: true, 'aria-label': t('remotePath'), disabled: busy || !online,
+              onChange: event => {
+                cancelScan();
+                previewSuspended.current = false;
+                setError('');
+                setDraft(event.target.value);
+              },
+              onKeyDown: event => {
+                if (event.key !== 'Enter' || event.nativeEvent.isComposing || !draft.trim()) return;
+                event.preventDefault();
+                previewSuspended.current = true;
+                void load(draft);
+              },
+            }) : h(React.Fragment, null,
+              h('nav', { className: 't3-folder-crumbs', ref: breadcrumbs, 'aria-label': t('remotePath') },
+                (homeIndex >= 0 || crumbs.length === 0) && h('button', { type: 'button', disabled: busy || !online,
+                  'aria-current': activeListing?.home === path || undefined, onClick: () => void load() }, t('remoteHome')),
+                crumbs.slice(homeIndex + 1).map((crumb, index) => h(React.Fragment, { key: crumb.path },
+                  (homeIndex >= 0 || index > 0) && h(FolderChevron),
+                  h('button', { type: 'button', disabled: busy || !online, title: crumb.path, 'aria-current': crumb.path === path || undefined,
+                    onClick: () => void load(crumb.path) }, crumb.name)))),
+              h('button', { ref: editButton, className: 't3-folder-edit', type: 'button', disabled: busy || !online,
+                'aria-label': t('remotePath'), title: t('remotePath'), onClick: editPath },
+                h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', 'aria-hidden': true }, h('path', { d: 'm3 10 7.8-7.8 3 3L6 13H3zM9.5 3.5l3 3' })))))),
+        h('div', { className: 't3-folder-columns', ref: columns, 'aria-busy': loading },
+          parent && h(FolderColumn, { listing: parent, selected, showHidden, prefix: child ? '' : prefix, editing: draft !== null, onPick: pickFolder, disabled: busy || !online, t }),
+          child && h(FolderColumn, { listing: child, showHidden, prefix, editing: draft !== null, onPick: pickFolder, disabled: busy || !online, t })),
+        (error || !online) && h('div', { className: 't3-folder-status', role: 'alert' }, !online ? t('remoteDeviceUnreachable') : error),
+        loading && h('div', { className: 't3-folder-status', role: 'status' }, t('remoteLoading')),
+        !loading && (parent?.truncated || child?.truncated) && h('div', { className: 't3-folder-status', role: 'status' }, t('remoteTruncated')),
+        h('footer', { className: 't3-folder-footer' },
+          h(FolderButton, { disabled: !ready || !online, onClick: () => setNewFolder(true) }, h(PlusIcon), t('remoteNewFolder')),
+          h('button', { type: 'button', className: 't3-folder-hidden', 'aria-pressed': showHidden,
+            onMouseDown: event => { if (draft !== null && event.button === 0) event.preventDefault(); },
+            onClick: () => setShowHidden(value => !value),
+          }, t('remoteShowHidden'), showHidden && ' ✓'),
+          h('span', { className: 't3-folder-gap' }),
+          h(FolderButton, { action: true, onClick: close, disabled: busy }, t('remoteCancel')),
+          h(FolderButton, { action: true, primary: true, disabled: !ready || !online, onClick: () => void choose() }, t(busy ? 'remoteWorking' : 'remoteChoose'))),
+        newFolder && h(NewFolderDialog, { path, create, close: () => setNewFolder(false), t }));
+    }
+    function AddProjectDialog({ machines, initialTargetId, close, t, onPicked, busy }) {
+      const [targetId, setTargetId] = React.useState(() =>
+        (machines.find(machine => machine.targetId === initialTargetId)
+          ?? machines.find(machine => machine.status === 'ready') ?? machines[0])?.targetId);
+      // Keep the selected device when it disconnects. An existing selection
+      // must never start browsing or writing on another machine implicitly.
+      const target = machines.find(machine => machine.targetId === targetId);
+      const lastTarget = React.useRef(target);
+      if (target) lastTarget.current = target;
+      if (!lastTarget.current) return null;
+      const device = target ?? { ...lastTarget.current, status: 'down' };
+      return createPortal(h(ProjectDirectoryDialog, { key: targetId ?? 'local', target: device,
+        machines: target ? machines : [device, ...machines], onTarget: setTargetId, close, onPicked, busy, t }), document.body);
+    }
+    function DirectoryFlowDialog({ open, busy, onPicked, onCancel, targetId }) {
+      const context = Sidebar.context;
+      React.useSyncExternalStore(listener => context.locale.subscribe(listener), () => context.locale.getSnapshot());
+      const { snapshot } = useRemoteMachines(context);
+      const t = context.locale.bind(NS);
+      if (!open) return null;
+      return h(AddProjectDialog, { machines: [deviceForFolder(targetId, snapshot, t)], close: onCancel, onPicked, busy, t });
+    }
+    function deviceForFolder(targetId, snapshot, t) {
+      if (targetId === null) return { targetId, label: t('remoteDeviceThisMachine'), status: 'ready' };
+      return snapshot?.targets?.[targetId] ?? { targetId, label: targetId, status: 'down' };
     }
 
     function Sidebar({
@@ -1047,6 +1388,7 @@ window.__ModuleLoader__.load({
     }) {
       const { getTriggerProps } = useContextMenu();
       const canStartSession = useRemoteAccess('session/create');
+      const canCreateLocal = useRemoteAccess('workspace/create');
       const activePanelId = usePanelInfo(info => info.activePanelId);
       const panelActive = activePanelId !== null;
       const sessions = useSessions(s => s);
@@ -1390,9 +1732,10 @@ window.__ModuleLoader__.load({
                 else { deactivateDevice(); context.uiWorkspace.startSession(); }
               }, 'openFailed'),
             }, h(PlusIcon)),
-            machines.length > 0 && h('button', {
-              type: 'button', className: 't3-header-action', 'aria-label': t('remoteAddProject'), title: t('remoteAddProject'),
-              disabled: !machines.some(machine => canManageDevice(machine.targetId)), onClick: () => setDialog({ kind: 'add' }),
+            (canCreateLocal || machines.length > 0) && h('button', {
+              type: 'button', className: 't3-header-action', 'aria-label': t('addWorkspace'), title: t('addWorkspace'),
+              disabled: !canCreateLocal && !machines.some(machine => canManageDevice(machine.targetId)),
+              onClick: () => setDialog({ kind: 'add' }),
             }, h(AddWorkspaceIcon)))),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
@@ -1492,7 +1835,10 @@ window.__ModuleLoader__.load({
               onClick: () => runUi(() => { context.uiWorkspace.openSession(id); deactivateDevice(); }, 'openFailed'),
             }, topLine, titleLine());
           })))))),
-        dialog?.kind === 'add' && h(AddProjectDialog, { machines: machines.filter(machine => canManageDevice(machine.targetId)), hues: assignHues(machines), t, close: () => setDialog(null) }));
+        dialog?.kind === 'add' && h(AddProjectDialog, {
+          machines: [...(canCreateLocal ? [deviceForFolder(null, null, t)] : []), ...machines],
+          initialTargetId: deviceRuntime.active?.targetId, t, close: () => setDialog(null),
+        }));
     }
     return {
       inject: ['slots', 'locale', 'connection', 'uiWorkspace', 'contextMenus', 'workspaces', 'loader', 'modules', 'layout', 'sessions', 'uiSession', 'shortcuts'],
@@ -1503,7 +1849,17 @@ window.__ModuleLoader__.load({
         ctx.slots.inject('contextMenu.icon', function* () {
           yield ctx.slots.register({ name: 'contextMenu.icon', key: NS + '.settle' }, SettledIcon);
           yield ctx.slots.register({ name: 'contextMenu.icon', key: NS + '.unsettle' }, () => h(SettledIcon, { restored: true }));
+          yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + 'project' }, ProjectIcon);
+          yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + 'add' }, PlusIcon);
+          for (const kind of ['server', 'macos', 'linux', 'windows', 'wsl']) {
+            yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + kind }, () => h(MachineIcon, { kind, size: 16 }));
+            yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + kind + '.selected' }, () => h(SelectedPickerIcon, null, h(MachineIcon, { kind, size: 16 })));
+          }
         });
+        ctx.effect(() => ctx.contextMenus.register({
+          id: 't3-sidebar.hero-picker', target: HERO_MENU_KIND, order: 0,
+          resolve: ({ id }) => heroMenus.get(id)?.current ?? [],
+        }), 't3-session-sidebar: hero picker menu');
         ctx.effect(() => ctx.contextMenus.register({
           id: 't3-sidebar.settled', target: 'session', order: 150,
           observe: () => [ctx.locale, ctx.workspaces.list],
@@ -1601,9 +1957,7 @@ window.__ModuleLoader__.load({
           yield ctx.slots.register({ name: 'shell.overlay', id: 't3-device-runtime-owner' }, RuntimeConnections);
           yield ctx.slots.register({ name: 'shell.overlay', id: 't3-device-rename', locale: NS }, RemoteRenameOverlay);
         }), 't3-session-sidebar: device overlays');
-        ctx.effect(() => ctx.slots.inject('conversation.hero.frame', () => ctx.slots.register({
-          name: 'conversation.hero.frame', id: 't3-device-before-project', order: -100, locale: NS,
-        }, DeviceHeroFrame)), 't3-session-sidebar: device before project');
+        ctx.effect(() => installDeviceWorkspacePicker(ctx), 't3-session-sidebar: device before project');
         ctx.effect(() => async () => {
           runtimeClosed = true;
           navigation++;
