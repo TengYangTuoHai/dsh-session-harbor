@@ -58,13 +58,20 @@ jobs:
           mkdir -p dist
           npm pack ./dsh-session-harbor --ignore-scripts --pack-destination dist
           echo "ARCHIVE=./dist/dsh-session-harbor-$version.tgz" >> "$GITHUB_ENV"
+      - name: Save the release archive
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: session-harbor-${{ env.RELEASE_TAG }}
+          path: ${{ env.ARCHIVE }}
+          if-no-files-found: error
+          compression-level: 0
       - name: Publish the archive to npm
         run: |
           version=${RELEASE_TAG#v}
           published=$(curl --fail --silent --show-error --max-time 30 https://registry.npmjs.org/dsh-session-harbor |
             jq --arg version "$version" -r '.versions[$version].dist.integrity // empty')
           if [[ -z "$published" ]]; then
-            npm publish "$ARCHIVE" --access public --ignore-scripts
+            npm publish "$ARCHIVE" --access public --ignore-scripts --loglevel=verbose
           else
             integrity="sha512-$(openssl dgst -sha512 -binary "$ARCHIVE" | openssl base64 -A)"
             if [[ "$published" != "$integrity" ]]; then
