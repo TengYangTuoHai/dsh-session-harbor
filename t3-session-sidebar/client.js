@@ -19,7 +19,29 @@ window.__ModuleLoader__.load({
         expand: 'Open sidebar',
         menuDone: 'Session marked as settled.', menuRestored: 'Session reactivated.', more: 'Session actions',
         timeNow: 'now', timeMinutes: '{n}min', timeHours: '{n}h', timeDays: '{n}d', timeMonths: '{n}mo', timeYears: '{n}y',
-        statusOngoing: 'Working', statusWarning: 'Waiting for you', statusDone: 'Finished'
+        statusOngoing: 'Working', statusWarning: 'Waiting for you', statusDone: 'Finished',
+        remoteOn: 'On {name}', remotePickMachine: 'Machine', remoteError: 'Machine mirror unavailable. Retrying…', remoteUnknown: 'Unknown state',
+        remoteOfflineNote: '{name} is not answering — showing the last sync',
+        remoteReady: 'Connected', remoteConnecting: 'Connecting', remoteStale: 'Out of date', remoteDown: 'Offline', remoteIncompatible: 'Session placement version mismatch',
+
+        remoteAddProject: 'Add project on another machine', remoteDeleteProject: 'Delete project',
+        remoteNewSession: 'New session in this project',
+        remoteDeviceChip: 'Device', remoteDeviceThisMachine: 'This machine', remoteDeviceBack: 'All devices',
+        remoteDeviceNoProjects: 'No project on that machine yet', remoteDeviceStarting: 'Starting…',
+        remoteDeviceFailed: 'Could not start that session', remoteDeviceUnreachable: 'That machine is not reachable',
+        remoteDeviceCreated: 'Session started on {name}',
+        newSession: 'New session', chooseDeviceProject: 'Choose a device and project', project: 'Project', chooseProject: 'Choose a project',
+        deviceHint: 'Choose where this session runs, then select a project on that device.',
+        remoteOpening: 'Opening session…', remoteOpen: 'Open session', retry: 'Retry',
+        remoteDisconnected: 'The device disconnected. The session will reopen when it reconnects.',
+        remoteStreamReconnecting: 'Reconnecting to the session…',
+        rename: 'Rename', renameTitle: 'Session name', save: 'Save', fork: 'Fork session', archive: 'Archive', copyId: 'Copy session ID',
+        copyDone: 'Session ID copied.', close: 'Close', localNoProjects: 'Add a project to start a session.' ,
+        remoteChoose: 'Use this folder', remoteGo: 'Go', remotePath: 'Path', remoteHome: 'Home',
+        remoteShowHidden: 'Show hidden folders', remoteTruncated: 'Too many folders to list here — filter or type a path.', remoteEmptyLevel: 'No folders here', remoteLoading: 'Loading…',
+        remoteNewFolder: 'New folder', remoteCreate: 'Create', remoteCancel: 'Cancel', remoteWorking: 'Working…',
+        remoteDeleteTitle: 'Delete project', remoteDeleteBody: 'This cannot be undone. The folder itself stays on the machine.',
+        remoteDeleteMachine: 'Machine', remoteDeletePath: 'Folder', remoteDeleteSessions: 'Sessions', remoteDeleteCount: '{n}', remoteDeleteConfirm: 'Delete project'
       },
       ['z' + 'h']: {
         enable: '切换至 T3 侧栏', native: '切换至原生侧栏', nativeShort: '切换至原生', t3Short: '切换至 T3',
@@ -32,18 +54,37 @@ window.__ModuleLoader__.load({
         expand: '展开侧边栏',
         menuDone: '会话已标记为完成。', menuRestored: '会话已重新激活。', more: '会话操作',
         timeNow: '刚刚', timeMinutes: '{n}分钟', timeHours: '{n}小时', timeDays: '{n}天', timeMonths: '{n}个月', timeYears: '{n}年',
-        statusOngoing: '工作中', statusWarning: '等待你操作', statusDone: '已完成'
+        statusOngoing: '工作中', statusWarning: '等待你操作', statusDone: '已完成',
+        remoteOn: '在 {name} 上', remotePickMachine: '机器', remoteError: '无法同步远程机器，正在重试…', remoteUnknown: '状态未知',
+        remoteOfflineNote: '{name} 未响应，显示最后一次同步',
+        remoteReady: '已连接', remoteConnecting: '连接中', remoteStale: '数据已过期', remoteDown: '离线', remoteIncompatible: '会话分组版本不匹配',
+
+        remoteAddProject: '在其他机器上添加项目', remoteDeleteProject: '删除项目',
+        remoteNewSession: '在这个项目里新建会话',
+        remoteDeviceChip: '设备', remoteDeviceThisMachine: '本机', remoteDeviceBack: '全部设备',
+        remoteDeviceNoProjects: '那台机器上还没有项目', remoteDeviceStarting: '正在新建…',
+        remoteDeviceFailed: '没能在那个项目里新建会话', remoteDeviceUnreachable: '那台机器现在连不上',
+        remoteDeviceCreated: '已在 {name} 上新建会话',
+        newSession: '新会话', chooseDeviceProject: '选择设备和项目', project: '项目', chooseProject: '选择项目',
+        deviceHint: '先选择会话运行的设备，再选择该设备上的项目。',
+        remoteOpening: '正在打开会话…', remoteOpen: '打开会话', retry: '重试',
+        remoteDisconnected: '设备已断开，重新连接后将打开此会话。',
+        remoteStreamReconnecting: '正在重新连接会话…',
+        rename: '重命名', renameTitle: '会话名称', save: '保存', fork: '分叉会话', archive: '归档', copyId: '复制会话 ID',
+        copyDone: '已复制会话 ID。', close: '关闭', localNoProjects: '添加项目后即可开始会话。',
+        remoteChoose: '选择此目录', remoteGo: '转到', remotePath: '路径', remoteHome: '主目录',
+        remoteShowHidden: '显示隐藏文件夹', remoteTruncated: '该层目录过多，请用输入框过滤或直接输入路径。', remoteEmptyLevel: '这里没有子目录', remoteLoading: '正在加载…',
+        remoteNewFolder: '新建文件夹', remoteCreate: '创建', remoteCancel: '取消', remoteWorking: '处理中…',
+        remoteDeleteTitle: '删除项目', remoteDeleteBody: '此操作不可撤销。机器上的目录本身不会被删除。',
+        remoteDeleteMachine: '机器', remoteDeletePath: '目录', remoteDeleteSessions: '会话数', remoteDeleteCount: '{n}', remoteDeleteConfirm: '删除项目'
       }
     };
     const css = `
       .t3-sidebar{display:flex;flex-direction:column;min-height:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px}
-      /* The shipped shell (0.2.2) seats this slot in a max-content grid row, so the
-         hole is content-sized and flex:1 has nothing to fill. The component walks
-         up to the host's scroll area, subtracts whatever the shell seats above us,
-         and hands the remainder to --t3-fill. min/max, not height: flex-basis wins
-         over height on a flex item. With --t3-fill unset (a shell that scrolls
-         elsewhere) the flex sizing above stands. */
+      /* The new shell gives the section a viewport-sized container. The older
+         shell uses the measured space below its navigation. */
       .t3-sidebar{min-height:var(--t3-fill,0px);max-height:var(--t3-fill,none)}
+      .t3-sidebar[data-scroll-handoff=true]{flex:none;height:100cqh}
       /* Section header, measured off the native browser's (ui-workspace
          WorkspaceBrowser.module.css): a 36px row holding the section title, the
          search control parked at one 28px button, and nothing else. Expanding
@@ -74,11 +115,15 @@ window.__ModuleLoader__.load({
       .t3-header-actions[data-hidden=true]{max-width:0;opacity:0;transform:translateX(4px);visibility:hidden;pointer-events:none;transition-delay:0s,0s,0s,180ms}
       .t3-header-action{flex:none;display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;border-radius:50%;corner-shape:round;padding:0;background:transparent;cursor:pointer;color:var(--dsw-alias-label-secondary)}
       .t3-header-action:hover{background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-header-action:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
+      .t3-header-action:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:-2px}
       .t3-btn{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:5px;padding:5px}
       .t3-btn:hover,.t3-btn:focus-visible{background:var(--dsw-alias-bg-layer-2)}
       .t3-btn:disabled{opacity:.45;cursor:default}
       .t3-scroll{display:flex;flex-direction:column;flex:1 1 auto;overflow:auto;min-height:0;padding:0 6px 10px}
+      .t3-sidebar[data-scroll-handoff=true] .t3-scroll{scrollbar-gutter:stable}
+      @container scroll-state(scrollable: bottom){
+        .t3-sidebar[data-scroll-handoff=true] .t3-scroll{overflow-y:hidden}
+      }
       .t3-group{flex:none;margin-top:7px}
       /* T3 hangs the Working and Settled shelves off the foot of the list: the
          first shelf header takes the free space above it, so the gap opens under
@@ -140,6 +185,86 @@ window.__ModuleLoader__.load({
       .t3-footer svg{flex:none}
       .t3-footer[data-wide=false]{flex:none;width:32px;justify-content:center;padding:0}
       .t3-footer-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      /* A session on another machine is drawn by the same rules as a local one; the only
+         addition is the badge that names whose machine it lives on. */
+      .t3-machine-badge{display:inline-flex;flex:none;align-items:center}
+      /* Identity hue, blended toward the surrounding text colour so it keeps its contrast in
+         both themes. A machine that cannot be used gives up its hue to grey. */
+      .t3-hue-0{color:hsl(210 62% 58%);color:color-mix(in oklab, hsl(210 62% 58%) 72%, currentColor)}
+      .t3-hue-1{color:hsl(150 45% 50%);color:color-mix(in oklab, hsl(150 45% 50%) 72%, currentColor)}
+      .t3-hue-2{color:hsl(22 70% 58%);color:color-mix(in oklab, hsl(22 70% 58%) 72%, currentColor)}
+      .t3-hue-3{color:hsl(272 55% 62%);color:color-mix(in oklab, hsl(272 55% 62%) 72%, currentColor)}
+      .t3-hue-4{color:hsl(330 60% 58%);color:color-mix(in oklab, hsl(330 60% 58%) 72%, currentColor)}
+      .t3-hue-5{color:hsl(190 55% 50%);color:color-mix(in oklab, hsl(190 55% 50%) 72%, currentColor)}
+      .t3-machine-badge[data-status=down],.t3-machine-badge[data-status=incompatible]{color:var(--dsw-alias-label-caption);opacity:.7}
+      .t3-machine-badge[data-status=connecting],.t3-machine-badge[data-status=stale]{opacity:.7}
+      .t3-row[data-open-disabled=true]{cursor:default}
+      .t3-device-before-project{display:flex;justify-content:center;gap:8px;padding:12px;flex:none}
+      .t3-native-portals{position:fixed;inset:0;z-index:100;pointer-events:none}.t3-native-portals>*{pointer-events:auto}
+      .t3-device-main,.t3-device-main-content,.t3-native-region,.t3-native-body,.t3-native-conversation{display:flex;flex:1;min-height:0;min-width:0;overflow:hidden}
+      .t3-device-main,.t3-device-main-content,.t3-native-region,.t3-native-conversation{flex-direction:column}
+      .t3-native-body{flex-direction:row}
+      .t3-native-right{display:flex;flex-direction:column;flex:none;min-width:0;min-height:0;overflow:hidden}
+      .t3-device-reconnecting{flex:none;padding:8px 16px;color:var(--dsw-alias-label-secondary);font-size:13px}
+      .t3-new-session{display:flex;flex:1;min-height:0;overflow:auto;flex-direction:column;justify-content:center;align-items:center;padding:24px;color:var(--dsw-alias-label-primary)}
+      .t3-new-card{display:flex;flex-direction:column;gap:18px;width:min(640px,100%)}
+      .t3-new-card h1{font-size:20px;line-height:1.4;font-weight:600;margin:0}
+      .t3-new-hint{margin:0;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-secondary)}
+      .t3-new-fields{display:flex;gap:12px;flex-wrap:wrap}
+      .t3-new-field{display:flex;flex-direction:column;gap:7px;flex:1;min-width:180px;font-size:12px;color:var(--dsw-alias-label-secondary)}
+      .t3-new-field select{height:36px;max-width:100%;padding:0 10px;border:1px solid var(--dsw-alias-border-l4);border-radius:8px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}
+      .t3-new-field select:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
+      .t3-new-actions{display:flex;align-items:center;gap:10px}
+      .t3-device-error{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:24px;font-size:13px;color:var(--dsw-alias-label-secondary)}
+      .t3-device-error p{margin:0}
+      .t3-rename-form{display:flex;flex-direction:column;gap:12px}
+      .t3-machine-pick{display:flex;flex-wrap:wrap;gap:6px;flex:none}
+      .t3-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--dsw-alias-border-l4);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;cursor:pointer}
+      .t3-chip svg{flex:none}
+      .t3-chip[data-current=true]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
+      .t3-chip[data-status=down]{opacity:.55}
+      .t3-device{position:relative;display:inline-flex;flex:none}
+      .t3-device-chip{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border:1px solid var(--dsw-alias-border-l4);border-radius:999px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:12px;cursor:pointer}
+      .t3-device-chip[data-open=true]{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
+      .t3-device-caret{font-size:10px;opacity:.7}
+      .t3-device-menu{position:absolute;z-index:30;top:calc(100% + 6px);left:0;min-width:230px;max-height:280px;overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px;border:1px solid var(--dsw-alias-border-l4);border-radius:10px;background:var(--dsw-alias-bg-elevated,var(--dsw-alias-bg-primary));box-shadow:0 8px 24px rgba(0,0,0,.28)}
+      .t3-device-item{display:flex;align-items:center;gap:8px;text-align:left;padding:6px 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:13px;cursor:pointer;overflow:hidden;white-space:nowrap}
+      .t3-device-item:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-device-item:disabled{opacity:.55;cursor:default}
+      .t3-device-item:disabled:hover{background:transparent}
+      .t3-device-item[data-back=true]{color:var(--dsw-alias-label-secondary)}
+      .t3-device-label{overflow:hidden;text-overflow:ellipsis}
+      .t3-device-busy{margin-left:auto;font-size:11px;color:var(--dsw-alias-label-tertiary)}
+      .t3-device-note{padding:6px 8px;font-size:12px;color:var(--dsw-alias-label-tertiary)}
+      /* The two writes this feature offers sit behind dialogs of our own: the host's
+         approval dialog carries agent-approval semantics, which choosing a folder has
+         nothing to do with. */
+      .t3-modal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.45)}
+      .t3-dialog{display:flex;flex-direction:column;gap:10px;box-sizing:border-box;width:min(460px,100%);max-height:min(560px,92vh);padding:12px 14px;border:1px solid var(--dsw-alias-border-l4);border-radius:12px;background:var(--dsw-alias-bg-layer-2);box-shadow:0 18px 48px rgba(0,0,0,.35)}
+      .t3-dialog-head{display:flex;align-items:center;gap:8px;flex:none}
+      .t3-dialog-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600}
+      .t3-dialog-body{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto}
+      .t3-dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex:none}
+      .t3-dialog .t3-btn{padding:5px 10px;border:1px solid var(--dsw-alias-border-l4);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:12px;cursor:pointer}
+      .t3-dialog .t3-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-dialog .t3-btn:disabled{opacity:.5;cursor:default}
+      .t3-btn-primary{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
+      .t3-btn-danger{border-color:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-state-warn-primary)}
+      .t3-browser-path{display:flex;gap:6px;flex:none}
+      .t3-browser-input{flex:1;min-width:0;padding:5px 8px;border:1px solid var(--dsw-alias-border-l4);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:12px}
+      .t3-crumbs{display:flex;flex-wrap:wrap;gap:2px;font-size:11px;flex:none}
+      .t3-crumb{padding:2px 6px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);font-size:11px;cursor:pointer}
+      .t3-crumb:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-browser-list{display:flex;flex-direction:column;gap:1px;min-height:110px;max-height:240px;overflow:auto}
+      .t3-browser-entry{text-align:left;padding:5px 8px;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:13px;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+      .t3-browser-entry:hover{background:var(--dsw-alias-interactive-bg-hover)}
+      .t3-browser-entry[data-hidden=true]{color:var(--dsw-alias-label-tertiary)}
+      .t3-browser-foot,.t3-browser-new{display:flex;align-items:center;gap:8px;flex:none}
+      .t3-browser-hidden{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:var(--dsw-alias-label-secondary)}
+      .t3-confirm-body{font-size:12px;color:var(--dsw-alias-label-secondary)}
+      .t3-confirm-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;margin:0;font-size:12px}
+      .t3-confirm-facts dt{color:var(--dsw-alias-label-tertiary)}
+      .t3-confirm-facts dd{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary)}
     `;
     // The header's glyphs are the host's own artwork (ui-primitives
     // IconSearchOutline, IconCloseFill, IconSlidersTwoOutline and
@@ -229,18 +354,725 @@ window.__ModuleLoader__.load({
       return now;
     }
     function unwrap(result) {
-      if (!result || result.ok !== true) throw new Error(result?.error?.message || 'RPC failed');
+      if (!result || result.ok !== true) throw Object.assign(new Error(result?.error?.message || 'RPC failed'), { code: result?.error?.code });
       return result.value;
+    }
+    function validRemoteSnapshot(value) {
+      return !!value && typeof value.epoch === 'string' && Number.isSafeInteger(value.revision) && value.revision >= 0
+        && ['targets', 'workspaces', 'sessions'].every(key => value[key] && typeof value[key] === 'object' && !Array.isArray(value[key]));
     }
     function validSnapshot(value) {
       return value && typeof value.epoch === 'string' && Number.isSafeInteger(value.revision) && value.revision >= 0 && value.placements && typeof value.placements === 'object' && !Array.isArray(value.placements);
     }
-    function Sidebar({ wide, expandSidebar, useSessions, useSessionStatus, useWorkspaces, usePanelInfo, useContextMenu, renderFactorySlot, t }) {
+    /**
+     * The mirror of every machine reachable through the ssh plugin, kept fresh by the
+     * same long poll the local placements use. Without that plugin the mirror simply
+     * stays empty, so the sidebar never blocks on a machine that is not there.
+     */
+    function useRemoteMachines(context) {
+      const state = React.useSyncExternalStore(
+        listener => { mirrorListeners.add(listener); return () => mirrorListeners.delete(listener); },
+        () => mirrorState,
+        () => mirrorState,
+      );
+      React.useEffect(() => {
+        mirrorRefs += 1;
+        if (mirrorRefs === 1) startMirror(context);
+        return () => {
+          mirrorRefs -= 1;
+          if (mirrorRefs === 0) stopMirror();
+        };
+      }, [context]);
+      return state;
+    }
+
+    /**
+     * The mirror is read by more than one seat now — the sidebar shelves and the
+     * new-session device chip — and each of them long-polls the same door. One loop
+     * per page, reference counted, so two seats never hold two connections open.
+     */
+    let mirrorState = { snapshot: null, error: false };
+    const mirrorListeners = new Set();
+    let mirrorRefs = 0;
+    let mirrorGeneration = 0;
+    let mirrorTimer = null;
+    let mirrorRequest = null;
+    function publishMirror(next) {
+      if (next.snapshot === mirrorState.snapshot && next.error === mirrorState.error) return;
+      mirrorState = next;
+      for (const listener of [...mirrorListeners]) listener();
+    }
+    function stopMirror() {
+      mirrorGeneration += 1;
+      clearTimeout(mirrorTimer);
+      mirrorTimer = null;
+      mirrorRequest?.abort();
+      mirrorRequest = null;
+    }
+    function startMirror(context) {
+      const generation = ++mirrorGeneration;
+      let cursor = null;
+      const step = async () => {
+        if (generation !== mirrorGeneration) return;
+        const active = new AbortController();
+        mirrorRequest = active;
+        try {
+          const value = unwrap(await context.connection.rpc.call('/api', 't3-remote/snapshot', cursor || {}, active.signal));
+          if (!validRemoteSnapshot(value)) throw new Error('Invalid remote snapshot');
+          if (generation !== mirrorGeneration) return;
+          cursor = { epoch: value.epoch, revision: value.revision };
+          publishMirror({ snapshot: value, error: false });
+          mirrorTimer = setTimeout(step, 500);
+        } catch {
+          if (generation !== mirrorGeneration) return;
+          if (!active.signal.aborted) publishMirror({ ...mirrorState, error: true });
+          cursor = null;
+          mirrorTimer = setTimeout(step, active.signal.aborted ? 0 : 5000);
+        }
+      };
+      step();
+    }
+
+    // A mirror written by an older or newer supervisor must not take the sidebar down
+    // with it, so an unrecognised status is named rather than thrown.
+    const REMOTE_STATUSES = new Set(['connecting', 'ready', 'stale', 'down', 'incompatible']);
+    const remoteStatusKey = status => REMOTE_STATUSES.has(status)
+      ? 'remote' + status[0].toUpperCase() + status.slice(1)
+      : 'remoteUnknown';
+
+    // One glyph for every machine means two machines look identical until you hover, so
+    // each one also carries a stable identity hue, derived from its target id: the same
+    // colour in every list, and it survives a machine coming and going.
+    const MACHINE_HUE_COUNT = 6;
+    function machineHue(targetId) {
+      let hash = 2166136261;
+      for (const char of String(targetId)) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+      return hash % MACHINE_HUE_COUNT;
+    }
+
+    /**
+     * A hue is only an identity signal if two machines do not share one, so a collision
+     * walks to the next free hue. With at most six machines everyone stays distinct, and
+     * a machine keeps its colour as long as the set around it does not change.
+     */
+    function assignHues(machines) {
+      const taken = new Set();
+      const hues = new Map();
+      for (const machine of machines) {
+        const start = machineHue(machine.targetId);
+        let hue = start;
+        for (let step = 0; step < MACHINE_HUE_COUNT; step += 1) {
+          hue = (start + step) % MACHINE_HUE_COUNT;
+          if (!taken.has(hue)) break;
+        }
+        taken.add(hue);
+        hues.set(machine.targetId, hue);
+      }
+      return hues;
+    }
+
+    // T3 Code tells machines apart by the shape of the glyph (server / linux / laptop /
+    // cloud …). We know far less about a machine over a tunnel, but the shape of its home
+    // directory separates the three families that matter, and Linux and WSL share one
+    // glyph there too.
+    function MachineIcon({ kind = 'server', size = 13 }) {
+      const parts = kind === 'windows'
+        ? [h('rect', { x: 4, y: 4, width: 7, height: 7 }), h('rect', { x: 13, y: 4, width: 7, height: 7 }),
+          h('rect', { x: 4, y: 13, width: 7, height: 7 }), h('rect', { x: 13, y: 13, width: 7, height: 7 })]
+        : kind === 'macos'
+          ? [h('rect', { x: 4, y: 5, width: 16, height: 11, rx: 1.5 }), h('path', { d: 'M2 19.5h20' })]
+          : kind === 'linux'
+            ? [h('rect', { x: 3, y: 4, width: 18, height: 16, rx: 2 }), h('path', { d: 'M7 9l3 3-3 3M13 15h4' })]
+            : kind === 'wsl'
+              // The same terminal, with the four-dot corner of the Windows flag: a Linux
+              // prompt that lives inside a Windows box.
+              ? [h('rect', { x: 3, y: 4, width: 18, height: 16, rx: 2 }), h('path', { d: 'M7 11l3 3-3 3M13 17h4' }),
+                h('path', { d: 'M15.5 7h.01M18.5 7h.01M15.5 10h.01M18.5 10h.01' })]
+            : [h('rect', { x: 3, y: 4, width: 18, height: 7, rx: 2 }), h('rect', { x: 3, y: 13, width: 18, height: 7, rx: 2 }),
+              h('path', { d: 'M7 7.5h.01M7 16.5h.01' })];
+      return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, ...parts);
+    }
+
+    /**
+     * Remote sessions are not a second list. A session on another machine is the same
+     * kind of thing as one on this one, so it sits in the same shelf with the same row
+     * shape, and the only thing that differs is a badge naming whose machine it lives
+     * on — which is what T3 Code does too (ProjectEnvironmentBadge: an icon whose
+     * tooltip reads "On wsl").
+     */
+    function MachineBadge({ machine, hue, t }) {
+      const where = t('remoteOn').replace('{name}', machine.label);
+      const label = machine.status === 'ready' ? where : where + ' · ' + t(remoteStatusKey(machine.status));
+      const kind = machine.kind ?? 'server';
+      return h('span', { className: 't3-machine-badge t3-hue-' + hue, 'data-status': machine.status, 'data-hue': hue, 'data-kind': kind, role: 'img', 'aria-label': label, title: label }, h(MachineIcon, { kind }));
+    }
+
+    function remoteTargetsOf(snapshot) {
+      return Object.values(snapshot?.targets ?? {});
+    }
+
+    /** One door onto the machine's own write surface; the machine decides the rest. */
+    async function remoteCall(endpoint, payload, signal) {
+      return unwrap(await Sidebar.context.connection.rpc.call('/api', endpoint, payload, signal));
+    }
+
+    function PlusIcon() {
+      return h('svg', { width: 14, height: 14, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round' },
+        h('path', { d: 'M12 5v14M5 12h14' }));
+    }
+
+    const DEVICE_PANEL = 't3-device-conversation';
+    const NEW_PANEL = 't3-device-new';
+    let pool = null;
+    let poolLoading = null;
+    let awaitingOpen = null;
+    let runtimeClosed = false;
+    let navigation = 0;
+    const selectedDeviceKey = 'dsh.t3.selected-device-session';
+    let restoreReference = null;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(selectedDeviceKey));
+      if (saved && typeof saved.targetId === 'string' && /^[A-Za-z0-9-]{1,80}$/.test(saved.targetId)
+        && (saved.sessionId === null || typeof saved.sessionId === 'string' && /^[A-Za-z0-9_-]{1,200}$/.test(saved.sessionId))) restoreReference = saved;
+    } catch { /* unavailable or outdated browser state is not a navigation request */ }
+    let restorePending = restoreReference !== null;
+    let stopPool = () => {};
+    let runtimeSnapshot = { pool: null, active: null, phase: 'idle', error: null, revision: 0 };
+    const runtimeListeners = new Set();
+    const runtimeSubscribe = listener => { runtimeListeners.add(listener); return () => runtimeListeners.delete(listener); };
+    function publishRuntime(patch) {
+      runtimeSnapshot = { ...runtimeSnapshot, ...patch, revision: runtimeSnapshot.revision + 1 };
+      if (Object.hasOwn(patch, 'active') && !restorePending && !runtimeClosed) {
+        try {
+          if (patch.active) window.localStorage.setItem(selectedDeviceKey, JSON.stringify(patch.active));
+          else window.localStorage.removeItem(selectedDeviceKey);
+        } catch { /* the live selection still works when browser persistence is unavailable */ }
+      }
+      for (const listener of [...runtimeListeners]) listener();
+    }
+    function useDeviceRuntime() {
+      return React.useSyncExternalStore(runtimeSubscribe, () => runtimeSnapshot, () => runtimeSnapshot);
+    }
+    let deviceChoice = { targetId: null, revision: 0 };
+    const choiceListeners = new Set();
+    const choiceSubscribe = listener => { choiceListeners.add(listener); return () => choiceListeners.delete(listener); };
+    function pickDevice(targetId) {
+      deviceChoice = { targetId: targetId ?? null, revision: deviceChoice.revision + 1 };
+      for (const listener of [...choiceListeners]) listener();
+    }
+    function currentMachine(targetId) { return mirrorState.snapshot?.targets?.[targetId]; }
+    function currentConnection(targetId) { return mirrorState.snapshot?.connections?.[targetId]; }
+    function canOpenDevice(targetId) {
+      const status = currentMachine(targetId)?.status;
+      return !!currentConnection(targetId) && status !== 'down' && status !== 'connecting';
+    }
+    function canManageDevice(targetId) {
+      const status = currentMachine(targetId)?.status;
+      return !!currentConnection(targetId) && (status === 'ready' || status === 'incompatible');
+    }
+    function requireRemoteReady(targetId) {
+      if (!canManageDevice(targetId)) {
+        throw new Error(Sidebar.context.locale.bind(NS)('remoteDeviceUnreachable'));
+      }
+      return currentConnection(targetId);
+    }
+    function refreshMirror() { mirrorRequest?.abort(); }
+    function deactivateDevice() {
+      restorePending = false;
+      navigation++;
+      awaitingOpen = null;
+      pool?.deactivate();
+      publishRuntime({ active: null, phase: 'idle', error: null });
+    }
+    function chooseDeviceProject(targetId = null) {
+      Sidebar.context.layout.selectPanel(NEW_PANEL);
+      deactivateDevice();
+      pickDevice(targetId);
+    }
+    async function devicePool() {
+      if (pool) return pool;
+      if (poolLoading) return poolLoading;
+      const context = Sidebar.context;
+      const operation = (async () => {
+        const loaded = await require.async('./client.remote-runtime.js');
+        if (runtimeClosed) throw new Error('The device workspace has closed');
+        pool = loaded.createDeviceRuntimePool({
+          context, React, platformRequire: require,
+          describe: (targetId, { signal } = {}) => remoteCall('t3-remote/runtime', { targetId }, signal),
+          onChooseDevice: chooseDeviceProject,
+          onStatusChange: () => publishRuntime({}),
+        });
+        stopPool = pool.state.subscribe(() => {
+          const value = pool.state.getSnapshot();
+          if (!runtimeSnapshot.active || runtimeSnapshot.phase === 'offline'
+            || value.active?.targetId !== runtimeSnapshot.active.targetId
+            || awaitingOpen && value.active !== awaitingOpen) {
+            publishRuntime({});
+            return;
+          }
+          publishRuntime({ ...value, pool });
+        });
+        publishRuntime({ pool });
+        return pool;
+      })();
+      poolLoading = operation;
+      try { return await operation; }
+      finally { if (poolLoading === operation) poolLoading = null; }
+    }
+    async function openDeviceSession(reference, { reconnect = false, refresh = false } = {}) {
+      if (reference.sessionId === null) { chooseDeviceProject(reference.targetId); return; }
+      const layout = Sidebar.context.layout;
+      if (reconnect && layout.panelInfo.getSnapshot().activePanelId !== DEVICE_PANEL) return;
+      if (!reconnect) layout.selectPanel(DEVICE_PANEL);
+      restorePending = false;
+      const token = ++navigation;
+      const connectionId = currentConnection(reference.targetId);
+      if (!canOpenDevice(reference.targetId)) {
+        awaitingOpen = null;
+        pool?.deactivate();
+        publishRuntime({ active: reference, phase: 'offline', error: null });
+        return;
+      }
+      awaitingOpen = reference;
+      publishRuntime({ active: reference, phase: 'loading', error: null });
+      try {
+        const next = await devicePool();
+        if (runtimeClosed || token !== navigation) return;
+        const opening = next.open(reference, { connectionId, refresh });
+        awaitingOpen = null;
+        await opening;
+        if (token !== navigation) return;
+        next.setLabel(reference.targetId, currentMachine(reference.targetId)?.label ?? reference.targetId);
+        publishRuntime({});
+      } catch (error) {
+        if (token !== navigation || runtimeClosed) return;
+        awaitingOpen = null;
+        publishRuntime({ active: reference, phase: 'error', error: error?.message ?? String(error) });
+        throw error;
+      }
+    }
+    async function prepareRemoteNavigation(targetId, signal) {
+      const connectionId = requireRemoteReady(targetId);
+      const next = await devicePool();
+      signal.throwIfAborted();
+      await next.ensure(targetId, { connectionId });
+      signal.throwIfAborted();
+      if (requireRemoteReady(targetId) !== connectionId) {
+        throw new Error(Sidebar.context.locale.bind(NS)('remoteDeviceUnreachable'));
+      }
+    }
+    async function createAndOpenDeviceSession(targetId, workspaceId, signal) {
+      const navigation = Sidebar.context.layout.beginNavigation();
+      const request = AbortSignal.any([navigation, signal]);
+      let session;
+      try {
+        await prepareRemoteNavigation(targetId, request);
+        ({ session } = await remoteCall('t3-remote/session-create', { targetId, workspaceId }, request));
+      } catch (error) {
+        if (request.aborted) return;
+        throw error;
+      }
+      if (!session?.sessionId) throw new Error(Sidebar.context.locale.bind(NS)('remoteDeviceFailed'));
+      refreshMirror();
+      if (!request.aborted) await openDeviceSession({ targetId, sessionId: session.sessionId });
+    }
+    async function remoteSessionCommand(target, action, title, signal) {
+      requireRemoteReady(target.targetId);
+      const value = await remoteCall('t3-remote/session-command', {
+        targetId: target.targetId, sessionId: target.sessionId, action,
+        ...(title === undefined ? {} : { title }),
+      }, signal);
+      refreshMirror();
+      return value;
+    }
+    function RuntimeConnections({ usePanelInfo }) {
+      const activePanel = usePanelInfo(info => info.activePanelId);
+      React.useEffect(() => {
+        if (Sidebar.context.layout.panelInfo.getSnapshot().activePanelId !== DEVICE_PANEL && runtimeSnapshot.active) deactivateDevice();
+      }, [activePanel]);
+      const remote = useRemoteMachines(Sidebar.context);
+      React.useEffect(() => {
+        if (!restorePending) return;
+        const context = Sidebar.context;
+        const cancel = event => {
+          if (!restorePending || event && !event.isTrusted) return;
+          restorePending = false;
+          restoreReference = null;
+          try { window.localStorage.removeItem(selectedDeviceKey); } catch { /* optional persistence */ }
+        };
+        const attempt = () => {
+          if (!restorePending || runtimeClosed || navigation !== 0 || !mirrorState.snapshot) return;
+          if (context.layout.panelInfo.getSnapshot().activePanelId !== null) { cancel(); return; }
+          if (context.sessions.list.getSnapshot().phase !== 'ready' || context.workspaces.list.getSnapshot().phase !== 'ready') return;
+          const reference = restoreReference;
+          restorePending = false;
+          restoreReference = null;
+          queueMicrotask(() => {
+            if (runtimeClosed || navigation !== 0) return;
+            if (reference.sessionId === null) chooseDeviceProject(reference.targetId);
+            else void openDeviceSession(reference).catch(() => {});
+          });
+        };
+        document.addEventListener('pointerdown', cancel, true);
+        document.addEventListener('keydown', cancel, true);
+        const unsubscribeSessions = context.sessions.list.subscribe(attempt);
+        const unsubscribeWorkspaces = context.workspaces.list.subscribe(attempt);
+        attempt();
+        return () => {
+          unsubscribeSessions();
+          unsubscribeWorkspaces();
+          document.removeEventListener('pointerdown', cancel, true);
+          document.removeEventListener('keydown', cancel, true);
+        };
+      }, [remote.snapshot]);
+      const knownConnections = React.useRef({});
+      const warmedConnections = React.useRef(new Map());
+      React.useEffect(() => {
+        if (!remote.snapshot) return;
+        const before = knownConnections.current;
+        const warmed = warmedConnections.current;
+        const connections = remote.snapshot.connections ?? {};
+        knownConnections.current = connections;
+        const selected = runtimeSnapshot.active;
+        for (const [targetId, previousId] of Object.entries(before)) {
+          if (connections[targetId] === previousId) continue;
+          warmed.delete(targetId);
+          void pool?.retire(targetId).catch(() => {});
+          if (selected?.targetId === targetId) {
+            navigation++;
+            publishRuntime({ active: selected, phase: 'offline', error: null });
+          }
+        }
+        if (selected && runtimeSnapshot.phase === 'offline' && canOpenDevice(selected.targetId)) {
+          void openDeviceSession(selected, { reconnect: true }).catch(() => {});
+        }
+        for (const [targetId, connectionId] of Object.entries(connections)) {
+          const previous = warmed.get(targetId);
+          if (!canOpenDevice(targetId) || (previous?.connectionId === connectionId && previous.retryAt > Date.now())) continue;
+          const attempt = { connectionId, retryAt: Infinity };
+          warmed.set(targetId, attempt);
+          // Keep a Client ready for this SSH connection without selecting or
+          // creating a conversation. A click joins the same in-flight startup.
+          void devicePool().then(next => {
+            if (runtimeClosed || warmed.get(targetId) !== attempt) return;
+            if (currentConnection(targetId) !== connectionId || !canOpenDevice(targetId)) {
+              warmed.delete(targetId);
+              return;
+            }
+            return next.ensure(targetId, { connectionId });
+          }).catch(() => {
+            // Let later mirror updates retry without starting on every update.
+            attempt.retryAt = Date.now() + 15000;
+          });
+        }
+      }, [remote.snapshot]);
+      return null;
+    }
+    function DeviceOpening({ t }) {
+      const [visible, setVisible] = React.useState(false);
+      React.useEffect(() => {
+        const timer = setTimeout(() => setVisible(true), 120);
+        return () => clearTimeout(timer);
+      }, []);
+      return visible ? h('div', { className: 't3-device-error', role: 'status' }, h('p', null, t('remoteOpening'))) : null;
+    }
+    function DeviceConversation({ t }) {
+      const runtime = useDeviceRuntime();
+      const reference = runtime.active;
+      const connection = reference && runtime.pool?.connectionStatus?.(reference.targetId);
+      const reconnecting = runtime.phase === 'ready' && (connection === 'connecting' || connection === 'disconnected');
+      return h('section', { className: 't3-device-main' }, h('style', null, css),
+        reconnecting && h('div', { className: 't3-device-reconnecting', role: 'status' }, t('remoteStreamReconnecting')),
+        runtime.phase === 'ready' && reference &&
+          h('div', { className: 't3-device-main-content' }, runtime.pool?.render(reference.targetId)),
+        runtime.phase === 'loading' && h(DeviceOpening, { t, key: JSON.stringify(reference) }),
+        (runtime.phase === 'error' || runtime.phase === 'offline') &&
+          h('div', { className: 't3-device-error', role: runtime.phase === 'error' ? 'alert' : 'status' },
+            h('p', null, t(runtime.phase === 'error' ? 'openFailed' : 'remoteDisconnected')),
+            runtime.error && h('p', null, runtime.error),
+            runtime.phase === 'error' && reference && h('button', {
+              type: 'button', className: 't3-btn', onClick: () => { void openDeviceSession(reference, { refresh: true }).catch(() => {}); },
+            }, t('retry'))));
+    }
+    function DeviceHeroFrame({ hero, children, t }) {
+      const remote = useRemoteMachines(Sidebar.context);
+      return h(React.Fragment, null,
+        hero && remoteTargetsOf(remote.snapshot).length > 0 && h('div', { className: 't3-device-before-project' },
+          h('style', null, css),
+          h('button', { type: 'button', className: 't3-device-chip', title: t('chooseDeviceProject'), onClick: () => chooseDeviceProject(null) },
+            h(MachineIcon, { kind: 'server' }), t('remoteDeviceThisMachine'))),
+        children);
+    }
+    function NewDeviceSession({ t, useWorkspaces }) {
+      const choice = React.useSyncExternalStore(choiceSubscribe, () => deviceChoice, () => deviceChoice);
+      const remote = useRemoteMachines(Sidebar.context);
+      const workspaces = useWorkspaces(value => value);
+      const [busy, setBusy] = React.useState(false);
+      const [error, setError] = React.useState('');
+      const [adding, setAdding] = React.useState(false);
+      const request = React.useRef(null);
+      const locked = React.useRef(false);
+      React.useEffect(() => () => request.current?.abort(), []);
+      const machines = remoteTargetsOf(remote.snapshot).sort((a, b) => String(a.label).localeCompare(String(b.label)));
+      const machine = machines.find(item => item.targetId === choice.targetId);
+      const local = choice.targetId === null;
+      const online = local || canManageDevice(choice.targetId);
+      const projects = (local ? workspaces?.items ?? [] : Object.values(remote.snapshot?.workspaces ?? {}).filter(item => item.targetId === choice.targetId))
+        .slice().sort((a, b) => (a.title || a.path).localeCompare(b.title || b.path));
+      const start = async workspaceId => {
+        if (!workspaceId || locked.current || !online) return;
+        locked.current = true;
+        setBusy(true);
+        setError('');
+        const controller = new AbortController();
+        request.current = controller;
+        try {
+          if (local) {
+            deactivateDevice();
+            await Sidebar.context.uiWorkspace.openWorkspace(workspaceId);
+          } else {
+            await createAndOpenDeviceSession(choice.targetId, workspaceId, controller.signal);
+          }
+        } catch (reason) {
+          if (!controller.signal.aborted) setError(reason?.message ?? String(reason));
+        } finally {
+          locked.current = false;
+          if (!controller.signal.aborted) setBusy(false);
+        }
+      };
+      const add = async () => {
+        if (!local) { setAdding(true); return; }
+        setError('');
+        try {
+          const path = await Sidebar.context.uiWorkspace.pickDirectory();
+          if (path) await Sidebar.context.workspaces.create({ path });
+        } catch (reason) { setError(reason?.message ?? String(reason)); }
+      };
+      return h('section', { className: 't3-new-session' }, h('style', null, css),
+        h('div', { className: 't3-new-card' },
+          h('h1', null, t('newSession')),
+          h('p', { className: 't3-new-hint' }, t('deviceHint')),
+          h('div', { className: 't3-new-fields' },
+            h('label', { className: 't3-new-field' }, t('remoteDeviceChip'),
+              h('select', { value: choice.targetId ?? '', disabled: busy, onChange: event => { pickDevice(event.target.value || null); setError(''); } },
+                h('option', { value: '' }, t('remoteDeviceThisMachine')),
+                ...machines.map(item => h('option', { key: item.targetId, value: item.targetId }, item.label + (item.status === 'ready' ? '' : ' · ' + t(remoteStatusKey(item.status))))))),
+            h('label', { className: 't3-new-field' }, t('project'),
+              h('select', { key: choice.targetId ?? 'local', value: '', disabled: busy || !online || !projects.length, onChange: event => { void start(event.target.value); } },
+                h('option', { value: '' }, busy ? t('remoteDeviceStarting') : t('chooseProject')),
+                ...projects.map(project => h('option', { key: project.workspaceId, value: project.workspaceId }, `${project.title || pathLabel(project.path)} · ${project.path}`))))),
+          !online && h('p', { className: 't3-new-hint', role: 'status' }, t('remoteDeviceUnreachable')),
+          online && !projects.length && h('p', { className: 't3-new-hint' }, t(local ? 'localNoProjects' : 'remoteDeviceNoProjects')),
+          error && h('p', { className: 't3-new-hint', role: 'alert' }, error),
+          h('div', { className: 't3-new-actions' },
+            h('button', { type: 'button', className: 't3-btn', disabled: busy || !online, onClick: () => { void add(); } }, h(AddWorkspaceIcon), ' ', t('addWorkspace')))),
+        adding && machine && h(AddProjectDialog, { machines: [machine], hues: assignHues([machine]), t, close: () => { setAdding(false); refreshMirror(); } }));
+    }
+
+    let renameTarget = null;
+    const renameListeners = new Set();
+    const renameSubscribe = listener => { renameListeners.add(listener); return () => renameListeners.delete(listener); };
+    function setRenameTarget(target) {
+      renameTarget = target;
+      for (const listener of [...renameListeners]) listener();
+    }
+    function RemoteRenameOverlay({ t }) {
+      const target = React.useSyncExternalStore(renameSubscribe, () => renameTarget, () => renameTarget);
+      return target && h(RenameRemoteSession, { key: target.targetId + '/' + target.sessionId, target, t });
+    }
+    function RenameRemoteSession({ target, t }) {
+      const [title, setTitle] = React.useState(target.displayTitle || '');
+      const [busy, setBusy] = React.useState(false);
+      const [error, setError] = React.useState('');
+      const close = () => { if (renameTarget === target) setRenameTarget(null); };
+      return h(Modal, { title: t('rename'), close, t },
+        h('style', null, css),
+        h('form', { className: 't3-rename-form', onSubmit: async event => {
+          event.preventDefault();
+          if (busy || !title.trim()) return;
+          setBusy(true);
+          setError('');
+          try { await remoteSessionCommand(target, 'rename', title.trim()); close(); }
+          catch (reason) { setError(reason?.message ?? String(reason)); setBusy(false); }
+        } },
+          h('input', { className: 't3-browser-input', value: title, maxLength: 200, 'aria-label': t('renameTitle'), onChange: event => setTitle(event.target.value), disabled: busy }),
+          error && h('p', { className: 't3-new-hint', role: 'alert' }, error),
+          h('div', { className: 't3-dialog-actions' },
+            h('button', { type: 'button', className: 't3-btn', onClick: close }, t('remoteCancel')),
+            h('button', { type: 'submit', className: 't3-btn t3-btn-primary', disabled: busy || !title.trim() }, t(busy ? 'remoteWorking' : 'save')))));
+    }
+
+    /**
+     * A small modal primitive shared by the two writes this feature offers. It is
+     * deliberately not the host's approval dialog: that one carries agent-approval
+     * semantics, and choosing a folder has nothing to do with approving anything.
+     */
+    function Modal({ title, close, children, t }) {
+      const body = React.useRef(null);
+      const dialog = React.useRef(null);
+      const closing = React.useRef(close);
+      closing.current = close;
+      React.useEffect(() => {
+        const previous = document.activeElement;
+        const onKey = event => {
+          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closing.current(); return; }
+          if (event.key !== 'Tab') return;
+          const controls = [...(dialog.current?.querySelectorAll('input:not(:disabled),button:not(:disabled),select:not(:disabled),[tabindex="0"]') ?? [])];
+          const first = controls[0], last = controls[controls.length - 1];
+          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+        };
+        window.addEventListener('keydown', onKey, true);
+        body.current?.querySelector('input,button')?.focus();
+        return () => { window.removeEventListener('keydown', onKey, true); if (previous?.isConnected) previous.focus?.({ preventScroll: true }); };
+      }, []);
+      const closeLabel = t ? t('close') : 'Close';
+      return h('div', { className: 't3-modal', role: 'presentation', onMouseDown: event => { if (event.target === event.currentTarget) close(); } },
+        h('div', { className: 't3-dialog', ref: dialog, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+          h('div', { className: 't3-dialog-head' },
+            h('span', { className: 't3-dialog-title' }, title),
+            h('button', { type: 'button', className: 't3-icon-button', 'aria-label': closeLabel, title: closeLabel, onClick: close }, h(ClearIcon))),
+          h('div', { className: 't3-dialog-body', ref: body }, children)));
+    }
+
+    /**
+     * The path-first project picker: one level at a time, breadcrumbs to jump, and a
+     * field that both filters the level and — when it holds an absolute path — jumps
+     * straight to it. The machine's own directoryPicker answers each level; the only
+     * caching is the supervisor's short-lived one.
+     */
+    function BrowserBody({ target, close, t }) {
+      const [level, setLevel] = React.useState(null);
+      const [listing, setListing] = React.useState(null);
+      const [draft, setDraft] = React.useState('');
+      const [showHidden, setShowHidden] = React.useState(false);
+      const [folder, setFolder] = React.useState('');
+      const [status, setStatus] = React.useState(null);
+      const request = React.useRef(null);
+      const busy = status?.kind === 'busy';
+      const load = async (path, refresh) => {
+        request.current?.abort();
+        const active = new AbortController();
+        request.current = active;
+        setStatus(previous => (previous?.kind === 'error' ? null : previous));
+        try {
+          const value = await remoteCall('t3-remote/browse', { targetId: target.targetId, ...(path ? { path } : {}), ...(refresh ? { refresh: true } : {}) }, active.signal);
+          if (active.signal.aborted) return;
+          setListing(value.listing ?? null);
+          setDraft('');
+        } catch (error) {
+          if (active.signal.aborted) return;
+          setStatus({ kind: 'error', text: error?.message ?? String(error) });
+        }
+      };
+      React.useEffect(() => {
+        void load(level, false);
+        return () => request.current?.abort();
+      }, [level]);
+      const jump = path => { setListing(null); setLevel(path); };
+      const filter = draft.startsWith('/') ? '' : draft.trim().toLowerCase();
+      const entries = (listing?.entries ?? []).filter(entry => (showHidden || !entry.hidden) && (!filter || entry.name.toLowerCase().includes(filter)));
+      const choose = async () => {
+        if (!listing || busy) return;
+        setStatus({ kind: 'busy' });
+        try {
+          requireRemoteReady(target.targetId);
+          await remoteCall('t3-remote/workspace-create', { targetId: target.targetId, path: listing.path });
+          refreshMirror();
+          close();
+        } catch (error) {
+          setStatus({ kind: 'error', text: error?.message ?? String(error) });
+        }
+      };
+      const createFolder = async () => {
+        const name = folder.trim();
+        if (!listing || !name || busy) return;
+        setStatus({ kind: 'busy' });
+        try {
+          requireRemoteReady(target.targetId);
+          const value = await remoteCall('t3-remote/create-directory', { targetId: target.targetId, path: listing.path, name });
+          setFolder('');
+          if (typeof value?.path === 'string') jump(value.path);
+          else await load(listing.path, true);
+        } catch (error) {
+          setStatus({ kind: 'error', text: error?.message ?? String(error) });
+        }
+      };
+      const go = () => { if (draft.startsWith('/')) jump(draft.trim()); };
+      return h(React.Fragment, null,
+        h('div', { className: 't3-browser-path' },
+          h('input', {
+            className: 't3-browser-input', type: 'text', value: draft, spellCheck: false,
+            'aria-label': t('remotePath'), placeholder: listing?.path ?? target.label,
+            onChange: event => setDraft(event.target.value),
+            onKeyDown: event => { if (event.key === 'Enter') { event.preventDefault(); go(); } },
+          }),
+          draft.startsWith('/') && h('button', { type: 'button', className: 't3-btn t3-browser-go', onClick: go }, t('remoteGo'))),
+        h('div', { className: 't3-crumbs' },
+          h('button', { type: 'button', className: 't3-crumb', onClick: () => jump(null) }, t('remoteHome')),
+          ...(listing?.crumbs ?? []).map(crumb => h('button', { key: crumb.path, type: 'button', className: 't3-crumb', title: crumb.path, onClick: () => jump(crumb.path) }, crumb.name))),
+        h('div', { className: 't3-browser-level' },
+          !listing && !status && h('div', { className: 't3-message' }, t('remoteLoading')),
+          listing && !entries.length && h('div', { className: 't3-message' }, t('remoteEmptyLevel')),
+          listing?.truncated && h('div', { className: 't3-message' }, t('remoteTruncated'))),
+        h('div', { className: 't3-browser-list' }, entries.map(entry => h('button', {
+          key: entry.path, type: 'button', className: 't3-browser-entry', 'data-hidden': entry.hidden,
+          title: entry.path, onClick: () => jump(entry.path),
+        }, entry.name))),
+        h('div', { className: 't3-browser-foot' },
+          h('label', { className: 't3-browser-hidden' },
+            h('input', { type: 'checkbox', checked: showHidden, onChange: event => setShowHidden(event.target.checked) }),
+            t('remoteShowHidden'))),
+        h('div', { className: 't3-browser-new' },
+          h('input', {
+            className: 't3-browser-input', type: 'text', value: folder, maxLength: 200,
+            'aria-label': t('remoteNewFolder'), placeholder: t('remoteNewFolder'), disabled: busy || !canManageDevice(target.targetId),
+            onChange: event => setFolder(event.target.value),
+            onKeyDown: event => { if (event.key === 'Enter') { event.preventDefault(); void createFolder(); } },
+          }),
+          h('button', { type: 'button', className: 't3-btn', disabled: !listing || !folder.trim() || busy || !canManageDevice(target.targetId), onClick: () => void createFolder() }, t('remoteCreate'))),
+        status?.kind === 'error' && h('div', { className: 't3-message', role: 'alert' }, status.text),
+        h('div', { className: 't3-dialog-actions' },
+          h('button', { type: 'button', className: 't3-btn', onClick: close }, t('remoteCancel')),
+          h('button', { type: 'button', className: 't3-btn t3-btn-primary', disabled: !listing || busy || !canManageDevice(target.targetId), onClick: () => void choose() }, busy ? t('remoteWorking') : t('remoteChoose'))));
+    }
+
+    /**
+     * Adding a project to another machine, in one dialog: pick the machine, then walk
+     * its own filesystem. T3 Code's AddProjectToMachineDialog has the same shape — the
+     * machine is a choice inside the dialog, not a separate place you have to visit.
+     */
+    function AddProjectDialog({ machines, hues, close, t }) {
+      const [targetId, setTargetId] = React.useState(() => (machines.find(machine => machine.status === 'ready') ?? machines[0])?.targetId);
+      const target = machines.find(machine => machine.targetId === targetId) ?? machines[0];
+      if (!target) return null;
+      return h(Modal, { title: t('remoteAddProject'), close, t },
+        machines.length > 1 && h('div', { className: 't3-machine-pick', role: 'group', 'aria-label': t('remotePickMachine') },
+          machines.map(machine => h('button', {
+            key: machine.targetId, type: 'button', className: 't3-chip t3-hue-' + (hues.get(machine.targetId) ?? machineHue(machine.targetId)),
+            'data-current': machine.targetId === target.targetId, 'data-status': machine.status, disabled: machine.status !== 'ready',
+            onClick: () => setTargetId(machine.targetId),
+          }, h(MachineIcon, { kind: machine.kind ?? 'server', size: 12 }), machine.label))),
+        // A level belongs to one machine, so switching machines starts the browser over.
+        h(BrowserBody, { key: target.targetId, target, close, t }));
+    }
+
+    function Sidebar({
+      wide, expandSidebar, useSessions, useSessionStatus, useWorkspaces, usePanelInfo, useContextMenu,
+      useSectionScroller = () => ({}), useRemoteAccess = () => true, renderFactorySlot, t,
+    }) {
       const { getTriggerProps } = useContextMenu();
-      const panelActive = usePanelInfo(info => info.activePanelId !== null);
+      const { bindScrollerRef } = useSectionScroller();
+      const canStartSession = useRemoteAccess('session/create');
+      const activePanelId = usePanelInfo(info => info.activePanelId);
+      const panelActive = activePanelId !== null;
       const sessions = useSessions(s => s);
       const statuses = useSessionStatus(s => s);
       const workspaces = useWorkspaces(s => s);
+      const remote = useRemoteMachines(Sidebar.context);
+      const deviceRuntime = useDeviceRuntime();
+      // The two writes this feature offers, each behind its own dialog.
+      const [dialog, setDialog] = React.useState(null);
       const nowMinute = useNowMinute();
       const [snapshot, setSnapshot] = React.useState(null);
       const [syncError, setSyncError] = React.useState(false);
@@ -259,25 +1091,27 @@ window.__ModuleLoader__.load({
       React.useEffect(() => {
         const now = Date.now();
         const pinnedIds = new Set(workspaces?.pinnedSessionIds || []);
-        const present = new Set(sessions?.ids || []);
+        const observations = (sessions?.ids || []).map(id => ({
+          id, running: statuses?.get(id)?.running ?? sessions.byId?.[id]?.running,
+          pendingInteraction: statuses?.get(id)?.pendingInteraction,
+          settled: !!snapshot?.placements?.[id]?.settled, pinned: pinnedIds.has(id), updatedAt: sessions.byId?.[id]?.updatedAt,
+        }));
+        for (const row of Object.values(remote.snapshot?.sessions ?? {})) {
+          const status = deviceRuntime.pool?.status(row.targetId, row.sessionId);
+          observations.push({ id: row.targetId + '/' + row.sessionId, running: status?.running ?? row.running,
+            pendingInteraction: status?.pendingInteraction, pinned: row.pinned, settled: row.settled, updatedAt: row.updatedAt });
+        }
+        const present = new Set(observations.map(row => row.id));
         const next = new Set();
         let nextDeadline = Infinity;
-        for (const id of present) {
-          const status = statuses?.get(id);
-          const running = status?.running ?? sessions.byId?.[id]?.running;
-          const pendingInteraction = status?.pendingInteraction;
-          const settled = !!snapshot?.placements?.[id]?.settled;
-          const pinned = pinnedIds.has(id);
+        for (const { id, running, pendingInteraction, pinned, settled, updatedAt } of observations) {
           const placement = `${pinned}:${settled}`;
           const previous = workingRef.current.get(id);
           const actual = !!running && !pendingInteraction;
           const canWait = !actual && previous?.working && !pendingInteraction && !pinned && !settled && previous.placement === placement;
           const deadline = canWait ? (previous.deadline ?? now + 2000) : null;
           const working = actual || (deadline !== null && deadline > now);
-          // DSH publishes no run-start clock, so a run is anchored at the last
-          // recorded activity the moment the sidebar first sees it running.
-          const known = sessions.byId?.[id]?.updatedAt;
-          const anchor = Number.isFinite(known) ? Math.min(known, now) : now;
+          const anchor = Number.isFinite(updatedAt) ? Math.min(updatedAt, now) : now;
           const since = working ? (previous?.working ? previous.since ?? anchor : anchor) : null;
           workingRef.current.set(id, { working, deadline: working ? deadline : null, placement, since });
           if (working) next.add(id);
@@ -305,16 +1139,13 @@ window.__ModuleLoader__.load({
         };
         schedule(nextDeadline);
         return () => clearTimeout(timer);
-      }, [sessions, statuses, workspaces, snapshot]);
-      // The shipped shell seats us in a max-content grid row, so the hole is
-      // content-sized and the shelf's auto margin has nothing to absorb. The space
-      // actually visible for us is the host's scroll area minus whatever it seats
-      // above us, and both move with the shell version -- so measure them and hand
-      // the number to CSS instead of hardcoding a grid's spacer rows.
+      }, [sessions, statuses, workspaces, snapshot, remote.snapshot, deviceRuntime]);
+      // DSH rc.3 sizes the section to content and does not supply a scroller
+      // hook. Measure the visible space below its navigation for the shelves.
       const rootRef = React.useRef(null);
       React.useEffect(() => {
         const node = rootRef.current;
-        if (!wide || !node) return undefined;
+        if (!wide || bindScrollerRef || !node) return undefined;
         let area = null;
         for (let el = node.parentElement; el; el = el.parentElement) {
           if (/(auto|scroll)/.test(window.getComputedStyle(el).overflowY)) { area = el; break; }
@@ -334,7 +1165,7 @@ window.__ModuleLoader__.load({
         observer.observe(area);
         observer.observe(node);
         return () => observer.disconnect();
-      }, [wide]);
+      }, [wide, bindScrollerRef]);
       // Same landing as the native header: expanding puts the caret in the field,
       // and a click outside the control gives it up — collapsing only while
       // nothing is filtered, so a hidden input never hides a live filter.
@@ -411,6 +1242,53 @@ window.__ModuleLoader__.load({
           }
         }
       };
+      // The same verb on a session that lives on another machine: hand it to that
+      // machine's own plugin. It bumps its revision, and the mirror's long poll brings
+      // the new placement back — so nothing here writes the mirror.
+      const actRemote = async (targetId, sessionId, action) => {
+        const key = targetId + '/' + sessionId;
+        if (pending[key]) return;
+        setActionError(false);
+        const controller = new AbortController();
+        operations.current.add(controller);
+        setPending(value => ({ ...value, [key]: true }));
+        try {
+          requireRemoteReady(targetId);
+          unwrap(await context.connection.rpc.call('/api', 't3-remote/action', { targetId, sessionId, action }, controller.signal));
+          refreshMirror();
+        } catch {
+          if (alive.current && !controller.signal.aborted) setActionError(true);
+        } finally {
+          operations.current.delete(controller);
+          if (alive.current) {
+            setPending(value => { const next = { ...value }; delete next[key]; return next; });
+            // The machine made a session, so the mirror has a row to bring back.
+            pollRef.current?.abort();
+          }
+        }
+      };
+      // A new session in a mirrored project. The machine decides the id, and reuses the
+      // blank session it already has there rather than stacking up empty rows.
+      const createRemoteSession = async (targetId, workspaceId) => {
+        const key = targetId + '/project:' + workspaceId;
+        if (pending[key]) return;
+        setActionError(false);
+        const controller = new AbortController();
+        operations.current.add(controller);
+        setPending(value => ({ ...value, [key]: true }));
+        try {
+          await createAndOpenDeviceSession(targetId, workspaceId, controller.signal);
+        } catch {
+          if (alive.current && !controller.signal.aborted) setActionError(true);
+        } finally {
+          operations.current.delete(controller);
+          if (alive.current) {
+            setPending(value => { const next = { ...value }; delete next[key]; return next; });
+            // The machine made a session, so the mirror has a row to bring back now.
+            pollRef.current?.abort();
+          }
+        }
+      };
       const runUi = (fn, errorKey) => {
         setUiError('');
         try { Promise.resolve(fn()).catch(() => { if (alive.current) setUiError(errorKey); }); }
@@ -440,12 +1318,42 @@ window.__ModuleLoader__.load({
         const group = pinned.has(id) ? 'pinned' : placement?.settled ? 'settled' : !status?.pendingInteraction && workingIds.has(id) ? 'working' : 'active';
         groups[group].push({ id, title, session, placement });
       }
+      // A session on another machine joins the same shelves. Its own machine decides
+      // pin/settle/archive (D1) and the mirror carries those flags, so the grouping rule
+      // is the same one; the row only gains a badge naming the machine it lives on.
+      const machines = remoteTargetsOf(remote.snapshot).slice().sort((a, b) => String(a.label).localeCompare(String(b.label)));
+      const remoteWorkspaces = new Map(Object.values(remote.snapshot?.workspaces ?? {}).map(row => [row.targetId + '/' + row.workspaceId, row]));
+      // A machine can only take the row verbs its own plugin understands, so compare
+      // its reported contract with the one this mirror speaks.
+      const mirrorContract = remote.snapshot?.contract ?? null;
+      const offline = machines.filter(machine => machine.status === 'down');
+      const machineHues = assignHues(machines);
+      for (const row of Object.values(remote.snapshot?.sessions ?? {})) {
+        const selected = activePanelId === DEVICE_PANEL && deviceRuntime.active?.targetId === row.targetId && deviceRuntime.active?.sessionId === row.sessionId;
+        if ((row.blank && !selected) || row.archived || row.origin === 'subagent') continue;
+        const remoteTitle = row.displayTitle || t('untitled');
+        if (needle && !remoteTitle.toLocaleLowerCase().includes(needle)) continue;
+        const machine = machines.find(known => known.targetId === row.targetId);
+        if (!machine) continue;
+        const id = row.targetId + '/' + row.sessionId;
+        const status = deviceRuntime.pool?.status(row.targetId, row.sessionId);
+        const group = row.pinned ? 'pinned' : row.settled ? 'settled' : !status?.pendingInteraction && workingIds.has(id) ? 'working' : 'active';
+        groups[group].push({ id, title: remoteTitle, session: { updatedAt: row.updatedAt, cwd: row.cwd }, placement: null, remote: row, machine });
+      }
       const pins = workspaces?.pinnedSessionIds || [];
-      groups.pinned.sort((a, b) => pins.indexOf(a.id) - pins.indexOf(b.id));
       const activity = row => Math.max(row.session.updatedAt || 0, row.placement?.unsettledAt || 0);
+      const pinOrder = row => {
+        const order = row.remote
+          ? remoteWorkspaces.get(row.remote.targetId + '/' + row.remote.workspaceId)?.pinnedSessionIds?.indexOf(row.remote.sessionId)
+          : pins.indexOf(row.id);
+        return order >= 0 ? order : Number.MAX_SAFE_INTEGER;
+      };
+      groups.pinned.sort((a, b) => pinOrder(a) - pinOrder(b) || activity(b) - activity(a) || a.id.localeCompare(b.id));
       groups.active.sort((a, b) => activity(b) - activity(a));
       groups.working.sort((a, b) => activity(b) - activity(a));
-      groups.settled.sort((a, b) => (b.placement?.settledAt || 0) - (a.placement?.settledAt || 0));
+      // A mirrored settled row carries no local settledAt, so it falls back to the
+      // machine's own last activity rather than dropping to the bottom of the shelf.
+      groups.settled.sort((a, b) => (b.placement?.settledAt || activity(b)) - (a.placement?.settledAt || activity(a)));
       // T3 Code only emits the Working shelf when something is working
       // (Sidebar.tsx:1979 `if (workingThreads.length > 0)`); an empty shelf is a
       // heading with a zero. Pinned follows the same rule. Active and Settled are
@@ -456,7 +1364,7 @@ window.__ModuleLoader__.load({
       // running session the push moves from Working to Settled, as in T3.
       const shelf = shown.find(group => group === 'working' || group === 'settled');
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
-      return h('div', { className: 't3-sidebar', ref: rootRef }, h('style', null, css),
+      return h('div', { className: 't3-sidebar', ref: rootRef, 'data-scroll-handoff': !!bindScrollerRef }, h('style', null, css),
         h('div', { className: 't3-header' },
           h('span', { className: 't3-title', 'data-hidden': searchExpanded }, t('sessions')),
           h('div', { className: 't3-search-slot', 'data-expanded': searchExpanded },
@@ -485,19 +1393,75 @@ window.__ModuleLoader__.load({
                 onClick: event => { event.stopPropagation(); setQuery(''); setSearchExpanded(false); },
               }, h(ClearIcon)))),
           h('div', { className: 't3-header-actions', 'data-hidden': searchExpanded },
-            // Seated and styled like the native header's trailing cluster, but
-            // deliberately inert: view options (grouping, ordering, archived)
-            // and the add-workspace flow are the native browser's, not wired
-            // into these shelves yet.
-            h('button', { type: 'button', className: 't3-header-action', 'aria-label': t('viewOptions'), title: t('viewOptions') }, h(ViewOptionsIcon)),
-            h('button', { type: 'button', className: 't3-header-action', 'aria-label': t('addWorkspace'), title: t('addWorkspace') }, h(AddWorkspaceIcon)))),
+            canStartSession && h('button', {
+              type: 'button', className: 't3-header-action', 'aria-label': t('newSession'), title: t('newSession'),
+              onClick: () => runUi(() => {
+                if (machines.length) chooseDeviceProject(deviceRuntime.active?.targetId);
+                else { deactivateDevice(); context.uiWorkspace.startSession(); }
+              }, 'openFailed'),
+            }, h(PlusIcon)),
+            machines.length > 0 && h('button', {
+              type: 'button', className: 't3-header-action', 'aria-label': t('remoteAddProject'), title: t('remoteAddProject'),
+              disabled: !machines.some(machine => canManageDevice(machine.targetId)), onClick: () => setDialog({ kind: 'add' }),
+            }, h(AddWorkspaceIcon)))),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
-        !snapshot ? h('div', { className: 't3-message', role: 'status' }, t(syncError ? 'syncing' : 'loading')) :
-        h('div', { className: 't3-scroll' }, shown.map(group => h('section', { className: 't3-group', key: group, 'data-shelf': group === shelf },
+        !snapshot && !remote.snapshot && !sessions?.ids?.length ? h('div', { className: 't3-message', role: 'status' }, t(syncError ? 'syncing' : 'loading')) :
+        h('div', { className: 't3-scroll', ref: bindScrollerRef }, shown.map(group => h('section', { className: 't3-group', key: group, 'data-shelf': group === shelf },
           h('button', { className: 't3-btn t3-heading', type: 'button', 'aria-expanded': !collapsed[group], onClick: () => setCollapsed(value => ({ ...value, [group]: !value[group] })) },
             h('span', { 'aria-hidden': true }, collapsed[group] ? '▸' : '▾'), t(group), h('span', { className: 't3-count' }, String(groups[group].length))),
-          !collapsed[group] && groups[group].map(({ id, title, session, placement }) => {
+          !collapsed[group] && groups[group].map(({ id, title, session, placement, remote, machine }) => {
+            if (remote) {
+              const workspace = remoteWorkspaces.get(remote.targetId + '/' + (remote.workspaceId ?? ''));
+              const online = canManageDevice(remote.targetId);
+              const canOpen = canOpenDevice(remote.targetId);
+              const canVerb = online && Number.isInteger(mirrorContract) && machine.pluginContract === mirrorContract;
+              const busy = !!pending[id];
+              const creating = !!pending[machine.targetId + '/project:' + (workspace?.workspaceId ?? '')];
+              const pinAction = remote.pinned ? 'unpin' : 'pin';
+              const settleAction = remote.settled ? 'unsettle' : 'settle';
+              const status = deviceRuntime.pool?.status(remote.targetId, remote.sessionId);
+              const state = status?.pendingInteraction ? 'warning'
+                : workingIds.has(id) || status?.running ? 'ongoing'
+                : status?.completionUnread ? 'done' : null;
+              const live = state === 'ongoing';
+              const stateLabel = state && t('status' + state[0].toUpperCase() + state.slice(1));
+              const elapsed = live ? Math.floor(Math.max(0, nowMinute - (workingRef.current.get(id)?.since ?? nowMinute)) / 60000) : 0;
+              const target = { kind: 't3-device-session', value: { targetId: remote.targetId, sessionId: remote.sessionId, displayTitle: title } };
+              const open = () => { if (canOpen) runUi(() => openDeviceSession({ targetId: remote.targetId, sessionId: remote.sessionId }), 'openFailed'); };
+              const trigger = getTriggerProps(target, {
+                tabIndex: -1,
+                onKeyDown: event => {
+                  if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); open(); }
+                },
+              });
+              return h('div', {
+                className: 't3-row', key: id, ...trigger, 'data-remote': true, 'data-working': live,
+                'data-current': activePanelId === DEVICE_PANEL && deviceRuntime.active?.targetId === remote.targetId && deviceRuntime.active?.sessionId === remote.sessionId,
+                'data-target': machine.targetId, 'data-open-disabled': !canOpen,
+                title: canOpen ? workspace?.path ?? remote.cwd ?? '' : t('remoteDeviceUnreachable'), onClick: open,
+              },
+                h('div', { className: 't3-top' },
+                  remote.pinned && h('span', { className: 't3-pin', 'aria-hidden': true }, h(PinIcon, { filled: true, size: 12 })),
+                  h('span', { className: 't3-proj' }, workspace?.title || pathLabel(workspace?.path ?? remote.cwd ?? '')),
+                  h('span', { className: 't3-slot' },
+                    live
+                      ? h('span', { className: 't3-time t3-live', title: t('statusOngoing') }, h(StatusGlyph, { state: 'ongoing' }), h('span', null, t('statusOngoing') + (elapsed > 0 ? ' ' + t('timeMinutes').replace('{n}', elapsed) : '')))
+                      : h('span', { className: 't3-time', 'aria-hidden': true }, timeLabel(t, remote.updatedAt, nowMinute)),
+                    h('span', { className: 't3-actions', onClick: event => event.stopPropagation() },
+                      workspace && h('button', {
+                        type: 'button', className: 't3-icon-button', disabled: !online || creating,
+                        title: t('remoteNewSession'), 'aria-label': t('remoteNewSession') + ': ' + workspace.path,
+                        onClick: () => { void createRemoteSession(machine.targetId, workspace.workspaceId); },
+                      }, h(PlusIcon)),
+                      h('button', { className: 't3-icon-button', 'data-pinned': remote.pinned, type: 'button', disabled: !canVerb || busy, title: t(pinAction), 'aria-label': `${t(pinAction)}: ${title}`, onClick: () => { void actRemote(machine.targetId, remote.sessionId, pinAction); } }, h(PinIcon, { filled: remote.pinned, size: 14 })),
+                      h('button', { className: 't3-icon-button', type: 'button', disabled: !canVerb || busy, title: t(settleAction), 'aria-label': `${t(settleAction)}: ${title}`, onClick: () => { void actRemote(machine.targetId, remote.sessionId, settleAction); } }, h(SettledIcon, { restored: remote.settled })),
+                      renderFactorySlot('contextMenu.button', { target, label: `${t('more')}: ${title}`, className: 't3-icon-button' })))),
+                h('div', { className: 't3-line' }, h('button', { className: 't3-open', type: 'button', title, disabled: !canOpen }, title),
+                  state && !live && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })),
+                  h(MachineBadge, { machine, hue: machineHues.get(machine.targetId), t })));
+            }
+
             const isPinned = pinned.has(id);
             const isSettled = !!placement?.settled;
             const pinAction = isPinned ? 'unpin' : 'pin';
@@ -508,7 +1472,7 @@ window.__ModuleLoader__.load({
               onKeyDown: event => {
                 if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ') || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
                 event.preventDefault();
-                runUi(() => context.uiWorkspace.openSession(id), 'openFailed');
+                runUi(() => { context.uiWorkspace.openSession(id); deactivateDevice(); }, 'openFailed');
               },
             });
             const status = statuses?.get(id);
@@ -518,7 +1482,7 @@ window.__ModuleLoader__.load({
             const stateLabel = state && t('status' + state[0].toUpperCase() + state.slice(1));
             const live = state === 'ongoing';
             const duration = live ? workingDuration(t, workingRef.current.get(id)?.since, nowMinute) : null;
-            const busy = !!pending[id] || syncError;
+            const busy = !!pending[id] || syncError || !snapshot;
             // One trailing cell carries the age — or, while the agent runs, the
             // live status and its elapsed time — and on hover the row verbs.
             // Clicks on the strip stay there instead of opening the session.
@@ -548,14 +1512,21 @@ window.__ModuleLoader__.load({
               className: 't3-row', key: id, ...trigger,
               'data-working': live,
               'data-current': !panelActive && (session.retainedBy?.mainView || 0) > 0,
-              onClick: () => runUi(() => context.uiWorkspace.openSession(id), 'openFailed'),
+              onClick: () => runUi(() => { context.uiWorkspace.openSession(id); deactivateDevice(); }, 'openFailed'),
             }, topLine, titleLine);
-          })))));
+          }))),
+          // A machine that stopped answering keeps its rows — they are the last thing it
+          // said — and says so once, in a line rather than a shelf of its own.
+          !!offline.length && h('div', { className: 't3-message', role: 'status' },
+            t('remoteOfflineNote').replace('{name}', offline.map(machine => machine.label).join(', '))),
+          remote.error && h('div', { className: 't3-message', role: 'status' }, t('remoteError'))),
+        dialog?.kind === 'add' && h(AddProjectDialog, { machines: machines.filter(machine => canManageDevice(machine.targetId)), hues: machineHues, t, close: () => setDialog(null) }));
     }
     return {
-      inject: ['slots', 'locale', 'connection', 'uiWorkspace', 'contextMenus', 'workspaces'],
+      inject: ['slots', 'locale', 'connection', 'uiWorkspace', 'contextMenus', 'workspaces', 'loader', 'modules', 'layout', 'sessions', 'uiSession', 'shortcuts'],
       apply(ctx) {
         Sidebar.context = ctx;
+        runtimeClosed = false;
         ctx.effect(() => ctx.locale.register(NS, dictionaries), 't3-session-sidebar: dictionaries');
         ctx.slots.inject('contextMenu.icon', function* () {
           yield ctx.slots.register({ name: 'contextMenu.icon', key: NS + '.settle' }, SettledIcon);
@@ -599,6 +1570,78 @@ window.__ModuleLoader__.load({
             }];
           },
         }), 't3-session-sidebar: session menu');
+        ctx.effect(() => ctx.contextMenus.register({
+          id: 't3-sidebar.device-session', target: 't3-device-session', order: 100,
+          observe: () => [ctx.locale, {
+            getSnapshot: () => mirrorState,
+            subscribe(listener) { mirrorListeners.add(listener); return () => mirrorListeners.delete(listener); },
+          }],
+          resolve(target) {
+            const row = mirrorState.snapshot?.sessions?.[target.targetId + '/' + target.sessionId];
+            const machine = currentMachine(target.targetId);
+            if (!row || !machine) return [];
+            const t = ctx.locale.bind(NS);
+            const online = canManageDevice(target.targetId);
+            const placement = online && Number.isInteger(mirrorState.snapshot?.contract) && machine.pluginContract === mirrorState.snapshot.contract;
+            const verb = action => async () => {
+              requireRemoteReady(target.targetId);
+              await remoteCall('t3-remote/action', { targetId: target.targetId, sessionId: target.sessionId, action });
+              refreshMirror();
+            };
+            const item = (id, label, run, disabled = false) => ({ id, label: t(label), run, disabled, failureLabel: t('actionFailed') });
+            return [
+              item('open', 'remoteOpen', () => openDeviceSession({ targetId: target.targetId, sessionId: target.sessionId }), !canOpenDevice(target.targetId)),
+              item('pin', row.pinned ? 'unpin' : 'pin', verb(row.pinned ? 'unpin' : 'pin'), !placement),
+              item('settle', row.settled ? 'unsettle' : 'settle', verb(row.settled ? 'unsettle' : 'settle'), !placement),
+              item('rename', 'rename', () => { requireRemoteReady(target.targetId); setRenameTarget({ ...target, displayTitle: row.displayTitle || '' }); }, !online),
+              item('fork', 'fork', async () => {
+                const signal = ctx.layout.beginNavigation();
+                let value;
+                try {
+                  await prepareRemoteNavigation(target.targetId, signal);
+                  value = await remoteSessionCommand(target, 'fork', undefined, signal);
+                } catch (error) {
+                  if (signal.aborted) return;
+                  throw error;
+                }
+                const sessionId = value.sessionId ?? value.session?.sessionId;
+                if (!sessionId) throw new Error(t('openFailed'));
+                if (!signal.aborted) await openDeviceSession({ targetId: target.targetId, sessionId });
+              }, !online),
+              item('copy', 'copyId', async () => {
+                if (!navigator.clipboard?.writeText) throw new Error(t('actionFailed'));
+                await navigator.clipboard.writeText(target.sessionId);
+                ctx.contextMenus.notify(t('copyDone'), true);
+              }),
+              { ...item('archive', 'archive', async () => {
+                await remoteSessionCommand(target, 'archive');
+                const active = runtimeSnapshot.active;
+                if (active?.targetId === target.targetId && active.sessionId === target.sessionId) chooseDeviceProject(target.targetId);
+              }, !online), separatorBefore: true },
+            ];
+          },
+        }), 't3-session-sidebar: device session menu');
+        ctx.effect(() => ctx.slots.inject('main', function* () {
+          yield ctx.slots.register({ name: 'main', key: DEVICE_PANEL, locale: NS }, DeviceConversation);
+          yield ctx.slots.register({ name: 'main', key: NEW_PANEL, locale: NS }, NewDeviceSession);
+        }), 't3-session-sidebar: device main regions');
+        ctx.effect(() => ctx.slots.inject('shell.overlay', function* () {
+          yield ctx.slots.register({ name: 'shell.overlay', id: 't3-device-runtime-owner' }, RuntimeConnections);
+          yield ctx.slots.register({ name: 'shell.overlay', id: 't3-device-rename', locale: NS }, RemoteRenameOverlay);
+        }), 't3-session-sidebar: device overlays');
+        ctx.effect(() => ctx.slots.inject('conversation.hero.frame', () => ctx.slots.register({
+          name: 'conversation.hero.frame', id: 't3-device-before-project', order: -100, locale: NS,
+        }, DeviceHeroFrame)), 't3-session-sidebar: device before project');
+        ctx.effect(() => async () => {
+          runtimeClosed = true;
+          navigation++;
+          stopPool();
+          const previous = pool;
+          pool = null;
+          await previous?.dispose();
+          publishRuntime({ pool: null, active: null, phase: 'idle', error: null });
+          setRenameTarget(null);
+        }, 't3-session-sidebar: device runtime ownership');
         ctx.effect(() => {
           let enabled = true;
           let disposeSidebar;

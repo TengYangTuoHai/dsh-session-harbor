@@ -1,3 +1,8 @@
+// Retired acceptance fixture: its fake slot tree asserted that remote clicks do
+// nothing. It cannot validate the native per-device runtime. Keep the old fixture
+// below for comparison, but never treat it as current UI verification.
+throw new Error('Legacy jsdom UI fixture retired. Run node --test t3-session-sidebar/*.test.js, then verify the current authenticated DSH GUI.');
+
 // Offline render check for the sidebar rows: mounts the plugin's client module in
 // jsdom with fake DSH slot props and prints the row markup, so the T3-style layout
 // can be reviewed without the app. It borrows react, react-dom and jsdom from a
