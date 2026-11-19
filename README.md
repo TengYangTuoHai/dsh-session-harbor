@@ -1,4 +1,4 @@
-# 会话港 · Session Harbor
+# Session Harbor
 
 在一个 DeepSeek Harness 窗口里管理本机和多台 SSH 设备的会话。侧栏按「已置顶」「活跃」「工作中」「已完成」分组，点开远端会话就能在主区域继续对话。
 
@@ -6,20 +6,20 @@
 
 ## 直接安装
 
-**插件 v0.2.4** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
+**插件 v0.2.5** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
 
 1. 在 DSH 左侧打开「插件」，点击「添加插件」。
 2. 将下面的链接粘贴到「包名或地址」，点击「安装」。
 
    ```text
-   https://github.com/TengYangTuoHai/dsh-session-harbor/releases/download/v0.2.4/dsh-session-harbor-0.2.4.tgz
+   https://github.com/TengYangTuoHai/dsh-session-harbor/releases/download/v0.2.5/dsh-session-harbor-0.2.5.tgz
    ```
 
 3. 安装完成后点「立即启用」。如果 DSH 提示重启，重启后再打开工作台。
 
-从旧版「T3 会话侧边栏」升级时，先在「插件」页卸载旧版，再用上面的链接安装「会话港」。会话、置顶、已完成状态和已保存的 SSH 主机可继续使用。
+从旧版「T3 会话侧边栏」升级时，先在「插件」页卸载旧版，再用上面的链接安装 Session Harbor。会话、置顶、已完成状态和已保存的 SSH 主机可继续使用。
 
-更新会话港时复制新版 `.tgz` 安装包的下载链接。如果 DSH 提示插件已安装，先在「插件」页卸载旧版，再粘贴新版链接安装。[查看最新 Release](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
+更新时复制新版 `.tgz` 安装包的下载链接。如果 DSH 提示插件已安装，先在「插件」页卸载旧版，再粘贴新版链接安装。[查看最新 Release](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
 
 ## 管理会话
 
@@ -31,7 +31,7 @@
 
 ## 连接 SSH 设备
 
-1. 在「设置 → 会话港 SSH」点击「添加主机」，从本机 SSH 配置选择主机，或输入 `user@host`。
+1. 在「设置 → Session Harbor SSH」点击「添加主机」，从本机 SSH 配置选择主机，或输入 `user@host`。
 2. 点击「添加并连接」。连接就绪后，该设备的会话会出现在侧栏。
 3. 点击已有会话继续对话，或点侧栏顶部的「新会话」，先选设备，再选项目。
 

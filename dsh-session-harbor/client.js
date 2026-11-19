@@ -48,7 +48,7 @@ window.__ModuleLoader__.load({
         remoteDeleteMachine: 'Machine', remoteDeletePath: 'Folder', remoteDeleteSessions: 'Sessions', remoteDeleteCount: '{n}', remoteDeleteConfirm: 'Delete project'
       },
       ['z' + 'h']: {
-        enable: '切换至会话港', native: '切换至原生侧栏', nativeShort: '切换至原生',
+        enable: '切换至 Session Harbor', native: '切换至原生侧栏', nativeShort: '切换至原生',
         sessions: '会话', search: '搜索会话', searchPlaceholder: '搜索会话名称', searchClear: '清除搜索',
         viewOptions: '视图选项', addWorkspace: '添加工作区',
         pinned: '已置顶', active: '活跃', working: '工作中', settled: '已完成',
@@ -1725,7 +1725,7 @@ window.__ModuleLoader__.load({
         httpError: 'The SSH service returned HTTP {status}.', invalidResponse: 'The SSH service returned an invalid response.',
       },
       ['z' + 'h']: {
-        title: '会话港 SSH', addHost: '添加主机', addConnect: '添加并连接', adding: '正在添加…',
+        title: 'Session Harbor SSH', addHost: '添加主机', addConnect: '添加并连接', adding: '正在添加…',
         config: 'SSH 配置中的主机', chooseHost: '选择主机', noConfigHosts: 'SSH 配置中未找到已命名的主机。',
         address: 'SSH 地址', advanced: '高级选项', label: '名称', directory: '远程目录',
         executable: 'DSH 启动路径', profile: '配置名称', remoteHome: '远程用户主目录',
