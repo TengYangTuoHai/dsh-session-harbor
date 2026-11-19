@@ -53,9 +53,11 @@ export function groupSessions(sessions) {
       session.updatedAt ?? 0);
   };
   for (const group of GROUPS) {
-    groups[group].sort((a, b) => group === 'pinned'
-      ? (time(a, group) - time(b, group) || a.id.localeCompare(b.id))
-      : (time(b, group) - time(a, group) || a.id.localeCompare(b.id)));
+    groups[group].sort((a, b) => {
+      const byTime = group === 'pinned' ? time(a, group) - time(b, group) : time(b, group) - time(a, group);
+      const byAttention = group === 'active' ? Number(Boolean(b.pendingInteraction)) - Number(Boolean(a.pendingInteraction)) : 0;
+      return byAttention || byTime || a.id.localeCompare(b.id);
+    });
   }
   return groups;
 }

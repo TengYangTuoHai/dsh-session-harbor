@@ -34,7 +34,7 @@
 
 远端是会话、置顶、归档与 settled 的权威；本机镜像用于混合侧栏和断线缓存。每个连接 task 独占 Client 与订阅，异步结果提交前检查连接世代。Workspace 流持续消费 baseline 和增量。Snapshot 以 epoch/revision 合并，并在旧列表返回后重放较新的运行状态。
 
-本机与远端使用相同的分组优先级：Pinned、Settled、Working、Active。等待用户交互的运行会话进入 Active；普通运行结束保留两秒退出缓冲。设备原生 UiSession 的 pending interaction 与 running 状态参与远端分组。
+本机与远端的分组优先级依次为 Pinned、Settled、Working、Active。等待用户交互的普通会话排在 Active 顶部。普通运行结束保留两秒退出缓冲。设备原生 UiSession 的 pending interaction 与 running 状态参与远端分组。
 
 侧栏通过原生 context menu 呈现远端会话的打开、置顶、完成、重命名、分叉、复制 ID 与归档。离线写操作禁用。会话右键不执行项目删除。项目管理在自己的入口中完成。
 

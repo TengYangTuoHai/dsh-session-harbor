@@ -56,15 +56,17 @@ test('working exit is delayed, but attention and explicit placement are immediat
   assert.equal(stale.sessions[0].returnedAt, now);
 });
 
-test('sessions partition once and sort by time with stable id tie break', () => {
+test('sessions partition once, prioritizing pending interactions within Active', () => {
   const result = groupSessions([
     { id: 'b', running: false, updatedAt: 10 },
     { id: 'a', running: false, updatedAt: 10 },
     { id: 'c', running: true, updatedAt: 1 },
     { id: 'd', pinned: true, updatedAt: 2 },
     { id: 'e', settled: true, updatedAt: 3 },
+    { id: 'f', running: true, pendingInteraction: 'approval', updatedAt: 1 },
   ]);
+  assert.deepEqual(Object.keys(result), ['pinned', 'active', 'working', 'settled']);
   assert.deepEqual(Object.fromEntries(Object.entries(result).map(([group, rows]) => [group, rows.map(row => row.id)])), {
-    pinned: ['d'], active: ['a', 'b'], working: ['c'], settled: ['e'],
+    pinned: ['d'], active: ['f', 'a', 'b'], working: ['c'], settled: ['e'],
   });
 });

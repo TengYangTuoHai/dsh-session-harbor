@@ -4,9 +4,8 @@ window.__ModuleLoader__.load({
     const React = require('react');
     const h = React.createElement;
     const NS = 't3-session-sidebar';
-    // Settled sessions are the backlog: start that group collapsed so the
-    // actionable groups stay visible. Any group can still be toggled by hand.
-    const DEFAULT_COLLAPSED = Object.freeze({ settled: true });
+    const GROUPS = ['pinned', 'active', 'working', 'settled'];
+    const DEFAULT_COLLAPSED = Object.freeze({ working: true, settled: true });
     const dictionaries = {
       en: {
         enable: 'Use T3 sidebar', native: 'Use native sidebar', nativeShort: 'Use native', t3Short: 'Use T3',
@@ -19,7 +18,7 @@ window.__ModuleLoader__.load({
         expand: 'Open sidebar',
         menuDone: 'Session marked as settled.', menuRestored: 'Session reactivated.', more: 'Session actions',
         timeNow: 'now', timeMinutes: '{n}min', timeHours: '{n}h', timeDays: '{n}d', timeMonths: '{n}mo', timeYears: '{n}y',
-        statusOngoing: 'Working', statusWarning: 'Waiting for you', statusDone: 'Finished',
+        statusOngoing: 'Working', statusWarning: 'Waiting for you', statusDone: 'Finished', waitingCount: '{n} waiting',
         remoteOn: 'On {name}', remotePickMachine: 'Machine', remoteError: 'Machine mirror unavailable. Retrying…', remoteUnknown: 'Unknown state',
         remoteOfflineNote: '{name} is not answering — showing the last sync',
         remoteReady: 'Connected', remoteConnecting: 'Connecting', remoteStale: 'Out of date', remoteDown: 'Offline', remoteIncompatible: 'Session placement version mismatch',
@@ -54,7 +53,7 @@ window.__ModuleLoader__.load({
         expand: '展开侧边栏',
         menuDone: '会话已标记为完成。', menuRestored: '会话已重新激活。', more: '会话操作',
         timeNow: '刚刚', timeMinutes: '{n}分钟', timeHours: '{n}小时', timeDays: '{n}天', timeMonths: '{n}个月', timeYears: '{n}年',
-        statusOngoing: '工作中', statusWarning: '等待你操作', statusDone: '已完成',
+        statusOngoing: '工作中', statusWarning: '等待你操作', statusDone: '已完成', waitingCount: '{n} 条待操作',
         remoteOn: '在 {name} 上', remotePickMachine: '机器', remoteError: '无法同步远程机器，正在重试…', remoteUnknown: '状态未知',
         remoteOfflineNote: '{name} 未响应，显示最后一次同步',
         remoteReady: '已连接', remoteConnecting: '连接中', remoteStale: '数据已过期', remoteDown: '离线', remoteIncompatible: '会话分组版本不匹配',
@@ -81,10 +80,7 @@ window.__ModuleLoader__.load({
     };
     const css = `
       .t3-sidebar{display:flex;flex-direction:column;min-height:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px}
-      /* The new shell gives the section a viewport-sized container. The older
-         shell uses the measured space below its navigation. */
-      .t3-sidebar{min-height:var(--t3-fill,0px);max-height:var(--t3-fill,none)}
-      .t3-sidebar[data-scroll-handoff=true]{flex:none;height:100cqh}
+      .t3-sidebar[data-expanded=true]{flex:none;height:var(--t3-fill,100cqh);min-height:min(160px,100cqh)}
       /* Section header, measured off the native browser's (ui-workspace
          WorkspaceBrowser.module.css): a 36px row holding the section title, the
          search control parked at one 28px button, and nothing else. Expanding
@@ -119,25 +115,30 @@ window.__ModuleLoader__.load({
       .t3-btn{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;border-radius:5px;padding:5px}
       .t3-btn:hover,.t3-btn:focus-visible{background:var(--dsw-alias-bg-layer-2)}
       .t3-btn:disabled{opacity:.45;cursor:default}
-      .t3-scroll{display:flex;flex-direction:column;flex:1 1 auto;overflow:auto;min-height:0;padding:0 6px 10px}
-      .t3-sidebar[data-scroll-handoff=true] .t3-scroll{scrollbar-gutter:stable}
-      @container scroll-state(scrollable: bottom){
-        .t3-sidebar[data-scroll-handoff=true] .t3-scroll{overflow-y:hidden}
+      .t3-list-frame{flex:1;min-height:0;container:t3-list-height / size}
+      .t3-list{display:flex;flex-direction:column;height:100%;box-sizing:border-box;padding:0 6px 10px;overflow:auto}
+      .t3-group{display:flex;flex-direction:column;flex:0 1 auto;min-height:26px;margin-top:7px}
+      /* Active takes the spare space beneath its rows, keeping Working and
+         Settled at the bottom whether or not Pinned has any rows. */
+      .t3-group[data-group=active]{flex-grow:1}
+      .t3-group[data-has-rows=true]{min-height:78px}
+      /* Let Working fit its rows even when Active is long. Cap its height so
+         a busy list still leaves room for the other sections. */
+      .t3-group[data-group=working]{flex-shrink:0;max-height:40cqh}
+      .t3-rows{min-height:0;overflow:auto;scrollbar-gutter:stable}
+      @container t3-list-height (height < 350px){
+        .t3-list{scrollbar-gutter:stable}
+        .t3-group{flex-shrink:0}
+        .t3-group[data-group=working]{max-height:none}
+        .t3-rows{overflow:visible;scrollbar-gutter:auto}
       }
-      .t3-group{flex:none;margin-top:7px}
-      /* T3 hangs the Working and Settled shelves off the foot of the list: the
-         first shelf header takes the free space above it, so the gap opens under
-         the actionable rows rather than under the backlog. With nothing left
-         over, the auto margin collapses and the list simply scrolls. */
-      .t3-group[data-shelf=true]{margin-top:auto}
-      .t3-heading{display:flex;width:100%;align-items:center;gap:6px;text-align:left;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600}
-      .t3-count{margin-left:auto;font-weight:400;color:var(--dsw-alias-label-caption)}
+      .t3-heading{display:flex;flex:none;min-height:26px;width:100%;align-items:center;gap:6px;text-align:left;color:var(--dsw-alias-label-secondary);font-size:12px;font-weight:600}
+      .t3-count{flex:none;margin-left:auto;font-weight:400;color:var(--dsw-alias-label-caption)}
+      .t3-waiting{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;color:var(--dsw-alias-label-secondary)}
       .t3-message{padding:8px 12px;color:var(--dsw-alias-label-secondary);font-size:12px}
       .t3-btn:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:1px}
-      /* T3 Code thread row: one rounded surface per session, two lines for every
-         session -- workspace label and age over the title. A settled session keeps
-         the same shape; only its status dot and age differ. The trailing age swaps
-         to the row actions on hover. */
+      /* Session rows show the workspace and optional host on the first line,
+         with the title and time on the second line. */
       .t3-row{position:relative;display:flex;flex-direction:column;gap:2px;box-sizing:border-box;min-width:0;margin:2px 0;padding:6px 8px;border-radius:8px;cursor:pointer;user-select:none;color:var(--dsw-alias-label-primary);outline:none}
       .t3-row:hover,.t3-row:focus-within{background:var(--dsw-alias-interactive-bg-hover)}
       .t3-row[data-current=true]{background:var(--dsw-alias-interactive-bg-active)}
@@ -162,10 +163,13 @@ window.__ModuleLoader__.load({
       .t3-spinner .t3-arc{stroke-dasharray:20 150}
       @keyframes t3-spin{to{transform:rotate(360deg)}}
       @media (prefers-reduced-motion: reduce){.t3-spinner{animation:none}.t3-title,.t3-search-slot,.t3-search,.t3-search-input,.t3-header-actions{transition:none}}
-      .t3-slot{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:flex-end;min-width:26px;height:18px;margin-left:auto}
-      .t3-time{font-size:11px;line-height:16px;color:var(--dsw-alias-label-caption);font-variant-numeric:tabular-nums;transition:opacity .12s ease;pointer-events:none}
-      /* T3 names the live run instead of the age: spinner + Working + elapsed,
-         in the accent colour, in the same slot the age vacates on hover. */
+      .t3-slot{position:relative;flex:none;display:inline-flex;align-items:center;justify-content:flex-end;height:18px;margin-left:auto}
+      .t3-time{flex:none;font-size:11px;line-height:16px;color:var(--dsw-alias-label-caption);font-variant-numeric:tabular-nums;white-space:nowrap}
+      .t3-slot[data-host]{max-width:50%;gap:4px}
+      .t3-slot[data-host] .t3-actions{flex:none}
+      .t3-row:is(:hover,:focus-within,:has([aria-expanded=true])) .t3-slot[data-host]{max-width:70%}
+      .t3-host{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-caption)}
+      /* A running session shows its status and elapsed time in the time slot. */
       .t3-live{display:inline-flex;align-items:center;gap:4px;color:var(--dsw-alias-state-business-primary);font-weight:500}
       .t3-actions{position:absolute;right:0;top:0;display:inline-flex;align-items:center;gap:2px;opacity:0;pointer-events:none;transition:opacity .12s ease}
       /* 18px tall so the hover action strip never grows the slot it replaces. */
@@ -173,31 +177,19 @@ window.__ModuleLoader__.load({
       .t3-icon-button:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2)}
       .t3-icon-button:disabled{opacity:.45;cursor:default}
       .t3-icon-button[data-pinned=true]{color:var(--dsw-alias-brand-primary)}
-      /* Fine-pointer hover only, like T3's group-any-hover: a touch tap latches
-         :hover and would pin the action strip over the age label. */
-      @media (hover:hover) and (pointer:fine){
-        .t3-row:hover .t3-pin{display:none}
-      }
-      .t3-row:hover .t3-time,.t3-row:focus-within .t3-time,.t3-row:has([aria-expanded=true]) .t3-time{position:absolute;right:0;opacity:0}
       .t3-row:hover .t3-actions,.t3-row:focus-within .t3-actions,.t3-row:has([aria-expanded=true]) .t3-actions{position:static;opacity:1;pointer-events:auto}
       .t3-row:hover .t3-pin,.t3-row:focus-within .t3-pin,.t3-row:has([aria-expanded=true]) .t3-pin{display:none}
       .t3-footer{display:inline-flex;align-items:center;gap:8px;flex:1 1 0;width:100%;min-width:0;height:32px;padding:0 10px;overflow:hidden;color:var(--dsw-alias-label-primary);font-size:13px;text-align:left;white-space:nowrap}
       .t3-footer svg{flex:none}
       .t3-footer[data-wide=false]{flex:none;width:32px;justify-content:center;padding:0}
       .t3-footer-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      /* A session on another machine is drawn by the same rules as a local one; the only
-         addition is the badge that names whose machine it lives on. */
-      .t3-machine-badge{display:inline-flex;flex:none;align-items:center}
-      /* Identity hue, blended toward the surrounding text colour so it keeps its contrast in
-         both themes. A machine that cannot be used gives up its hue to grey. */
+      /* Device picker colours distinguish the machines in the dialog. */
       .t3-hue-0{color:hsl(210 62% 58%);color:color-mix(in oklab, hsl(210 62% 58%) 72%, currentColor)}
       .t3-hue-1{color:hsl(150 45% 50%);color:color-mix(in oklab, hsl(150 45% 50%) 72%, currentColor)}
       .t3-hue-2{color:hsl(22 70% 58%);color:color-mix(in oklab, hsl(22 70% 58%) 72%, currentColor)}
       .t3-hue-3{color:hsl(272 55% 62%);color:color-mix(in oklab, hsl(272 55% 62%) 72%, currentColor)}
       .t3-hue-4{color:hsl(330 60% 58%);color:color-mix(in oklab, hsl(330 60% 58%) 72%, currentColor)}
       .t3-hue-5{color:hsl(190 55% 50%);color:color-mix(in oklab, hsl(190 55% 50%) 72%, currentColor)}
-      .t3-machine-badge[data-status=down],.t3-machine-badge[data-status=incompatible]{color:var(--dsw-alias-label-caption);opacity:.7}
-      .t3-machine-badge[data-status=connecting],.t3-machine-badge[data-status=stale]{opacity:.7}
       .t3-row[data-open-disabled=true]{cursor:default}
       .t3-device-before-project{display:flex;justify-content:center;gap:8px;padding:12px;flex:none}
       .t3-native-portals{position:fixed;inset:0;z-index:100;pointer-events:none}.t3-native-portals>*{pointer-events:auto}
@@ -493,18 +485,10 @@ window.__ModuleLoader__.load({
       return h('svg', { width: size, height: size, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true }, ...parts);
     }
 
-    /**
-     * Remote sessions are not a second list. A session on another machine is the same
-     * kind of thing as one on this one, so it sits in the same shelf with the same row
-     * shape, and the only thing that differs is a badge naming whose machine it lives
-     * on — which is what T3 Code does too (ProjectEnvironmentBadge: an icon whose
-     * tooltip reads "On wsl").
-     */
-    function MachineBadge({ machine, hue, t }) {
+    function MachineName({ machine, t }) {
       const where = t('remoteOn').replace('{name}', machine.label);
-      const label = machine.status === 'ready' ? where : where + ' · ' + t(remoteStatusKey(machine.status));
-      const kind = machine.kind ?? 'server';
-      return h('span', { className: 't3-machine-badge t3-hue-' + hue, 'data-status': machine.status, 'data-hue': hue, 'data-kind': kind, role: 'img', 'aria-label': label, title: label }, h(MachineIcon, { kind }));
+      const title = machine.status === 'ready' ? where : where + ' · ' + t(remoteStatusKey(machine.status));
+      return h('span', { className: 't3-host', title }, machine.label);
     }
 
     function remoteTargetsOf(snapshot) {
@@ -1059,10 +1043,9 @@ window.__ModuleLoader__.load({
 
     function Sidebar({
       wide, expandSidebar, useSessions, useSessionStatus, useWorkspaces, usePanelInfo, useContextMenu,
-      useSectionScroller = () => ({}), useRemoteAccess = () => true, renderFactorySlot, t,
+      useRemoteAccess = () => true, renderFactorySlot, t,
     }) {
       const { getTriggerProps } = useContextMenu();
-      const { bindScrollerRef } = useSectionScroller();
       const canStartSession = useRemoteAccess('session/create');
       const activePanelId = usePanelInfo(info => info.activePanelId);
       const panelActive = activePanelId !== null;
@@ -1140,32 +1123,34 @@ window.__ModuleLoader__.load({
         schedule(nextDeadline);
         return () => clearTimeout(timer);
       }, [sessions, statuses, workspaces, snapshot, remote.snapshot, deviceRuntime]);
-      // DSH rc.3 sizes the section to content and does not supply a scroller
-      // hook. Measure the visible space below its navigation for the shelves.
       const rootRef = React.useRef(null);
-      React.useEffect(() => {
+      const loading = !snapshot && !remote.snapshot && !sessions?.ids?.length;
+      // Fit below the host navigation so the bottom groups are visible as
+      // soon as the sidebar opens. The short layout has one native scroller.
+      React.useLayoutEffect(() => {
         const node = rootRef.current;
-        if (!wide || bindScrollerRef || !node) return undefined;
-        let area = null;
-        for (let el = node.parentElement; el; el = el.parentElement) {
-          if (/(auto|scroll)/.test(window.getComputedStyle(el).overflowY)) { area = el; break; }
+        if (!wide || !node) return undefined;
+        let section = node;
+        let viewport = section.parentElement;
+        while (viewport && !/(auto|scroll)/.test(window.getComputedStyle(viewport).overflowY)) {
+          section = viewport;
+          viewport = section.parentElement;
         }
-        if (!area || !area.clientHeight) return undefined;
-        let last = -1;
-        const apply = () => {
-          const offset = node.getBoundingClientRect().top - area.getBoundingClientRect().top + area.scrollTop;
-          const next = Math.max(0, Math.round(area.clientHeight - offset));
-          if (next === last) return;
-          last = next;
-          node.style.setProperty('--t3-fill', next + 'px');
+        if (!viewport) return undefined;
+        const fit = () => {
+          const offset = node.getBoundingClientRect().top - viewport.getBoundingClientRect().top + viewport.scrollTop;
+          const height = `${Math.max(0, Math.floor(viewport.clientHeight - offset))}px`;
+          if (node.style.getPropertyValue('--t3-fill') !== height) node.style.setProperty('--t3-fill', height);
         };
-        apply();
+        fit();
         if (typeof ResizeObserver === 'undefined') return undefined;
-        const observer = new ResizeObserver(apply);
-        observer.observe(area);
-        observer.observe(node);
+        const observer = new ResizeObserver(fit);
+        observer.observe(viewport);
+        for (let sibling = section.previousElementSibling; sibling; sibling = sibling.previousElementSibling) {
+          observer.observe(sibling);
+        }
         return () => observer.disconnect();
-      }, [wide, bindScrollerRef]);
+      }, [wide]);
       // Same landing as the native header: expanding puts the caret in the field,
       // and a click outside the control gives it up — collapsing only while
       // nothing is filtered, so a hidden input never hides a live filter.
@@ -1304,44 +1289,54 @@ window.__ModuleLoader__.load({
       }
       const archived = new Set(workspaces?.archivedSessionIds || []);
       const pinned = new Set(workspaces?.pinnedSessionIds || []);
-      const groups = { pinned: [], active: [], working: [], settled: [] };
+      const groups = Object.fromEntries(GROUPS.map(group => [group, []]));
       const needle = query.trim().toLocaleLowerCase();
+      let hasWorking = false;
+      const addRow = (row, status, { pinned, settled, running }) => {
+        const state = status?.pendingInteraction ? 'warning'
+          : (status?.running ?? running) || workingIds.has(row.id) ? 'ongoing'
+          : status?.completionUnread ? 'done' : null;
+        // A pin from the native sidebar can coexist with our settled flag.
+        const group = pinned ? 'pinned' : settled ? 'settled' : state === 'ongoing' ? 'working' : 'active';
+        if (group === 'working') hasWorking = true;
+        if (needle && !row.title.toLocaleLowerCase().includes(needle)) return;
+        groups[group].push({ ...row, state });
+      };
       for (const id of sessions?.ids || []) {
         const session = sessions.byId?.[id];
         if (!session || archived.has(id) || session.origin === 'subagent' || (session.blank && !(session.retainedBy?.mainView > 0))) continue;
         const title = session.displayTitle || t('untitled');
-        if (needle && !title.toLocaleLowerCase().includes(needle)) continue;
         const placement = snapshot?.placements?.[id];
-        const status = statuses?.get(id);
-        // The native sidebar can pin a settled session without clearing our
-        // record. Keep that pin visible until the user resolves both flags.
-        const group = pinned.has(id) ? 'pinned' : placement?.settled ? 'settled' : !status?.pendingInteraction && workingIds.has(id) ? 'working' : 'active';
-        groups[group].push({ id, title, session, placement });
+        addRow({ id, title, session, placement }, statuses?.get(id), {
+          pinned: pinned.has(id), settled: placement?.settled, running: session.running,
+        });
       }
-      // A session on another machine joins the same shelves. Its own machine decides
-      // pin/settle/archive (D1) and the mirror carries those flags, so the grouping rule
-      // is the same one; the row only gains a badge naming the machine it lives on.
+      // Mirrored sessions use the same groups with the placement flags
+      // reported by their own machine.
       const machines = remoteTargetsOf(remote.snapshot).slice().sort((a, b) => String(a.label).localeCompare(String(b.label)));
       const remoteWorkspaces = new Map(Object.values(remote.snapshot?.workspaces ?? {}).map(row => [row.targetId + '/' + row.workspaceId, row]));
       // A machine can only take the row verbs its own plugin understands, so compare
       // its reported contract with the one this mirror speaks.
       const mirrorContract = remote.snapshot?.contract ?? null;
       const offline = machines.filter(machine => machine.status === 'down');
-      const machineHues = assignHues(machines);
       for (const row of Object.values(remote.snapshot?.sessions ?? {})) {
         const selected = activePanelId === DEVICE_PANEL && deviceRuntime.active?.targetId === row.targetId && deviceRuntime.active?.sessionId === row.sessionId;
         if ((row.blank && !selected) || row.archived || row.origin === 'subagent') continue;
         const remoteTitle = row.displayTitle || t('untitled');
-        if (needle && !remoteTitle.toLocaleLowerCase().includes(needle)) continue;
         const machine = machines.find(known => known.targetId === row.targetId);
         if (!machine) continue;
         const id = row.targetId + '/' + row.sessionId;
         const status = deviceRuntime.pool?.status(row.targetId, row.sessionId);
-        const group = row.pinned ? 'pinned' : row.settled ? 'settled' : !status?.pendingInteraction && workingIds.has(id) ? 'working' : 'active';
-        groups[group].push({ id, title: remoteTitle, session: { updatedAt: row.updatedAt, cwd: row.cwd }, placement: null, remote: row, machine });
+        addRow({ id, title: remoteTitle, session: { updatedAt: row.updatedAt, cwd: row.cwd }, placement: null, remote: row, machine }, status, row);
       }
       const pins = workspaces?.pinnedSessionIds || [];
       const activity = row => Math.max(row.session.updatedAt || 0, row.placement?.unsettledAt || 0);
+      React.useEffect(() => {
+        // Reopen when work starts, while honouring a manual toggle until
+        // the group next goes from empty to populated.
+        const working = !hasWorking;
+        setCollapsed(value => value.working === working ? value : { ...value, working });
+      }, [hasWorking]);
       const pinOrder = row => {
         const order = row.remote
           ? remoteWorkspaces.get(row.remote.targetId + '/' + row.remote.workspaceId)?.pinnedSessionIds?.indexOf(row.remote.sessionId)
@@ -1349,22 +1344,17 @@ window.__ModuleLoader__.load({
         return order >= 0 ? order : Number.MAX_SAFE_INTEGER;
       };
       groups.pinned.sort((a, b) => pinOrder(a) - pinOrder(b) || activity(b) - activity(a) || a.id.localeCompare(b.id));
-      groups.active.sort((a, b) => activity(b) - activity(a));
+      const isWaiting = row => row.state === 'warning';
+      const activeWaiting = groups.active.filter(isWaiting).length;
+      groups.active.sort((a, b) => Number(isWaiting(b)) - Number(isWaiting(a)) || activity(b) - activity(a));
       groups.working.sort((a, b) => activity(b) - activity(a));
       // A mirrored settled row carries no local settledAt, so it falls back to the
       // machine's own last activity rather than dropping to the bottom of the shelf.
       groups.settled.sort((a, b) => (b.placement?.settledAt || activity(b)) - (a.placement?.settledAt || activity(a)));
-      // T3 Code only emits the Working shelf when something is working
-      // (Sidebar.tsx:1979 `if (workingThreads.length > 0)`); an empty shelf is a
-      // heading with a zero. Pinned follows the same rule. Active and Settled are
-      // always rendered: they are where sessions come from and where they go.
-      const shown = ['pinned', 'active', 'working', 'settled'].filter(group =>
-        group === 'active' || group === 'settled' || groups[group].length > 0);
-      // The first rendered shelf carries the free space above it, so with no
-      // running session the push moves from Working to Settled, as in T3.
-      const shelf = shown.find(group => group === 'working' || group === 'settled');
+      const visibleGroups = GROUPS.filter(group => group !== 'pinned' || groups.pinned.length > 0);
+      const sectionId = React.useId();
       if (!wide) return h('div', { className: 't3-sidebar' }, h('style', null, css), h('button', { className: 't3-btn', type: 'button', title: t('expand'), 'aria-label': t('expand'), onClick: expandSidebar }, '☰'));
-      return h('div', { className: 't3-sidebar', ref: rootRef, 'data-scroll-handoff': !!bindScrollerRef }, h('style', null, css),
+      return h('div', { className: 't3-sidebar', ref: rootRef, 'data-expanded': true }, h('style', null, css),
         h('div', { className: 't3-header' },
           h('span', { className: 't3-title', 'data-hidden': searchExpanded }, t('sessions')),
           h('div', { className: 't3-search-slot', 'data-expanded': searchExpanded },
@@ -1406,11 +1396,30 @@ window.__ModuleLoader__.load({
             }, h(AddWorkspaceIcon)))),
         (syncError || actionError) && h('div', { className: 't3-message', role: 'status' }, t(actionError ? 'actionFailed' : 'syncing')),
         uiError && h('div', { className: 't3-message', role: 'alert' }, t(uiError)),
-        !snapshot && !remote.snapshot && !sessions?.ids?.length ? h('div', { className: 't3-message', role: 'status' }, t(syncError ? 'syncing' : 'loading')) :
-        h('div', { className: 't3-scroll', ref: bindScrollerRef }, shown.map(group => h('section', { className: 't3-group', key: group, 'data-shelf': group === shelf },
-          h('button', { className: 't3-btn t3-heading', type: 'button', 'aria-expanded': !collapsed[group], onClick: () => setCollapsed(value => ({ ...value, [group]: !value[group] })) },
-            h('span', { 'aria-hidden': true }, collapsed[group] ? '▸' : '▾'), t(group), h('span', { className: 't3-count' }, String(groups[group].length))),
-          !collapsed[group] && groups[group].map(({ id, title, session, placement, remote, machine }) => {
+        !!offline.length && h('div', { className: 't3-message', role: 'status' },
+          t('remoteOfflineNote').replace('{name}', offline.map(machine => machine.label).join(', '))),
+        remote.error && h('div', { className: 't3-message', role: 'status' }, t('remoteError')),
+        loading ? h('div', { className: 't3-message', role: 'status' }, t(syncError ? 'syncing' : 'loading')) :
+        h('div', { className: 't3-list-frame' }, h('div', { className: 't3-list' }, visibleGroups.map(group => h('section', {
+          className: 't3-group', key: group, 'data-group': group, 'data-has-rows': !collapsed[group] && groups[group].length > 0,
+        },
+          h('button', { className: 't3-btn t3-heading', type: 'button', 'aria-expanded': !collapsed[group], 'aria-controls': `${sectionId}-${group}`, onClick: () => setCollapsed(value => ({ ...value, [group]: !value[group] })) },
+            h('span', { 'aria-hidden': true }, collapsed[group] ? '▸' : '▾'), t(group),
+            group === 'active' && activeWaiting > 0 && h('span', { className: 't3-waiting' }, t('waitingCount').replace('{n}', activeWaiting)),
+            h('span', { className: 't3-count' }, String(groups[group].length))),
+          h('div', { id: `${sectionId}-${group}`, className: 't3-rows', hidden: !!collapsed[group] },
+          !collapsed[group] && groups[group].map(({ id, title, session, placement, remote, machine, state }) => {
+            const live = state === 'ongoing';
+            const stateLabel = state && t('status' + state[0].toUpperCase() + state.slice(1));
+            const duration = live ? workingDuration(t, workingRef.current.get(id)?.since, nowMinute) : null;
+            const time = live
+              ? h('span', { className: 't3-time t3-live' },
+                h(StatusGlyph, { state: 'ongoing' }), h('span', null, stateLabel), duration)
+              : h('span', { className: 't3-time', 'aria-hidden': true }, timeLabel(t, session.updatedAt, nowMinute));
+            const titleLine = (disabled = false) => h('div', { className: 't3-line' },
+              h('button', { className: 't3-open', type: 'button', title, disabled }, title),
+              state && !live && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })),
+              (remote || !session.blank) && time);
             if (remote) {
               const workspace = remoteWorkspaces.get(remote.targetId + '/' + (remote.workspaceId ?? ''));
               const online = canManageDevice(remote.targetId);
@@ -1420,13 +1429,6 @@ window.__ModuleLoader__.load({
               const creating = !!pending[machine.targetId + '/project:' + (workspace?.workspaceId ?? '')];
               const pinAction = remote.pinned ? 'unpin' : 'pin';
               const settleAction = remote.settled ? 'unsettle' : 'settle';
-              const status = deviceRuntime.pool?.status(remote.targetId, remote.sessionId);
-              const state = status?.pendingInteraction ? 'warning'
-                : workingIds.has(id) || status?.running ? 'ongoing'
-                : status?.completionUnread ? 'done' : null;
-              const live = state === 'ongoing';
-              const stateLabel = state && t('status' + state[0].toUpperCase() + state.slice(1));
-              const elapsed = live ? Math.floor(Math.max(0, nowMinute - (workingRef.current.get(id)?.since ?? nowMinute)) / 60000) : 0;
               const target = { kind: 't3-device-session', value: { targetId: remote.targetId, sessionId: remote.sessionId, displayTitle: title } };
               const open = () => { if (canOpen) runUi(() => openDeviceSession({ targetId: remote.targetId, sessionId: remote.sessionId }), 'openFailed'); };
               const trigger = getTriggerProps(target, {
@@ -1444,10 +1446,8 @@ window.__ModuleLoader__.load({
                 h('div', { className: 't3-top' },
                   remote.pinned && h('span', { className: 't3-pin', 'aria-hidden': true }, h(PinIcon, { filled: true, size: 12 })),
                   h('span', { className: 't3-proj' }, workspace?.title || pathLabel(workspace?.path ?? remote.cwd ?? '')),
-                  h('span', { className: 't3-slot' },
-                    live
-                      ? h('span', { className: 't3-time t3-live', title: t('statusOngoing') }, h(StatusGlyph, { state: 'ongoing' }), h('span', null, t('statusOngoing') + (elapsed > 0 ? ' ' + t('timeMinutes').replace('{n}', elapsed) : '')))
-                      : h('span', { className: 't3-time', 'aria-hidden': true }, timeLabel(t, remote.updatedAt, nowMinute)),
+                  h('span', { className: 't3-slot', 'data-host': true },
+                    h(MachineName, { machine, t }),
                     h('span', { className: 't3-actions', onClick: event => event.stopPropagation() },
                       workspace && h('button', {
                         type: 'button', className: 't3-icon-button', disabled: !online || creating,
@@ -1457,9 +1457,7 @@ window.__ModuleLoader__.load({
                       h('button', { className: 't3-icon-button', 'data-pinned': remote.pinned, type: 'button', disabled: !canVerb || busy, title: t(pinAction), 'aria-label': `${t(pinAction)}: ${title}`, onClick: () => { void actRemote(machine.targetId, remote.sessionId, pinAction); } }, h(PinIcon, { filled: remote.pinned, size: 14 })),
                       h('button', { className: 't3-icon-button', type: 'button', disabled: !canVerb || busy, title: t(settleAction), 'aria-label': `${t(settleAction)}: ${title}`, onClick: () => { void actRemote(machine.targetId, remote.sessionId, settleAction); } }, h(SettledIcon, { restored: remote.settled })),
                       renderFactorySlot('contextMenu.button', { target, label: `${t('more')}: ${title}`, className: 't3-icon-button' })))),
-                h('div', { className: 't3-line' }, h('button', { className: 't3-open', type: 'button', title, disabled: !canOpen }, title),
-                  state && !live && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })),
-                  h(MachineBadge, { machine, hue: machineHues.get(machine.targetId), t })));
+                titleLine(!canOpen));
             }
 
             const isPinned = pinned.has(id);
@@ -1475,33 +1473,12 @@ window.__ModuleLoader__.load({
                 runUi(() => { context.uiWorkspace.openSession(id); deactivateDevice(); }, 'openFailed');
               },
             });
-            const status = statuses?.get(id);
-            const state = status?.pendingInteraction ? 'warning'
-              : workingIds.has(id) || status?.running ? 'ongoing'
-              : status?.completionUnread ? 'done' : null;
-            const stateLabel = state && t('status' + state[0].toUpperCase() + state.slice(1));
-            const live = state === 'ongoing';
-            const duration = live ? workingDuration(t, workingRef.current.get(id)?.since, nowMinute) : null;
             const busy = !!pending[id] || syncError || !snapshot;
-            // One trailing cell carries the age — or, while the agent runs, the
-            // live status and its elapsed time — and on hover the row verbs.
-            // Clicks on the strip stay there instead of opening the session.
             const slot = session.blank ? null : h('span', { className: 't3-slot' },
-              live
-                ? h('span', { className: 't3-time t3-live', title: stateLabel },
-                  h(StatusGlyph, { state: 'ongoing' }),
-                  h('span', null, stateLabel),
-                  duration && h('span', { className: 't3-duration' }, duration))
-                : h('span', { className: 't3-time', 'aria-hidden': true }, timeLabel(t, session.updatedAt, nowMinute)),
-              // The menu trigger trails the row verbs, so it sits on the row's
-              // right edge where the pointer already rests.
               h('span', { className: 't3-actions', onClick: event => event.stopPropagation() },
                 h('button', { className: 't3-icon-button', 'data-pinned': isPinned, type: 'button', disabled: busy, title: t(pinAction), 'aria-label': `${t(pinAction)}: ${title}`, onClick: () => act(id, pinAction) }, h(PinIcon, { filled: isPinned, size: 14 })),
                 h('button', { className: 't3-icon-button', type: 'button', disabled: busy, title: t(settleAction), 'aria-label': `${t(settleAction)}: ${title}`, onClick: () => act(id, settleAction) }, h(SettledIcon, { restored: isSettled })),
                 renderFactorySlot('contextMenu.button', { target, label: `${t('more')}: ${title}`, className: 't3-icon-button' })));
-            const titleLine = h('div', { className: 't3-line' },
-              h('button', { className: 't3-open', type: 'button', title }, title),
-              state && (isSettled || !live) && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })));
             const topLine = h('div', { className: 't3-top' },
               isPinned && h('span', { className: 't3-pin', 'aria-hidden': true }, h(PinIcon, { filled: true, size: 12 })),
               h('span', { className: 't3-proj' }, workspaceLabel.get(id) || pathLabel(session.cwd)),
@@ -1513,14 +1490,9 @@ window.__ModuleLoader__.load({
               'data-working': live,
               'data-current': !panelActive && (session.retainedBy?.mainView || 0) > 0,
               onClick: () => runUi(() => { context.uiWorkspace.openSession(id); deactivateDevice(); }, 'openFailed'),
-            }, topLine, titleLine);
-          }))),
-          // A machine that stopped answering keeps its rows — they are the last thing it
-          // said — and says so once, in a line rather than a shelf of its own.
-          !!offline.length && h('div', { className: 't3-message', role: 'status' },
-            t('remoteOfflineNote').replace('{name}', offline.map(machine => machine.label).join(', '))),
-          remote.error && h('div', { className: 't3-message', role: 'status' }, t('remoteError'))),
-        dialog?.kind === 'add' && h(AddProjectDialog, { machines: machines.filter(machine => canManageDevice(machine.targetId)), hues: machineHues, t, close: () => setDialog(null) }));
+            }, topLine, titleLine());
+          })))))),
+        dialog?.kind === 'add' && h(AddProjectDialog, { machines: machines.filter(machine => canManageDevice(machine.targetId)), hues: assignHues(machines), t, close: () => setDialog(null) }));
     }
     return {
       inject: ['slots', 'locale', 'connection', 'uiWorkspace', 'contextMenus', 'workspaces', 'loader', 'modules', 'layout', 'sessions', 'uiSession', 'shortcuts'],
