@@ -1,0 +1,4 @@
+- insert:
+    # Keep the row ID so existing profile overrides still apply.
+    - id: t3-session-sidebar
+      name: 'dsh-session-harbor'

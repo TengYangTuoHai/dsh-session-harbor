@@ -1,5 +1,5 @@
 {
-  "name": "t3-static-check",
+  "name": "session-harbor-static-check",
   "private": true,
   "type": "module",
   "dependencies": {

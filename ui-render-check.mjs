@@ -1,7 +1,7 @@
 // Retired acceptance fixture: its fake slot tree asserted that remote clicks do
 // nothing. It cannot validate the native per-device runtime. Keep the old fixture
 // below for comparison, but never treat it as current UI verification.
-throw new Error('Legacy jsdom UI fixture retired. Run node --test t3-session-sidebar/*.test.js, then verify the current authenticated DSH GUI.');
+throw new Error('Legacy jsdom UI fixture retired. Run node --test dsh-session-harbor/*.test.js, then verify the current authenticated DSH GUI.');
 
 // Offline render check for the sidebar rows: mounts the plugin's client module in
 // jsdom with fake DSH slot props and prints the row markup, so the T3-style layout
@@ -37,7 +37,7 @@ const ReactDOMClient = nodeRequire(path.join(reactDom, 'client.js'));
 const { act } = nodeRequire(path.join(reactDom, 'test-utils.js'));
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-await import(path.join(here, 't3-session-sidebar', 'client.js'));
+await import(path.join(here, 'dsh-session-harbor', 'client.js'));
 const plugin = loaded.factory((name) => {
   if (name === 'react') return React;
   throw new Error('unexpected client require: ' + name);
@@ -68,11 +68,11 @@ const now = Date.now();
 const list = {
   ids: ['a', 'b', 'c', 'd', 'e'],
   byId: {
-    a: { id: 'a', displayTitle: 'Inspect Network Bridge Contract', cwd: '/repo/dsh-t3-code', running: true, blank: false, updatedAt: now - 9 * 3600000, retainedBy: { mainView: 1 } },
+    a: { id: 'a', displayTitle: 'Inspect Network Bridge Contract', cwd: '/repo/dsh-session-harbor', running: true, blank: false, updatedAt: now - 9 * 3600000, retainedBy: { mainView: 1 } },
     b: { id: 'b', displayTitle: 'Rename settle group', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 3 * 60000, retainedBy: {} },
     c: { id: 'c', displayTitle: 'Old settled thread', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 2 * 86400000, retainedBy: {} },
     d: { id: 'd', displayTitle: 'Needs a decision', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 30 * 60000, retainedBy: {} },
-    e: { id: 'e', displayTitle: 'Refactor thread inbox sync', cwd: '/repo/dsh-t3-code', running: true, blank: false, updatedAt: now - 39 * 60000, retainedBy: {} },
+    e: { id: 'e', displayTitle: 'Refactor thread inbox sync', cwd: '/repo/dsh-session-harbor', running: true, blank: false, updatedAt: now - 39 * 60000, retainedBy: {} },
   },
 };
 const statuses = new Map([
@@ -83,7 +83,7 @@ const statuses = new Map([
   ['e', { running: true, pendingInteraction: undefined, completionUnread: false }],
 ]);
 const workspaces = {
-  items: [{ workspaceId: 'w1', title: 'dsh-t3-code', path: '/repo/dsh-t3-code', sessionIds: ['a'] }],
+  items: [{ workspaceId: 'w1', title: 'dsh-session-harbor', path: '/repo/dsh-session-harbor', sessionIds: ['a'] }],
   pinnedSessionIds: ['a'],
   archivedSessionIds: [],
 };
@@ -187,7 +187,7 @@ const idleShelf = [...idleHost.querySelectorAll('.t3-group[data-shelf=true] .t3-
 console.log('idle sidebar headings:', idleHeadings.join(' | '), '| shelf:', idleShelf.join(', '));
 // The preview page re-runs the fill measurement on static markup, so the two
 // must not drift: pin the plugin side to the same pieces.
-const source = await import('node:fs').then(fs => fs.readFileSync(path.join(here, 't3-session-sidebar', 'client.js'), 'utf8'));
+const source = await import('node:fs').then(fs => fs.readFileSync(path.join(here, 'dsh-session-harbor', 'client.js'), 'utf8'));
 const fillPieces = ['--t3-fill', 'overflowY', 'area.clientHeight - offset', 'ResizeObserver'];
 const missing = fillPieces.filter(piece => !source.includes(piece));
 console.log('fill measurement pieces:', missing.length ? 'MISSING ' + missing.join(', ') : 'all present');

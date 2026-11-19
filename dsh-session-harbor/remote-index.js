@@ -127,7 +127,7 @@ export function createRemoteIndex({ storage, onWriteError = () => {} }) {
     for (const [key] of [...sessions.entries()]) if (key.startsWith(targetId + '/')) sessions.delete(key);
   }
 
-  /** Remove cached devices, sessions and projects outside the saved T3 device list. */
+  /** Remove cached devices, sessions and projects outside the saved device list. */
   function retainTargets(targetIds) {
     for (const [key, value] of workspaces.entries()) if (!targetIds.has(value.targetId)) workspaces.delete(key);
     for (const [key, value] of sessions.entries()) if (!targetIds.has(value.targetId)) sessions.delete(key);

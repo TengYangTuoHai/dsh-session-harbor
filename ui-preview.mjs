@@ -29,7 +29,7 @@ globalThis.window = dom.window;
 globalThis.document = dom.window.document;
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-await import(path.join(here, 't3-session-sidebar', 'client.js'));
+await import(path.join(here, 'dsh-session-harbor', 'client.js'));
 const plugin = loaded.factory((name) => {
   if (name === 'react') return React;
   throw new Error('unexpected require ' + name);
@@ -58,11 +58,11 @@ const dict = {
 const list = {
   ids: ['a', 'b', 'c', 'd', 'e'],
   byId: {
-    a: { id: 'a', displayTitle: 'Inspect Network Bridge Contract', cwd: '/repo/dsh-t3-code', running: true, blank: false, updatedAt: now - 9 * 3600000, retainedBy: { mainView: 1 } },
+    a: { id: 'a', displayTitle: 'Inspect Network Bridge Contract', cwd: '/repo/dsh-session-harbor', running: true, blank: false, updatedAt: now - 9 * 3600000, retainedBy: { mainView: 1 } },
     b: { id: 'b', displayTitle: 'Rename settle group', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 3 * 60000, retainedBy: {} },
     c: { id: 'c', displayTitle: 'Old settled thread', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 2 * 86400000, retainedBy: {} },
     d: { id: 'd', displayTitle: 'Needs a decision', cwd: '/repo/other', running: false, blank: false, updatedAt: now - 30 * 60000, retainedBy: {} },
-    e: { id: 'e', displayTitle: 'Refactor thread inbox sync', cwd: '/repo/dsh-t3-code', running: true, blank: false, updatedAt: now - 39 * 60000, retainedBy: {} },
+    e: { id: 'e', displayTitle: 'Refactor thread inbox sync', cwd: '/repo/dsh-session-harbor', running: true, blank: false, updatedAt: now - 39 * 60000, retainedBy: {} },
   },
 };
 const statuses = new Map([
@@ -72,7 +72,7 @@ const statuses = new Map([
   ['d', { running: false, pendingInteraction: { key: 'k', kind: 'approval', sessionId: 'd' }, completionUnread: false }],
   ['e', { running: true, pendingInteraction: undefined, completionUnread: false }],
 ]);
-const workspaces = { items: [{ workspaceId: 'w1', title: 'dsh-t3-code', path: '/repo/dsh-t3-code', sessionIds: ['a'] }], pinnedSessionIds: ['a'], archivedSessionIds: [] };
+const workspaces = { items: [{ workspaceId: 'w1', title: 'dsh-session-harbor', path: '/repo/dsh-session-harbor', sessionIds: ['a'] }], pinnedSessionIds: ['a'], archivedSessionIds: [] };
 
 const root = ReactDOMClient.createRoot(document.getElementById('root'));
 await act(async () => {

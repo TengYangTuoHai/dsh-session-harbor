@@ -1,5 +1,5 @@
 window.__ModuleLoader__.load({
-  id: '@local/dsh-t3-session-sidebar',
+  id: 'dsh-session-harbor',
   factory(require) {
     const React = require('react');
     const { createPortal } = require('react-dom');
@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     const DEFAULT_COLLAPSED = Object.freeze({ working: true, settled: true });
     const dictionaries = {
       en: {
-        enable: 'Use T3 sidebar', native: 'Use native sidebar', nativeShort: 'Use native', t3Short: 'Use T3',
+        enable: 'Use Session Harbor', native: 'Use native sidebar', nativeShort: 'Use native',
         sessions: 'Sessions', search: 'Search sessions', searchPlaceholder: 'Search session names', searchClear: 'Clear search',
         viewOptions: 'View options', addWorkspace: 'Add workspace',
         pinned: 'Pinned', active: 'Active', working: 'Working', settled: 'Settled',
@@ -48,7 +48,7 @@ window.__ModuleLoader__.load({
         remoteDeleteMachine: 'Machine', remoteDeletePath: 'Folder', remoteDeleteSessions: 'Sessions', remoteDeleteCount: '{n}', remoteDeleteConfirm: 'Delete project'
       },
       ['z' + 'h']: {
-        enable: '切换至 T3 侧栏', native: '切换至原生侧栏', nativeShort: '切换至原生', t3Short: '切换至 T3',
+        enable: '切换至会话港', native: '切换至原生侧栏', nativeShort: '切换至原生',
         sessions: '会话', search: '搜索会话', searchPlaceholder: '搜索会话名称', searchClear: '清除搜索',
         viewOptions: '视图选项', addWorkspace: '添加工作区',
         pinned: '已置顶', active: '活跃', working: '工作中', settled: '已完成',
@@ -1711,7 +1711,7 @@ window.__ModuleLoader__.load({
     const SSH_SETTINGS_ID = 't3-ssh';
     const sshCopy = {
       en: {
-        title: 'T3 SSH', addHost: 'Add host', addConnect: 'Add and connect', adding: 'Adding…',
+        title: 'Session Harbor SSH', addHost: 'Add host', addConnect: 'Add and connect', adding: 'Adding…',
         config: 'SSH config hosts', chooseHost: 'Choose a host', noConfigHosts: 'No named hosts found in SSH config.',
         address: 'SSH address', advanced: 'Advanced options', label: 'Name', directory: 'Remote directory',
         executable: 'DSH executable', profile: 'Profile', remoteHome: 'Remote home directory',
@@ -1725,7 +1725,7 @@ window.__ModuleLoader__.load({
         httpError: 'The SSH service returned HTTP {status}.', invalidResponse: 'The SSH service returned an invalid response.',
       },
       ['z' + 'h']: {
-        title: 'T3 SSH', addHost: '添加主机', addConnect: '添加并连接', adding: '正在添加…',
+        title: '会话港 SSH', addHost: '添加主机', addConnect: '添加并连接', adding: '正在添加…',
         config: 'SSH 配置中的主机', chooseHost: '选择主机', noConfigHosts: 'SSH 配置中未找到已命名的主机。',
         address: 'SSH 地址', advanced: '高级选项', label: '名称', directory: '远程目录',
         executable: 'DSH 启动路径', profile: '配置名称', remoteHome: '远程用户主目录',
@@ -1771,7 +1771,7 @@ window.__ModuleLoader__.load({
       .replace(/((?:token|password|authorization)["']?\s*[:=]\s*["']?)[^\s"',;]+/gi, '$1[redacted]');
 
     function installSshSettings(ctx) {
-      ctx.effect(() => ctx.locale.register(SSH_SETTINGS_ID, sshCopy), 't3-ssh: dictionaries');
+      ctx.effect(() => ctx.locale.register(SSH_SETTINGS_ID, sshCopy), 'session-harbor: SSH dictionaries');
       const t = ctx.locale.bind(SSH_SETTINGS_ID);
       const subscribe = ctx.locale.subscribe.bind(ctx.locale);
       const getLocale = ctx.locale.getSnapshot.bind(ctx.locale);
@@ -2022,10 +2022,10 @@ window.__ModuleLoader__.load({
 
       ctx.effect(() => ctx.slots.inject('settings.section', () => ctx.slots.register({
         name: 'settings.section', id: SSH_SETTINGS_ID, order: 26, label: () => t('title'),
-      }, SshSettings)), 't3-ssh: settings section');
+      }, SshSettings)), 'session-harbor: SSH settings section');
       ctx.effect(() => ctx.slots.inject('settings.section.icon', () => ctx.slots.register({
         name: 'settings.section.icon', id: SSH_SETTINGS_ID,
-      }, MachineIcon)), 't3-ssh: settings icon');
+      }, MachineIcon)), 'session-harbor: SSH settings icon');
     }
 
     return {
@@ -2033,7 +2033,7 @@ window.__ModuleLoader__.load({
       apply(ctx) {
         Sidebar.context = ctx;
         runtimeClosed = false;
-        ctx.effect(() => ctx.locale.register(NS, dictionaries), 't3-session-sidebar: dictionaries');
+        ctx.effect(() => ctx.locale.register(NS, dictionaries), 'session-harbor: dictionaries');
         installSshSettings(ctx);
         ctx.slots.inject('contextMenu.icon', function* () {
           yield ctx.slots.register({ name: 'contextMenu.icon', key: NS + '.settle' }, SettledIcon);
@@ -2076,7 +2076,7 @@ window.__ModuleLoader__.load({
               },
             }];
           },
-        }), 't3-session-sidebar: session menu');
+        }), 'session-harbor: session menu');
         ctx.effect(() => ctx.contextMenus.register({
           id: 't3-sidebar.device-session', target: 't3-device-session', order: 100,
           observe: () => [ctx.locale, {
@@ -2127,16 +2127,16 @@ window.__ModuleLoader__.load({
               }, !online), separatorBefore: true },
             ];
           },
-        }), 't3-session-sidebar: device session menu');
+        }), 'session-harbor: device session menu');
         ctx.effect(() => ctx.slots.inject('main', function* () {
           yield ctx.slots.register({ name: 'main', key: DEVICE_PANEL, locale: NS }, DeviceConversation);
           yield ctx.slots.register({ name: 'main', key: NEW_PANEL, locale: NS }, NewDeviceSession);
-        }), 't3-session-sidebar: device main regions');
+        }), 'session-harbor: device main regions');
         ctx.effect(() => ctx.slots.inject('shell.overlay', function* () {
           yield ctx.slots.register({ name: 'shell.overlay', id: 't3-device-runtime-owner' }, RuntimeConnections);
           yield ctx.slots.register({ name: 'shell.overlay', id: 't3-device-rename', locale: NS }, RemoteRenameOverlay);
-        }), 't3-session-sidebar: device overlays');
-        ctx.effect(() => installDeviceWorkspacePicker(ctx), 't3-session-sidebar: device before project');
+        }), 'session-harbor: device overlays');
+        ctx.effect(() => installDeviceWorkspacePicker(ctx), 'session-harbor: device before project');
         ctx.effect(() => async () => {
           runtimeClosed = true;
           navigation++;
@@ -2146,7 +2146,7 @@ window.__ModuleLoader__.load({
           await previous?.dispose();
           publishRuntime({ pool: null, active: null, phase: 'idle', error: null });
           setRenameTarget(null);
-        }, 't3-session-sidebar: device runtime ownership');
+        }, 'session-harbor: device runtime ownership');
         ctx.effect(() => {
           let enabled = true;
           let disposeSidebar;
@@ -2162,12 +2162,12 @@ window.__ModuleLoader__.load({
           function Footer({ t, wide }) {
             const active = React.useSyncExternalStore(subscribe, () => enabled, () => enabled);
             const label = t(active ? 'native' : 'enable');
-            return h(React.Fragment, null, h('style', null, css), h('button', { type: 'button', className: 't3-btn t3-footer', 'data-wide': wide, onClick: toggle, title: label, 'aria-label': label }, h(SwitchSidebarIcon), wide && h('span', { className: 't3-footer-label' }, t(active ? 'nativeShort' : 't3Short'))));
+            return h(React.Fragment, null, h('style', null, css), h('button', { type: 'button', className: 't3-btn t3-footer', 'data-wide': wide, onClick: toggle, title: label, 'aria-label': label }, h(SwitchSidebarIcon), wide && h('span', { className: 't3-footer-label' }, active ? t('nativeShort') : label)));
           }
           disposeSidebar = install();
           const disposeFooter = ctx.slots.inject('sidebar.footer.action', () => ctx.slots.register({ name: 'sidebar.footer.action', id: 't3-session-sidebar-toggle-v8', order: 1000, locale: NS }, Footer));
           return () => { disposeSidebar?.(); disposeFooter?.(); listeners.clear(); };
-        }, 't3-session-sidebar: slots');
+        }, 'session-harbor: slots');
       }
     };
   }

@@ -49,7 +49,7 @@ function mountRoutes(baseUrl) {
     || !['http:', 'https:'].includes(base.protocol) || base.username || base.password || base.search || base.hash
     || !base.pathname.endsWith('/') || /(?:^|\/)\.\.?\//.test(baseUrl) || baseUrl.includes('\\')
     || !/^\/t3-remote\/ssh\/[A-Za-z0-9_-]+\/$/.test(base.pathname)) {
-    throw new TypeError('connection: baseUrl must name a T3 SSH device route');
+    throw new TypeError('connection: baseUrl must name a Session Harbor SSH device route');
   }
   return (path, socket = false) => {
     assertRoute(path);

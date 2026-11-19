@@ -62,7 +62,7 @@ function namespaceStorage(backing, prefix, assertLive) {
 
 function transportMapper(baseUrl) {
   if (typeof baseUrl !== 'string' || !baseUrl.startsWith('/') || baseUrl.startsWith('//') || !/^\/t3-remote\/ssh\/[A-Za-z0-9_-]+\/$/.test(baseUrl)) {
-    throw new TypeError('device realm requires a T3 SSH device baseUrl');
+    throw new TypeError('device realm requires a Session Harbor SSH device baseUrl');
   }
   return input => {
     const path = String(input);

@@ -42,16 +42,16 @@
 
 ## 部署与验证
 
-本机插件支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。设置弹窗里的 T3 SSH 管理设备连接，Host 通过 OpenSSH 建立隧道并为内嵌会话转发 HTTP 与 WebSocket。启动时按 T3 保存的设备 ID 清理已失效的本地镜像。远端的 settled 和 placement 实时同步依赖远端安装本侧栏插件，原生会话依赖匹配 release 的可信官方 Client 图和远端 Web 能力。
+本机插件支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。在「设置 → 会话港 SSH」管理设备连接。Host 通过 OpenSSH 建立隧道并为内嵌会话转发 HTTP 与 WebSocket。启动时按已保存的设备 ID 清理已失效的本地镜像。远端的 settled 和 placement 实时同步依赖远端安装本侧栏插件，原生会话依赖匹配 release 的可信官方 Client 图和远端 Web 能力。
 
-远端首次安装侧栏插件会执行既有的一次性 idle 会话迁移；更新不应重新执行已完成的迁移。
+远端首次安装时会执行一次空闲会话迁移。改用会话港包名时沿用原插件的存储域、迁移记录、浏览器存储键和跨设备 RPC，支持新旧版本混用。
 
 构建与纯本地回归：
 
 ```sh
 node tools/build-client.mjs
 node tools/build-client.mjs --check
-node --test t3-session-sidebar/*.test.js
+node --test dsh-session-harbor/*.test.js
 ```
 
 纯本地测试覆盖协议、认证资源路由、双设备相同 ID 的存储隔离、生命周期、重连、取消、状态覆盖、连续新建和会话操作。它们不证明真实 GUI 已渲染或完成了一轮对话。

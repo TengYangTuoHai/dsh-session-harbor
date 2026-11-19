@@ -1,32 +1,57 @@
-# dsh-t3-code
+# 会话港 · Session Harbor
 
-DeepSeek Harness 插件：在同一工作台的 Pinned / Active / Working / Settled 四组中管理本机和 SSH 远端会话。远端正文使用该设备独立的原生 DSH Client，在本机主区域呈现；新建会话先选设备，再选该设备的项目。
+在一个 DeepSeek Harness 窗口里管理本机和多台 SSH 设备的会话。侧栏按「已置顶」「活跃」「工作中」「已完成」分组，点开远端会话就能在主区域继续对话。
 
-A DeepSeek Harness plugin that groups local and SSH device sessions in one workspace and opens native conversations in the same main area. New sessions choose a device before a project.
+[直接安装](#直接安装) · [连接 SSH 设备](#连接-ssh-设备) · [版本发布](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
 
-行为、依赖和限制见 [插件说明](t3-session-sidebar/README.md)；运行时边界见 [设计与验收范围](docs/remote-aggregation-design.md)。
+## 直接安装
 
-## 构建与安装
+**插件 v0.2.4** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
 
-当前插件版本 `0.2.3`，支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。先在仓库根目录构建：
+1. 在 DSH 左侧打开「插件」，点击「添加插件」。
+2. 将下面的链接粘贴到「包名或地址」，点击「安装」。
+
+   ```text
+   https://github.com/TengYangTuoHai/dsh-session-harbor/releases/download/v0.2.4/dsh-session-harbor-0.2.4.tgz
+   ```
+
+3. 安装完成后点「立即启用」。如果 DSH 提示重启，重启后再打开工作台。
+
+从旧版「T3 会话侧边栏」升级时，先在「插件」页卸载旧版，再用上面的链接安装「会话港」。会话、置顶、已完成状态和已保存的 SSH 主机可继续使用。
+
+更新会话港时复制新版 `.tgz` 安装包的下载链接。如果 DSH 提示插件已安装，先在「插件」页卸载旧版，再粘贴新版链接安装。[查看最新 Release](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
+
+## 管理会话
+
+- **搜索会话。** 按标题搜索本机和 SSH 会话，远端会话右上角显示设备名。
+- **查看待处理事项。** 等待审批或问答的会话排在「活跃」组顶部，展开「工作中」可查看正在运行的任务。
+- **整理会话。** 右键置顶、重命名或标为已完成。新建会话在首轮对话开始后进入列表。
+
+用侧栏底部的「切换至原生」按钮可切回 DSH 原生列表。
+
+## 连接 SSH 设备
+
+1. 在「设置 → 会话港 SSH」点击「添加主机」，从本机 SSH 配置选择主机，或输入 `user@host`。
+2. 点击「添加并连接」。连接就绪后，该设备的会话会出现在侧栏。
+3. 点击已有会话继续对话，或点侧栏顶部的「新会话」，先选设备，再选项目。
+
+SSH 登录沿用本机 OpenSSH 配置和 SSH agent。**打开远端原生会话需要远端安装与本机相同版本的 DSH。** 要在本机标记远端会话为「已完成」并同步该状态，也请在远端安装本插件。
+
+## 从源码安装
+
+在仓库根目录执行以下命令安装依赖、构建及验证。
 
 ```sh
+npm --prefix dsh-session-harbor install --no-package-lock
 node tools/build-client.mjs
-```
-
-在 DSH 插件管理器中安装或更新本地 `t3-session-sidebar` 目录。该目录的 manifest 声明 bundle patch、元数据、图标、Host 和 Client 入口。替换已加载版本后，按插件管理器返回的应用状态重启当前 DSH，再刷新原工作台。新开开发服务器不会更新已有 GUI。
-
-在 DeepSeek Harness 的「设置 → T3 SSH」里，可从本机 SSH 配置选主机，也可手动输入 SSH 地址。连接就绪后，远端会话会同步到侧栏。远端安装 T3 侧栏插件后，可持久化并同步该设备的 Settled 状态。
-
-## 验证
-
-```sh
 node tools/build-client.mjs --check
-node --test t3-session-sidebar/*.test.js
+node --test dsh-session-harbor/*.test.js
 ```
 
-纯本地测试验证协议、身份隔离和状态机。GUI 验收必须使用当前已认证的 DSH 工作台，覆盖新建与打开、流式正文、停止、审批、问答、模型、附件、菜单、断线重连及刷新恢复。历史 jsdom / 独立页面截图脚本不构成当前原生会话的验收证据。
+在 DSH「添加插件」里输入 `dsh-session-harbor/` 的绝对路径并启用。
 
-## 上游与许可
+[插件说明](dsh-session-harbor/README.md) · [远端会话设计](docs/remote-aggregation-design.md)
 
-分组规则（四组划分与两秒退出缓冲）及会话行呈现参考 [T3 Code](https://github.com/pingdotgg/t3code) 的 `095611d1` 实现（MIT，© T3 Tools Inc.）。本仓库使用 MIT 许可，见 [LICENSE](LICENSE)。
+## 许可
+
+本项目采用 MIT 许可。侧栏分组和会话行参考 T3 Code 的 `095611d1` 实现（MIT，© T3 Tools Inc.）。[LICENSE](LICENSE) · [T3 Code](https://github.com/pingdotgg/t3code/tree/095611d1)

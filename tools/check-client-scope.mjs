@@ -12,12 +12,12 @@ const globals = globalsModule.default ?? globalsModule;
 const known = new Set(Object.keys({ ...globals.es2025, ...globals.browser, ...globals.node }));
 const files = process.argv.slice(2);
 if (!files.length) files.push(
-  't3-session-sidebar/client.js',
-  't3-session-sidebar/client.remote-runtime.js',
-  't3-session-sidebar/remote-runtime.js',
-  't3-session-sidebar/device-realm.js',
-  't3-session-sidebar/remote-transport.js',
-  't3-session-sidebar/shortcuts-bridge.js',
+  'dsh-session-harbor/client.js',
+  'dsh-session-harbor/client.remote-runtime.js',
+  'dsh-session-harbor/remote-runtime.js',
+  'dsh-session-harbor/device-realm.js',
+  'dsh-session-harbor/remote-transport.js',
+  'dsh-session-harbor/shortcuts-bridge.js',
 );
 let errors = 0;
 for (const file of files) {

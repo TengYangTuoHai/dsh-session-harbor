@@ -31,10 +31,10 @@ const [{ Context, Logger }, { default: Storage, storageBackendServiceKey, Storag
 ]);
 const runtimeVersion = installedRequire('@deepseek-ai/dsh/package.json').version;
 assert.equal(installedRequire('@deepseek-ai/dsh-storage-domain/package.json').version, runtimeVersion);
-const plugin = await import('../t3-session-sidebar/index.js');
-const { SshService } = await import('../t3-session-sidebar/ssh/ssh-service.js');
-const { RemoteBridge } = await import('../t3-session-sidebar/ssh/remote-bridge.js');
-const { createRemoteIndex, remoteIndexSpec, REMOTE_INDEX_DOMAIN } = await import('../t3-session-sidebar/remote-index.js');
+const plugin = await import('../dsh-session-harbor/index.js');
+const { SshService } = await import('../dsh-session-harbor/ssh/ssh-service.js');
+const { RemoteBridge } = await import('../dsh-session-harbor/ssh/remote-bridge.js');
+const { createRemoteIndex, remoteIndexSpec, REMOTE_INDEX_DOMAIN } = await import('../dsh-session-harbor/remote-index.js');
 const turn = () => new Promise(resolve => setImmediate(resolve));
 const workspace = { workspaceId: 'fixture-workspace', path: '/fixture/project', title: 'Fixture', sessionIds: ['fixture-session'] };
 const baseline = { items: [workspace], pinnedSessionIds: [], archivedSessionIds: [] };

@@ -14,6 +14,7 @@ import { createSshSettingsHandler, mountSshTransport, sshTargetsSpec, SSH_SETTIN
 
 export const inject = ['storageDomain', 'workspaceRegistry', 'workspaceController', 'sessionController', 'connection', 'tools'];
 
+// Preserve the on-disk domain when users replace the old bundle.
 const DOMAIN = 'local_t3_session_sidebar';
 
 import { PLACEMENT_CONTRACT } from './contract.js';
@@ -369,7 +370,7 @@ export async function apply(ctx) {
       ssh = new SshService({ targets: domain.table('targets') });
       await ssh.initialize();
       if (disposed || remoteClosed) return;
-      // The saved T3 IDs distinguish live devices from obsolete mirrored IDs,
+      // The saved device IDs distinguish live devices from obsolete mirrored IDs,
       // even when both sets contain the same SSH host alias.
       remoteIndex.retainTargets(new Set(ssh.targets.keys()));
       await remoteIndex.flush();
@@ -516,7 +517,7 @@ export async function apply(ctx) {
 
   ctx.tools.register({
     name: 't3_sidebar_status',
-    description: 'Read SSH mirror health and session counts used by the T3 sidebar. This does not connect devices or change sessions.',
+    description: 'Read SSH mirror health and session counts used by Session Harbor. This does not connect devices or change sessions.',
     parameters: { type: 'object', properties: { targetId: { type: 'string' } }, additionalProperties: false },
     output: {
       schema: { type: 'object', additionalProperties: true },
@@ -570,7 +571,7 @@ export async function apply(ctx) {
 
   ctx.tools.register({
     name: 't3_session_placement',
-    description: 'Pin, unpin, settle, or restore a session in the T3 session sidebar. Supply targetId for a session on an SSH device.',
+    description: 'Pin, unpin, settle, or restore a session in Session Harbor. Supply targetId for a session on an SSH device.',
     parameters: {
       type: 'object', properties: {
         sessionId: { type: 'string', description: 'ID of the session to organize.' },
