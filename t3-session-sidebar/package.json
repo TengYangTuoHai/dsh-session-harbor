@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-t3-session-sidebar",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "license": "MIT",
   "engines": { "dsh": "0.2.2-rc.3 || 0.2.2-rc.5" },
   "scripts": {

@@ -1518,9 +1518,10 @@ window.__ModuleLoader__.load({
         if (needle && !row.title.toLocaleLowerCase().includes(needle)) return;
         groups[group].push({ ...row, state });
       };
+      // The main view can keep a new draft open until its first turn.
       for (const id of sessions?.ids || []) {
         const session = sessions.byId?.[id];
-        if (!session || archived.has(id) || session.origin === 'subagent' || (session.blank && !(session.retainedBy?.mainView > 0))) continue;
+        if (!session || session.blank || archived.has(id) || session.origin === 'subagent') continue;
         const title = session.displayTitle || t('untitled');
         const placement = snapshot?.placements?.[id];
         addRow({ id, title, session, placement }, statuses?.get(id), {
@@ -1536,8 +1537,7 @@ window.__ModuleLoader__.load({
       const mirrorContract = remote.snapshot?.contract ?? null;
       const offline = machines.filter(machine => machine.status === 'down');
       for (const row of Object.values(remote.snapshot?.sessions ?? {})) {
-        const selected = activePanelId === DEVICE_PANEL && deviceRuntime.active?.targetId === row.targetId && deviceRuntime.active?.sessionId === row.sessionId;
-        if ((row.blank && !selected) || row.archived || row.origin === 'subagent') continue;
+        if (row.blank || row.archived || row.origin === 'subagent') continue;
         const remoteTitle = row.displayTitle || t('untitled');
         const machine = machines.find(known => known.targetId === row.targetId);
         if (!machine) continue;
@@ -1636,7 +1636,7 @@ window.__ModuleLoader__.load({
             const titleLine = (disabled = false) => h('div', { className: 't3-line' },
               h('button', { className: 't3-open', type: 'button', title, disabled }, title),
               state && !live && h('span', { className: 't3-status', role: 'img', 'aria-label': stateLabel, title: stateLabel }, h(StatusGlyph, { state })),
-              (remote || !session.blank) && time);
+              time);
             if (remote) {
               const workspace = remoteWorkspaces.get(remote.targetId + '/' + (remote.workspaceId ?? ''));
               const online = canManageDevice(remote.targetId);
@@ -1676,7 +1676,7 @@ window.__ModuleLoader__.load({
             const pinAction = isPinned ? 'unpin' : 'pin';
             const settleAction = isSettled ? 'unsettle' : 'settle';
             const target = { kind: 'session', value: { sessionId: id, displayTitle: session.displayTitle || '' } };
-            const trigger = getTriggerProps(session.blank ? undefined : target, {
+            const trigger = getTriggerProps(target, {
               tabIndex: -1,
               onKeyDown: event => {
                 if (event.target !== event.currentTarget || (event.key !== 'Enter' && event.key !== ' ') || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
@@ -1685,7 +1685,7 @@ window.__ModuleLoader__.load({
               },
             });
             const busy = !!pending[id] || syncError || !snapshot;
-            const slot = session.blank ? null : h('span', { className: 't3-slot' },
+            const slot = h('span', { className: 't3-slot' },
               h('span', { className: 't3-actions', onClick: event => event.stopPropagation() },
                 h('button', { className: 't3-icon-button', 'data-pinned': isPinned, type: 'button', disabled: busy, title: t(pinAction), 'aria-label': `${t(pinAction)}: ${title}`, onClick: () => act(id, pinAction) }, h(PinIcon, { filled: isPinned, size: 14 })),
                 h('button', { className: 't3-icon-button', type: 'button', disabled: busy, title: t(settleAction), 'aria-label': `${t(settleAction)}: ${title}`, onClick: () => act(id, settleAction) }, h(SettledIcon, { restored: isSettled })),

@@ -8,7 +8,7 @@ A DeepSeek Harness plugin that groups local and SSH device sessions in one works
 
 ## 构建与安装
 
-当前插件版本 `0.2.2`，支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。先在仓库根目录构建：
+当前插件版本 `0.2.3`，支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。先在仓库根目录构建：
 
 ```sh
 node tools/build-client.mjs
