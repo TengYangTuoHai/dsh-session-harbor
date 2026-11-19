@@ -17,7 +17,7 @@
 
 3. 安装完成后点「立即启用」。如果 DSH 提示重启，重启后再打开工作台。
 
-如果当前镜像还没有同步，在「安装源」选择 npm 官方源 `https://registry.npmjs.org/`，或把 GitHub Release 的 `.tgz` 下载链接粘贴到同一个输入框。[npm 包](https://www.npmjs.com/package/dsh-session-harbor) · [Release 安装包](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
+如果镜像还没同步，在「安装源 → 自定义地址」填入 `https://registry.npmjs.org/`，再按包名安装。也可以在同一个输入框使用 GitHub Release 的 `.tgz` 下载链接。[npm 包](https://www.npmjs.com/package/dsh-session-harbor) · [Release 安装包](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
 
 从旧版「T3 会话侧边栏」升级时，先在「插件」页卸载旧版，再安装 Session Harbor。现有会话、置顶、已完成状态和已保存的 SSH 主机可继续使用。
 
