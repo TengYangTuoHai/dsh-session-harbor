@@ -6,20 +6,22 @@
 
 ## 直接安装
 
-**插件 v0.2.5** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
+**插件 v0.2.6** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
 
 1. 在 DSH 左侧打开「插件」，点击「添加插件」。
-2. 将下面的链接粘贴到「包名或地址」，点击「安装」。
+2. 在「包名或地址」输入以下包名，点击「安装」。
 
    ```text
-   https://github.com/TengYangTuoHai/dsh-session-harbor/releases/download/v0.2.5/dsh-session-harbor-0.2.5.tgz
+   dsh-session-harbor
    ```
 
 3. 安装完成后点「立即启用」。如果 DSH 提示重启，重启后再打开工作台。
 
-从旧版「T3 会话侧边栏」升级时，先在「插件」页卸载旧版，再用上面的链接安装 Session Harbor。会话、置顶、已完成状态和已保存的 SSH 主机可继续使用。
+如果当前镜像还没有同步，在「安装源」选择 npm 官方源 `https://registry.npmjs.org/`，或把 GitHub Release 的 `.tgz` 下载链接粘贴到同一个输入框。[npm 包](https://www.npmjs.com/package/dsh-session-harbor) · [Release 安装包](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
 
-更新时复制新版 `.tgz` 安装包的下载链接。如果 DSH 提示插件已安装，先在「插件」页卸载旧版，再粘贴新版链接安装。[查看最新 Release](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
+从旧版「T3 会话侧边栏」升级时，先在「插件」页卸载旧版，再安装 Session Harbor。现有会话、置顶、已完成状态和已保存的 SSH 主机可继续使用。
+
+更新 Session Harbor 时，在插件详情中使用 DSH 提供的「更新」。如果当前版本通过 `.tgz` 安装且 DSH 未提供更新入口，先卸载，再用包名重新安装。
 
 ## 管理会话
 
