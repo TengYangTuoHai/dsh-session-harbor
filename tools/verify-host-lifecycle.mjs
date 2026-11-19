@@ -9,6 +9,7 @@
  */
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { mock } from 'node:test';
 import { createRequire } from 'node:module';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -31,11 +32,13 @@ const [{ Context, Logger }, { default: Storage, storageBackendServiceKey, Storag
 const runtimeVersion = installedRequire('@deepseek-ai/dsh/package.json').version;
 assert.equal(installedRequire('@deepseek-ai/dsh-storage-domain/package.json').version, runtimeVersion);
 const plugin = await import('../t3-session-sidebar/index.js');
+const { SshService } = await import('../t3-session-sidebar/ssh/ssh-service.js');
+const { RemoteBridge } = await import('../t3-session-sidebar/ssh/remote-bridge.js');
 const { createRemoteIndex, remoteIndexSpec, REMOTE_INDEX_DOMAIN } = await import('../t3-session-sidebar/remote-index.js');
 const turn = () => new Promise(resolve => setImmediate(resolve));
 const workspace = { workspaceId: 'fixture-workspace', path: '/fixture/project', title: 'Fixture', sessionIds: ['fixture-session'] };
 const baseline = { items: [workspace], pinnedSessionIds: [], archivedSessionIds: [] };
-const state = { id: 'fixture-connection', targetId: 'fixture-target', status: 'connected', host: 'fixture.invalid', label: 'Fixture' };
+const state = { id: 'fixture-connection', targetId: 'fixture-target', status: 'connected', host: 'fixture.invalid', label: 'Fixture', cwd: '', dshPath: 'dsh', profile: 'web' };
 
 function memoryBackend(events) {
   const snapshots = new Map();
@@ -196,33 +199,50 @@ async function lifecycle(order) {
   const { ctx, events, logs, changes, backend } = env;
   const bridge = bridgeFixture(events);
   const routes = new Map();
+  const peer = { principal: { kind: 'owner' } };
   const serviceEdges = ctx.plugin({
     name: 'lifecycle-host-protocols',
     apply(host) {
       host.provide('sessionController', { async list() { return { items: [] }; } });
       host.provide('workspaceController', { async *follow() { yield { type: 'baseline', value: { items: [], pinnedSessionIds: [], archivedSessionIds: [] } }; } });
       host.provide('workspaceRegistry', { pinSession() { throw new Error('Unexpected local mutation'); }, unpinSession() { throw new Error('Unexpected local mutation'); } });
-      host.provide('connection', { fetch: { register(route) { assert.ok(!routes.has(route.path)); routes.set(route.path, route); return () => routes.delete(route.path); } } });
+      host.provide('connection', { browserPeer: peer, admit: () => ({ peer }), fetch: { register(route) { assert.ok(!routes.has(route.path)); routes.set(route.path, route); return () => routes.delete(route.path); } } });
       host.provide('tools', { register() {} });
     },
   });
   await serviceEdges.await();
-  let changeListener = null;
-  const ssh = ctx.plugin({
-    name: 'lifecycle-ssh-protocol',
+  let subscriptions = 0;
+  let managerDisposed = false;
+  const sshManager = {
+    list: () => [state],
+    get: id => id === state.id ? state : undefined,
+    getOpenUrl() { assert.fail('the fixture must not open a network connection'); },
+    onChange() {
+      subscriptions++;
+      return () => { subscriptions--; };
+    },
+    async dispose() { managerDisposed = true; },
+  };
+  mock.method(SshService.prototype, 'initialize', async function () {
+    this.manager = sshManager;
+    this.targets.set(state.targetId, { ...state, id: state.targetId });
+  });
+  mock.method(SshService.prototype, 'startAutoConnect', () => {});
+  for (const [name, method] of Object.entries(bridge)) {
+    if (typeof method === 'function') mock.method(RemoteBridge.prototype, name, method);
+  }
+  const web = ctx.plugin({
+    name: 'lifecycle-web-carrier',
     apply(host) {
-      host.provide('sshManager', {
-        manager: {
-          list: () => [state],
-          onChange(listener) { assert.equal(changeListener, null); changeListener = listener; return () => { changeListener = null; events.push({ type: 'ssh-unsubscribe' }); }; },
-        },
-        targetIdForConnection: incoming => incoming.targetId,
-        connectionFor: targetId => targetId === state.targetId ? state : undefined,
+      host.provide('webServer', {
+        register(route) { assert.ok(!routes.has(route.path)); routes.set(route.path, route); return () => routes.delete(route.path); },
+        registerUpgrade() { return () => {}; },
+        collectIndexInjections() { return []; },
+        readResource() { assert.fail('the fixture must not read resources'); },
       });
-      host.provide('sshRemoteBridge', bridge);
     },
   });
-  await ssh.await();
+  await web.await();
   const parent = ctx.plugin(plugin);
   try {
     await parent.await();
@@ -235,23 +255,25 @@ async function lifecycle(order) {
     assert.equal(bridge.sockets.length, 1, 'real TargetClient opened its mux');
     if (order === 'parent-first') {
       await Promise.all([parent.dispose(), parent.dispose()]);
-      await ssh.dispose();
-    } else if (order === 'ssh-first') {
-      await ssh.dispose();
-      assert.equal(domain.table('targets').get(state.targetId).status, 'down');
+      await web.dispose();
+    } else if (order === 'web-first') {
+      await web.dispose();
+      assert.equal(routes.has('/api/t3-ssh'), false);
+      assert.equal(managerDisposed, true);
       assert.equal(events.some(event => event.type === 'domain-close' && event.domain === REMOTE_INDEX_DOMAIN), false);
       await Promise.all([parent.dispose(), parent.dispose()]);
     } else if (order === 'simultaneous') {
-      await Promise.all([parent.dispose(), ssh.dispose(), parent.dispose()]);
+      await Promise.all([parent.dispose(), web.dispose(), parent.dispose()]);
     } else if (order === 'storage-form-first') {
       await env.form.dispose();
-      await Promise.all([parent.dispose(), ssh.dispose()]);
+      await Promise.all([parent.dispose(), web.dispose()]);
     } else throw new Error(`Unknown order: ${order}`);
     const closed = events.findIndex(event => event.type === 'client-close');
     const domainClosed = events.findIndex(event => event.type === 'domain-close' && event.domain === REMOTE_INDEX_DOMAIN);
     assert.ok(closed >= 0 && domainClosed > closed, `client must close before domain teardown: ${JSON.stringify(events)}`);
     assert.equal(bridge.sockets.every(socket => socket.destroyed), true);
-    assert.equal(changeListener, null);
+    assert.equal(subscriptions, 0);
+    assert.equal(managerDisposed, true);
     assert.equal(routes.size, 0, 'parent routes withdrew with its real fiber');
     assert.ok(backend.snapshots.get(REMOTE_INDEX_DOMAIN).tables.sessions['fixture-target/fixture-session'], 'durable mirror row survives teardown');
     assert.equal(events.filter(event => event.type === 'unit-close' && event.domain === REMOTE_INDEX_DOMAIN).length, 1);
@@ -259,7 +281,8 @@ async function lifecycle(order) {
     assertHealthy(logs);
     console.log(`PASS ${order}: TargetClient socket close < SDK Domain.close; durable session retained; no DomainError`);
   } finally {
-    await ctx.fiber.dispose();
+    try { await ctx.fiber.dispose(); }
+    finally { mock.restoreAll(); }
   }
   assert.equal(backend.units.size, 0, 'all native domain handles closed');
   assertHealthy(logs);
@@ -288,7 +311,7 @@ async function closedWriteContainment() {
 const watchdog = setTimeout(() => { console.error('FAIL lifecycle verification exceeded 20 seconds'); process.exit(1); }, 20000);
 try {
   console.log(`Installed SDK: ${installedRequire.resolve('@deepseek-ai/cordis')} / storage-domain ${runtimeVersion}`);
-  for (const order of ['parent-first', 'ssh-first', 'simultaneous', 'storage-form-first']) await lifecycle(order);
+  for (const order of ['parent-first', 'web-first', 'simultaneous', 'storage-form-first']) await lifecycle(order);
   await closedWriteContainment();
   console.log('PASS 5 real-SDK Host lifecycle scenarios (strict unhandled rejections; no GUI/profile/SSH activity)');
 } finally { clearTimeout(watchdog); }

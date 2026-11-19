@@ -3,6 +3,11 @@ window.__ModuleLoader__.load({
   factory(require) {
     const React = require('react');
     const { createPortal } = require('react-dom');
+    const {
+      Button, Input, Menu, Modal, IconCheckOutlineRegular, IconChevronDownOutlineRegular,
+      IconChevronRightOutlineRegular, IconEditOutlineRegular, IconFolderCloseRegular,
+      IconFolderOpenRegular, IconPlusOutlineRegular,
+    } = require('@deepseek-ai/dsh-client-ui-primitives');
     const h = React.createElement;
     const NS = 't3-session-sidebar';
     const GROUPS = ['pinned', 'active', 'working', 'settled'];
@@ -25,7 +30,6 @@ window.__ModuleLoader__.load({
         remoteReady: 'Connected', remoteConnecting: 'Connecting', remoteStale: 'Out of date', remoteDown: 'Offline', remoteIncompatible: 'Session placement version mismatch',
 
         remoteAddProject: 'Add project on another machine', remoteDeleteProject: 'Delete project',
-        remoteNewSession: 'New session in this project',
         remoteDeviceChip: 'Device', remoteDeviceThisMachine: 'This machine', remoteDeviceBack: 'All devices',
         remoteDeviceNoProjects: 'No project on that machine yet', remoteDeviceStarting: 'Starting…',
         remoteDeviceFailed: 'Could not start that session', remoteDeviceUnreachable: 'That machine is not reachable',
@@ -60,7 +64,6 @@ window.__ModuleLoader__.load({
         remoteReady: '已连接', remoteConnecting: '连接中', remoteStale: '数据已过期', remoteDown: '离线', remoteIncompatible: '会话分组版本不匹配',
 
         remoteAddProject: '在其他机器上添加项目', remoteDeleteProject: '删除项目',
-        remoteNewSession: '在这个项目里新建会话',
         remoteDeviceChip: '设备', remoteDeviceThisMachine: '本机', remoteDeviceBack: '全部设备',
         remoteDeviceNoProjects: '那台机器上还没有项目', remoteDeviceStarting: '正在新建…',
         remoteDeviceFailed: '没能在那个项目里新建会话', remoteDeviceUnreachable: '那台机器现在连不上',
@@ -79,6 +82,12 @@ window.__ModuleLoader__.load({
         remoteDeleteMachine: '机器', remoteDeletePath: '目录', remoteDeleteSessions: '会话数', remoteDeleteCount: '{n}', remoteDeleteConfirm: '删除项目'
       }
     };
+    const pickerCss = `
+      .t3-picker-trigger{display:flex;width:100%;justify-content:flex-start;gap:6px;min-width:0}
+      .t3-picker-trigger.t3-picker-compact{width:auto;max-width:min(100%,360px);min-height:28px;padding-inline:8px}
+      .t3-picker-trigger svg{flex:none}
+      .t3-picker-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}
+`;
     const css = `
       .t3-sidebar{display:flex;flex-direction:column;min-height:0;flex:1;color:var(--dsw-alias-label-primary);font-size:13px}
       .t3-sidebar[data-expanded=true]{flex:none;height:var(--t3-fill,100cqh);min-height:min(160px,100cqh)}
@@ -187,18 +196,10 @@ window.__ModuleLoader__.load({
       .t3-row[data-open-disabled=true]{cursor:default}
       .t3-hero-seat{display:contents}
       .t3-hero-pickers{display:flex;align-items:center;min-width:0;gap:2px}
-      .t3-hero-picker{display:inline-flex;align-items:center;gap:4px;min-width:0;max-width:min(100%,360px);min-height:28px;padding:0 8px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:var(--dsw-alias-label-primary);font-size:13px;line-height:20px;font-weight:500;cursor:pointer}
-      .t3-hero-picker svg{flex:none}
-      .t3-hero-picker svg:last-of-type{color:var(--dsw-alias-label-caption)}
-      .t3-hero-picker-label{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-      .t3-hero-picker[aria-expanded=true]{background:var(--dsw-alias-interactive-bg-hover)}
-      @media (hover:hover){.t3-hero-picker:not([aria-disabled=true]):hover{background:var(--dsw-alias-interactive-bg-hover)}}
-      .t3-hero-picker[aria-disabled=true]{cursor:default;color:var(--dsw-alias-label-secondary)}
+      ${pickerCss}
       .t3-hero-picker-status{min-width:0;margin-inline-start:6px;color:var(--dsw-alias-label-secondary);font-size:12px;overflow-wrap:anywhere}
       .t3-hero-seat:has([data-staged=true]) ~ *{display:none}
       [data-composer-card][data-t3-device-inert]{opacity:.55}
-      [role=menuitem]:has(.t3-hero-menu-check){position:relative;padding-inline-end:32px}
-      .t3-hero-menu-check{position:absolute;inset-inline-end:8px;top:50%;transform:translateY(-50%);color:var(--dsw-alias-label-primary)}
       .t3-native-portals{position:fixed;inset:0;z-index:100;pointer-events:none}.t3-native-portals>*{pointer-events:auto}
       .t3-device-main,.t3-device-main-content,.t3-native-region,.t3-native-body,.t3-native-conversation{display:flex;flex:1;min-height:0;min-width:0;overflow:hidden}
       .t3-device-main,.t3-device-main-content,.t3-native-region,.t3-native-conversation{flex-direction:column}
@@ -211,42 +212,24 @@ window.__ModuleLoader__.load({
       .t3-new-hint{margin:0;font-size:13px;line-height:1.6;color:var(--dsw-alias-label-secondary)}
       .t3-new-fields{display:flex;gap:12px;flex-wrap:wrap}
       .t3-new-field{display:flex;flex-direction:column;gap:7px;flex:1;min-width:180px;font-size:12px;color:var(--dsw-alias-label-secondary)}
-      .t3-new-field select{height:36px;max-width:100%;padding:0 10px;border:1px solid var(--dsw-alias-border-l4);border-radius:8px;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px}
-      .t3-new-field select:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}
       .t3-new-actions{display:flex;align-items:center;gap:10px}
       .t3-device-error{display:flex;flex-direction:column;align-items:flex-start;gap:12px;padding:24px;font-size:13px;color:var(--dsw-alias-label-secondary)}
       .t3-device-error p{margin:0}
       .t3-rename-form{display:flex;flex-direction:column;gap:12px}
-      /* The two writes this feature offers sit behind dialogs of our own: the host's
-         approval dialog carries agent-approval semantics, which choosing a folder has
-         nothing to do with. */
-      .t3-modal{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.45)}
-      .t3-dialog{display:flex;flex-direction:column;gap:10px;box-sizing:border-box;width:min(460px,100%);max-height:min(560px,92vh);padding:12px 14px;border:1px solid var(--dsw-alias-border-l4);border-radius:12px;background:var(--dsw-alias-bg-layer-2);box-shadow:0 18px 48px rgba(0,0,0,.35)}
-      .t3-dialog-head{display:flex;align-items:center;gap:8px;flex:none}
-      .t3-dialog-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600}
-      .t3-dialog-body{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:auto}
-      .t3-dialog-actions{display:flex;justify-content:flex-end;gap:8px;flex:none}
-      .t3-dialog .t3-btn{padding:5px 10px;border:1px solid var(--dsw-alias-border-l4);border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary);font-size:12px;cursor:pointer}
-      .t3-dialog .t3-btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-dialog .t3-btn:disabled{opacity:.5;cursor:default}
-      .t3-btn-primary{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}
-      .t3-btn-danger{border-color:var(--dsw-alias-state-warn-primary);color:var(--dsw-alias-state-warn-primary)}
-      .t3-folder-dialog{box-sizing:border-box;width:min(680px,calc(100vw - 32px));height:min(500px,calc(100dvh - 32px));max-width:none;max-height:none;inset:0;margin:auto;padding:0;overflow:hidden;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-xl,16px);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);box-shadow:0 18px 48px color-mix(in srgb,var(--dsw-alias-label-primary) 18%,transparent)}
-      .t3-folder-dialog[open]{display:flex;flex-direction:column}
-      .t3-folder-dialog::backdrop{background:var(--dsw-alias-bg-mask,rgba(0,0,0,.32))}
+      .t3-folder-dialog[role=dialog]{display:flex;flex-direction:column;box-sizing:border-box;width:min(680px,calc(100vw - 32px));height:min(500px,calc(100dvh - 32px));max-width:none;padding:0;overflow:hidden}
+      .t3-folder-scope{display:contents}
       .t3-folder-head{display:grid;gap:8px;flex:none;padding:16px 24px 8px;border-bottom:.5px solid var(--dsw-alias-border-l3)}
       .t3-folder-title{margin:0;font-size:16px;line-height:24px;font-weight:510}
       .t3-folder-heading,.t3-folder-path,.t3-folder-footer{display:flex;align-items:center;gap:8px;min-width:0}
       .t3-folder-heading>.t3-folder-title,.t3-folder-gap{flex:1}
-      .t3-folder-heading select{max-width:45%;padding:3px 6px;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-sm);background:var(--dsw-alias-bg-layer-2);color:inherit;font:inherit;font-size:13px}
+      .t3-folder-heading>.t3-picker-trigger{max-width:45%}
       .t3-folder-machine{display:inline-flex;align-items:center;gap:4px;max-width:45%;color:var(--dsw-alias-label-secondary);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .t3-folder-path{min-height:26px;border:1px solid transparent;border-radius:var(--dsw-radius-sm)}
-      .t3-folder-path:has(input),.t3-folder-path:has(.t3-folder-edit:hover){border-color:var(--dsw-alias-border-l2)}
       .t3-folder-crumbs{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none;color:var(--dsw-alias-label-secondary)}
-      .t3-folder-crumbs button,.t3-folder-edit,.t3-folder-hidden{flex:none;padding:2px 4px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
-      .t3-folder-crumbs button[aria-current=true],.t3-folder-hidden[aria-pressed=true]{color:var(--dsw-alias-label-primary)}
+      .t3-folder-crumbs button{flex:none;padding:2px 4px;border:0;border-radius:var(--dsw-radius-sm);background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+      .t3-folder-crumbs button[aria-current=true]{color:var(--dsw-alias-label-primary)}
       .t3-folder-edit{display:flex;justify-content:flex-end;flex:1;min-width:26px;color:var(--dsw-alias-label-secondary)}
-      .t3-folder-path input,.t3-folder-name{box-sizing:border-box;width:100%;min-width:0;padding:4px 8px;border:0;background:transparent;color:inherit;font:inherit;font-size:13px}
+      .t3-folder-path:has(input)>span{flex:1;min-width:0}
       .t3-folder-columns{display:flex;flex:1;min-height:0;overflow-x:auto;scrollbar-width:none}
       .t3-folder-column{flex:1 0 min(256px,100%);min-height:0;box-sizing:border-box;overflow:auto;padding:8px 12px}
       .t3-folder-column+.t3-folder-column{border-inline-start:.5px solid var(--dsw-alias-border-l3)}
@@ -255,23 +238,9 @@ window.__ModuleLoader__.load({
       .t3-folder-row span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
       .t3-folder-row[aria-pressed=true],.t3-folder-row:hover,.t3-folder-crumbs button:hover{background:var(--dsw-alias-interactive-bg-hover)}
       .t3-folder-footer{flex-wrap:wrap;flex:none;padding:16px 24px;border-top:.5px solid var(--dsw-alias-border-l3);color:var(--dsw-alias-label-secondary)}
-      .t3-folder-button{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:32px;padding:0 12px;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
-      .t3-folder-button:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
-      .t3-folder-button[data-primary]{border-color:transparent;background:var(--dsw-alias-brand-primary);color:var(--dsw-alias-label-inverse,#fff)}
-      .t3-folder-button[data-primary]:hover:not(:disabled){background:var(--dsw-alias-brand-primary);filter:brightness(.94)}
-      .t3-folder-button:disabled,.t3-folder-hidden:disabled{opacity:.5;cursor:default}
       .t3-folder-action{min-width:72px}
       .t3-folder-status{padding:4px 24px;color:var(--dsw-alias-label-secondary);font-size:12px;line-height:18px;overflow-wrap:anywhere}
       .t3-folder-status[role=alert]{color:var(--dsw-alias-state-error-primary)}
-      .t3-folder-dialog.t3-folder-create{width:min(380px,calc(100vw - 32px));height:auto;overflow:auto}
-      .t3-folder-create form{display:grid;gap:12px;padding:22px 24px 20px}
-      .t3-folder-name{height:44px;border:1px solid var(--dsw-alias-border-l3);border-radius:var(--dsw-radius-md)}
-      .t3-folder-create .t3-folder-status{padding:0}
-      .t3-folder-create .t3-folder-footer{justify-content:flex-end;padding:0;border:0}
-      .t3-confirm-body{font-size:12px;color:var(--dsw-alias-label-secondary)}
-      .t3-confirm-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;margin:0;font-size:12px}
-      .t3-confirm-facts dt{color:var(--dsw-alias-label-tertiary)}
-      .t3-confirm-facts dd{margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary)}
     `;
     // The header's glyphs are the host's own artwork (ui-primitives
     // IconSearchOutline, IconCloseFill, IconSlidersTwoOutline and
@@ -371,11 +340,7 @@ window.__ModuleLoader__.load({
     function validSnapshot(value) {
       return value && typeof value.epoch === 'string' && Number.isSafeInteger(value.revision) && value.revision >= 0 && value.placements && typeof value.placements === 'object' && !Array.isArray(value.placements);
     }
-    /**
-     * The mirror of every machine reachable through the ssh plugin, kept fresh by the
-     * same long poll the local placements use. Without that plugin the mirror simply
-     * stays empty, so the sidebar never blocks on a machine that is not there.
-     */
+    /** Follows the remote-device mirror without blocking the local sidebar. */
     function useRemoteMachines(context) {
       const state = React.useSyncExternalStore(
         listener => { mirrorListeners.add(listener); return () => mirrorListeners.delete(listener); },
@@ -765,13 +730,23 @@ window.__ModuleLoader__.load({
     function deviceLabel({ label, status }, t) {
       return status === 'ready' ? label : `${label} · ${t(remoteStatusKey(status))}`;
     }
-    function deviceOptions(machines, t) {
-      return [h('option', { key: '', value: '' }, t('remoteDeviceThisMachine')),
-        ...machines.map(machine => h('option', { key: machine.targetId, value: machine.targetId }, deviceLabel(machine, t)))];
+    const LOCAL_DEVICE = '::local';
+    const ADD_PROJECT = '::add-project';
+    const deviceMenuId = targetId => targetId ?? LOCAL_DEVICE;
+    const targetForMenuId = id => id === LOCAL_DEVICE ? null : id;
+    function deviceMenuItems(machines, t) {
+      return machines.map(machine => ({
+        id: deviceMenuId(machine.targetId), label: deviceLabel(machine, t), icon: h(MachineIcon, { kind: machine.kind, size: 16 }),
+      }));
     }
-    function projectOptions(projects) {
-      return projects.map(project => h('option', { key: project.workspaceId, value: project.workspaceId },
-        `${project.title || pathLabel(project.path)} · ${project.path}`));
+    function projectMenuItems(projects) {
+      const entries = projects.map(project => ({ ...project, name: project.title || pathLabel(project.path) }));
+      const nameCounts = new Map();
+      for (const { name } of entries) nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1);
+      return entries.map(({ workspaceId, path, name }) => ({
+        id: workspaceId, label: nameCounts.get(name) > 1 ? name + ' · ' + path : name,
+        icon: h(IconFolderCloseRegular, { size: 16 }),
+      }));
     }
     function useDeviceProjects(targetId, workspaces, snapshot) {
       const [busy, setBusy] = React.useState(false);
@@ -807,79 +782,34 @@ window.__ModuleLoader__.load({
         closeAdd() { setAdding(false); },
       };
     }
-    function PickerLabel({ icon, text }) {
-      return h(React.Fragment, null, icon,
-        h('span', { className: 't3-hero-picker-label' }, text),
-        h('svg', { width: 12, height: 12, viewBox: '0 0 12 12', 'aria-hidden': true },
-          h('path', { d: 'm3 4.5 3 3 3-3', fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round' })));
-    }
-    function ProjectIcon({ open = false } = {}) {
-      return h('svg', { width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true },
-        h('path', { d: open
-          ? 'M2.2 12.5V4.6a1 1 0 0 1 1-1h3.25l1.35 1.5h4.1a1 1 0 0 1 1 1v.6M2.2 12.5l1.4-5.1a.8.8 0 0 1 .77-.59h9.14a.7.7 0 0 1 .67.88l-1.15 4.31a1 1 0 0 1-.97.74H2.2z'
-          : 'M2.5 4a1 1 0 0 1 1-1h3l1.5 1.5h4.5a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1z' }));
-    }
-    function SelectedPickerIcon({ children }) {
-      const mark = React.useRef(null);
-      React.useLayoutEffect(() => {
-        const row = mark.current?.closest('[role=menuitem]');
-        if (!row) return;
-        row.setAttribute('aria-current', 'true');
-        return () => row.removeAttribute('aria-current');
-      }, []);
-      return h(React.Fragment, null, children,
-        h('svg', { ref: mark, className: 't3-hero-menu-check', width: 16, height: 16, viewBox: '0 0 16 16', fill: 'none', 'aria-hidden': true },
-          h('path', { d: 'm4 8 2.5 2.5L12 5', stroke: 'currentColor', strokeLinecap: 'round', strokeLinejoin: 'round' })));
-    }
-    const HERO_MENU_KIND = 't3-hero-picker';
-    const HERO_MENU_ICONS = NS + '.picker.';
-    const heroMenus = new Map();
-    function HeroMenuButton({ text, icon, label, items, disabled, statusId, beforeOpen }) {
-      const id = React.useId();
-      const menus = Sidebar.context.contextMenus;
-      const actions = React.useRef(items);
-      const owns = () => {
-        const target = menus.active.getSnapshot();
-        return target?.kind === HERO_MENU_KIND && target.value.id === id;
-      };
-      const expanded = React.useSyncExternalStore(menus.active.subscribe, owns);
-      React.useLayoutEffect(() => { actions.current = items; }, [items]);
-      React.useLayoutEffect(() => {
-        heroMenus.set(id, actions);
-        return () => {
-          if (owns()) menus.close();
-          heroMenus.delete(id);
-        };
-      }, [id, menus]);
-      React.useEffect(() => {
-        if (disabled && expanded) menus.close();
-      }, [disabled, expanded, menus]);
-      return h('button', {
-        type: 'button', className: 't3-hero-picker',
-        'data-context-menu-trigger': '', 'aria-haspopup': 'menu', 'aria-expanded': expanded,
-        'aria-label': label, 'aria-describedby': statusId, 'aria-disabled': disabled || undefined,
-        onClick: event => {
-          if (disabled) return;
-          if (expanded) { menus.close(); return; }
-          beforeOpen?.();
-          event.currentTarget.focus({ preventScroll: true });
-          const rect = event.currentTarget.getBoundingClientRect();
-          menus.open({ kind: HERO_MENU_KIND, value: { id } }, { x: rect.left, y: rect.bottom }, { button: id });
+    function PickerMenu({ text, icon, label, items, footer, selectedId, onSelect, disabled, statusId, compact, beforeOpen }) {
+      const [open, setOpen] = React.useState(false);
+      const shown = open && !disabled;
+      React.useEffect(() => { if (disabled) setOpen(false); }, [disabled]);
+      const anchor = h(Button, {
+        variant: compact ? 'ghost' : 'outline', size: compact ? 'sm' : 'md',
+        className: compact ? 't3-picker-trigger t3-picker-compact' : 't3-picker-trigger',
+        icon, disabled, 'aria-label': label, 'aria-describedby': statusId,
+        'aria-haspopup': 'menu', 'aria-expanded': shown,
+        onClick: () => {
+          if (!open) beforeOpen?.();
+          setOpen(!open);
         },
-      }, h(PickerLabel, { icon, text }));
+      }, h('span', { className: 't3-picker-text' }, text), h(IconChevronDownOutlineRegular, { size: compact ? 12 : 14 }));
+      return h(Menu, {
+        anchor, open: shown, onClose: () => setOpen(false), items, footer, selectedId,
+        onSelect: id => { setOpen(false); onSelect(id); }, portal: true, autoFocus: true,
+        minWidthFromAnchor: !compact,
+      });
     }
     function DeviceProjectPicker({ targetName, flow, statusId, t }) {
-      const projects = flow.projects.map(project => ({ ...project, label: project.title || pathLabel(project.path) }));
-      const items = projects.map(({ workspaceId, label, path }) => ({
-        id: workspaceId,
-        label: projects.some(project => project.workspaceId !== workspaceId && project.label === label) ? `${label} · ${path}` : label,
-        icon: { key: HERO_MENU_ICONS + 'project' },
-        run: () => flow.start(workspaceId),
-      }));
-      items.push({ id: '::add-project', label: t('addWorkspace'), icon: { key: HERO_MENU_ICONS + 'add' }, afterContent: items.length > 0, run: flow.add });
-      return h(HeroMenuButton, {
-        text: t(flow.busy ? 'remoteDeviceStarting' : 'chooseProject'), icon: h(ProjectIcon), items,
-        label: `${t('chooseProject')} · ${targetName}`, statusId, disabled: !flow.online || flow.adding || flow.busy,
+      const projects = projectMenuItems(flow.projects);
+      const add = { id: ADD_PROJECT, label: t('addWorkspace'), icon: h(IconPlusOutlineRegular, { size: 16 }) };
+      return h(PickerMenu, {
+        text: t(flow.busy ? 'remoteDeviceStarting' : 'chooseProject'), icon: h(IconFolderCloseRegular, { size: 16 }),
+        items: projects.length ? projects : [add], footer: projects.length ? [add] : undefined,
+        onSelect: id => { if (id === ADD_PROJECT) flow.add(); else void flow.start(id); },
+        label: t('chooseProject') + ' · ' + targetName, statusId, disabled: !flow.online || flow.adding || flow.busy, compact: true,
       });
     }
     function DeviceHeroWorkspace({ currentTargetId, open, anchorRef, selectedId, onPick, onClose, renderFactorySlot }) {
@@ -919,14 +849,14 @@ window.__ModuleLoader__.load({
         };
       }, [staged, seat]);
       const targetName = flow.machine?.label ?? (targetId ? selection?.label ?? targetId : t('remoteDeviceThisMachine'));
-      const deviceItems = [{ targetId: null, label: t('remoteDeviceThisMachine'), status: 'ready' }, ...machines].map(machine => ({
-        id: machine.targetId ?? '::local', label: deviceLabel(machine, t),
-        icon: { key: HERO_MENU_ICONS + (machine.kind || 'server') + (machine.targetId === targetId ? '.selected' : '') },
-        run: () => {
-          setSelection({ targetId: machine.targetId, label: machine.label });
-          flow.clearError();
-        },
-      }));
+      const deviceItems = deviceMenuItems([{ targetId: null, label: t('remoteDeviceThisMachine'), status: 'ready' }, ...machines], t);
+      const selectDevice = id => {
+        const targetId = targetForMenuId(id);
+        const machine = machines.find(machine => machine.targetId === targetId);
+        if (targetId !== null && !machine) return;
+        setSelection({ targetId, label: machine?.label ?? t('remoteDeviceThisMachine') });
+        flow.clearError();
+      };
       let status = flow.error;
       if (!status && !flow.online) status = t(flow.machine?.status === 'connecting' ? 'remoteConnecting' : 'remoteDeviceUnreachable');
       if (!status && !flow.projects.length) status = t(flow.local && workspaces?.phase !== 'ready'
@@ -935,9 +865,10 @@ window.__ModuleLoader__.load({
         !staged && renderFactorySlot('workspace.picker', { open, anchorRef, selectedId, onPick, onClose }),
         seat && machines.length > 0 && createPortal(h(React.Fragment, null, h('style', null, css),
           h('div', { className: 't3-hero-pickers', 'data-staged': staged },
-            h(HeroMenuButton, {
+            h(PickerMenu, {
               text: targetName, icon: h(MachineIcon, { kind: flow.machine?.kind, size: 16 }),
               label: `${t('remoteDeviceChip')} · ${targetName}`, items: deviceItems, disabled: flow.busy || flow.adding,
+              selectedId: deviceMenuId(targetId), onSelect: selectDevice, compact: true,
               beforeOpen: open ? onClose : undefined,
             }),
             staged && h(DeviceProjectPicker, { key: targetId, targetName, flow, statusId: status ? t3StatusId : undefined, t }),
@@ -959,23 +890,30 @@ window.__ModuleLoader__.load({
       const workspaces = useWorkspaces(value => value);
       const flow = useDeviceProjects(choice.targetId, workspaces, snapshot);
       const machines = remoteTargetsOf(snapshot).sort((a, b) => a.label.localeCompare(b.label));
+      const deviceName = flow.machine?.label ?? choice.targetId ?? t('remoteDeviceThisMachine');
+      const devices = deviceMenuItems([deviceForFolder(null, snapshot, t), ...machines], t);
       return h('section', { className: 't3-new-session' }, h('style', null, css),
         h('div', { className: 't3-new-card' },
           h('h1', null, t('newSession')),
           h('p', { className: 't3-new-hint' }, t('deviceHint')),
           h('div', { className: 't3-new-fields' },
-            h('label', { className: 't3-new-field' }, t('remoteDeviceChip'),
-              h('select', { value: choice.targetId ?? '', disabled: flow.busy || flow.adding, onChange: event => { pickDevice(event.target.value || null); flow.clearError(); } },
-                deviceOptions(machines, t))),
-            h('label', { className: 't3-new-field' }, t('project'),
-              h('select', { value: '', disabled: flow.busy || !flow.online || !flow.projects.length, onChange: event => { if (event.target.value) void flow.start(event.target.value); } },
-                h('option', { value: '' }, flow.busy ? t('remoteDeviceStarting') : t('chooseProject')),
-                ...projectOptions(flow.projects)))),
+            h('div', { className: 't3-new-field' }, h('span', null, t('remoteDeviceChip')),
+              h(PickerMenu, {
+                text: deviceName, label: t('remoteDeviceChip'), items: devices, selectedId: deviceMenuId(choice.targetId),
+                icon: h(MachineIcon, { kind: flow.machine?.kind, size: 16 }), disabled: flow.busy || flow.adding,
+                onSelect: id => { pickDevice(targetForMenuId(id)); flow.clearError(); },
+              })),
+            h('div', { className: 't3-new-field' }, h('span', null, t('project')),
+              h(PickerMenu, {
+                text: t(flow.busy ? 'remoteDeviceStarting' : 'chooseProject'), label: t('project'),
+                icon: h(IconFolderCloseRegular, { size: 16 }), items: projectMenuItems(flow.projects),
+                disabled: flow.busy || flow.adding || !flow.online || !flow.projects.length, onSelect: id => { void flow.start(id); },
+              }))),
           !flow.online && h('p', { className: 't3-new-hint', role: 'status' }, t('remoteDeviceUnreachable')),
           flow.online && !flow.projects.length && h('p', { className: 't3-new-hint' }, t(flow.local ? 'localNoProjects' : 'remoteDeviceNoProjects')),
           flow.error && h('p', { className: 't3-new-hint', role: 'alert' }, flow.error),
           h('div', { className: 't3-new-actions' },
-            h('button', { type: 'button', className: 't3-btn', disabled: flow.busy || !flow.online, onClick: () => { void flow.add(); } }, h(AddWorkspaceIcon), ' ', t('addWorkspace')))),
+            h(Button, { variant: 'outline', icon: h(IconPlusOutlineRegular, { size: 16 }), disabled: flow.busy || !flow.online, onClick: flow.add }, t('addWorkspace')))),
         flow.adding && h(AddProjectDialog, { machines: [deviceForFolder(choice.targetId, snapshot, t)], t, close: flow.closeAdd }));
     }
 
@@ -994,56 +932,28 @@ window.__ModuleLoader__.load({
       const [title, setTitle] = React.useState(target.displayTitle || '');
       const [busy, setBusy] = React.useState(false);
       const [error, setError] = React.useState('');
+      const formId = React.useId();
       const close = () => { if (renameTarget === target) setRenameTarget(null); };
-      return h(Modal, { title: t('rename'), close, t },
+      const submit = async event => {
+        event.preventDefault();
+        if (busy || !title.trim()) return;
+        setBusy(true);
+        setError('');
+        try { await remoteSessionCommand(target, 'rename', title.trim()); close(); }
+        catch (reason) { setError(reason?.message ?? String(reason)); setBusy(false); }
+      };
+      return h(Modal, {
+        open: true, title: t('rename'), closeLabel: t('close'), onClose: () => { if (!busy) close(); },
+        footer: h(React.Fragment, null,
+          h(Button, { variant: 'outline', onClick: close, disabled: busy }, t('remoteCancel')),
+          h(Button, { variant: 'primary', type: 'submit', form: formId, disabled: busy || !title.trim() }, t(busy ? 'remoteWorking' : 'save'))),
+      }, h('form', { id: formId, className: 't3-rename-form', onSubmit: submit },
         h('style', null, css),
-        h('form', { className: 't3-rename-form', onSubmit: async event => {
-          event.preventDefault();
-          if (busy || !title.trim()) return;
-          setBusy(true);
-          setError('');
-          try { await remoteSessionCommand(target, 'rename', title.trim()); close(); }
-          catch (reason) { setError(reason?.message ?? String(reason)); setBusy(false); }
-        } },
-          h('input', { className: 't3-browser-input', value: title, maxLength: 200, 'aria-label': t('renameTitle'), onChange: event => setTitle(event.target.value), disabled: busy }),
-          error && h('p', { className: 't3-new-hint', role: 'alert' }, error),
-          h('div', { className: 't3-dialog-actions' },
-            h('button', { type: 'button', className: 't3-btn', onClick: close }, t('remoteCancel')),
-            h('button', { type: 'submit', className: 't3-btn t3-btn-primary', disabled: busy || !title.trim() }, t(busy ? 'remoteWorking' : 'save')))));
+        h(Input, { value: title, maxLength: 200, 'aria-label': t('renameTitle'), 'data-modal-autofocus': true,
+          onFocus: event => event.target.select(), onChange: event => setTitle(event.target.value), disabled: busy }),
+        error && h('p', { className: 't3-new-hint', role: 'alert' }, error)));
     }
 
-    /**
-     * A small modal primitive shared by the two writes this feature offers. It is
-     * deliberately not the host's approval dialog: that one carries agent-approval
-     * semantics, and choosing a folder has nothing to do with approving anything.
-     */
-    function Modal({ title, close, children, t }) {
-      const body = React.useRef(null);
-      const dialog = React.useRef(null);
-      const closing = React.useRef(close);
-      closing.current = close;
-      React.useEffect(() => {
-        const previous = document.activeElement;
-        const onKey = event => {
-          if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closing.current(); return; }
-          if (event.key !== 'Tab') return;
-          const controls = [...(dialog.current?.querySelectorAll('input:not(:disabled),button:not(:disabled),select:not(:disabled),[tabindex="0"]') ?? [])];
-          const first = controls[0], last = controls[controls.length - 1];
-          if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-          else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-        };
-        window.addEventListener('keydown', onKey, true);
-        body.current?.querySelector('input,button')?.focus();
-        return () => { window.removeEventListener('keydown', onKey, true); if (previous?.isConnected) previous.focus?.({ preventScroll: true }); };
-      }, []);
-      const closeLabel = t ? t('close') : 'Close';
-      return h('div', { className: 't3-modal', role: 'presentation', onMouseDown: event => { if (event.target === event.currentTarget) close(); } },
-        h('div', { className: 't3-dialog', ref: dialog, role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
-          h('div', { className: 't3-dialog-head' },
-            h('span', { className: 't3-dialog-title' }, title),
-            h('button', { type: 'button', className: 't3-icon-button', 'aria-label': closeLabel, title: closeLabel, onClick: close }, h(ClearIcon))),
-          h('div', { className: 't3-dialog-body', ref: body }, children)));
-    }
 
     function folderOperations(targetId) {
       if (targetId === null) return {
@@ -1066,28 +976,10 @@ window.__ModuleLoader__.load({
         },
       };
     }
-    function FolderModal({ titleId, className = '', close, children, onKeyDown }) {
-      const dialog = React.useRef(null);
-      const backdropPress = React.useRef(false);
-      React.useLayoutEffect(() => {
-        const node = dialog.current;
-        node.showModal();
-        return () => node.close();
-      }, []);
-      return h('dialog', {
-        ref: dialog, className: 't3-folder-dialog ' + className, 'aria-labelledby': titleId,
-        onCancel: event => { event.preventDefault(); event.stopPropagation(); close(); },
-        onPointerDown: event => { backdropPress.current = event.target === event.currentTarget; },
-        onClick: event => { if (backdropPress.current && event.target === event.currentTarget) close(); },
-        onKeyDown,
-      }, children);
-    }
     function FolderButton({ primary, action, children, ...props }) {
-      return h('button', { type: 'button', ...props, className: 't3-folder-button' + (action ? ' t3-folder-action' : ''), 'data-primary': primary || undefined }, children);
+      return h(Button, { variant: primary ? 'primary' : 'outline', ...props, className: action ? 't3-folder-action' : undefined }, children);
     }
-    function FolderChevron() {
-      return h('svg', { width: 12, height: 12, viewBox: '0 0 12 12', fill: 'none', stroke: 'currentColor', 'aria-hidden': true }, h('path', { d: 'm4.5 2.5 3 3.5-3 3.5' }));
-    }
+
     function pathEditorParts(draft, windows) {
       const end = windows ? Math.max(draft.lastIndexOf('/'), draft.lastIndexOf('\\')) : draft.lastIndexOf('/');
       const directory = draft.slice(0, end + 1);
@@ -1112,11 +1004,11 @@ window.__ModuleLoader__.load({
             'aria-pressed': active,
             onMouseDown: editing ? event => { if (event.button === 0) event.preventDefault(); } : undefined,
             onClick: () => onPick(entry.path, listing),
-          }, h(ProjectIcon, { open: active }), h('span', null, entry.name), h(FolderChevron));
+          }, h(active ? IconFolderOpenRegular : IconFolderCloseRegular, { size: 16 }), h('span', null, entry.name), h(IconChevronRightOutlineRegular, { size: 12 }));
         }));
     }
     function NewFolderDialog({ path, create, close, t }) {
-      const titleId = React.useId();
+      const formId = React.useId();
       const [name, setName] = React.useState('');
       const [busy, setBusy] = React.useState(false);
       const [error, setError] = React.useState('');
@@ -1131,19 +1023,19 @@ window.__ModuleLoader__.load({
         catch (reason) { setError(reason?.message ?? String(reason)); }
         finally { request.current = false; setBusy(false); }
       };
-      return h(FolderModal, { titleId, className: 't3-folder-create', close: () => { if (!request.current) close(); } },
-        h('form', { onSubmit: submit },
-          h('h2', { id: titleId, className: 't3-folder-title' }, t('remoteNewFolder')),
-          h('span', { className: 't3-folder-status' }, path),
-          h('input', { className: 't3-folder-name', value: name, onChange: event => setName(event.target.value), autoFocus: true,
-            'aria-label': t('folderName'), placeholder: t('folderName'), maxLength: 200, disabled: busy }),
-          error && h('div', { className: 't3-folder-status', role: 'alert' }, error),
-          h('div', { className: 't3-folder-footer' },
-            h(FolderButton, { action: true, onClick: close, disabled: busy }, t('remoteCancel')),
-            h(FolderButton, { action: true, primary: true, type: 'submit', disabled: busy || !name.trim() }, t(busy ? 'remoteWorking' : 'remoteCreate')))));
+       return h(Modal, {
+        open: true, title: t('remoteNewFolder'), description: path, closeLabel: t('close'),
+        onClose: () => { if (!request.current) close(); },
+        footer: h(React.Fragment, null,
+          h(FolderButton, { action: true, onClick: close, disabled: busy }, t('remoteCancel')),
+          h(FolderButton, { action: true, primary: true, type: 'submit', form: formId, disabled: busy || !name.trim() }, t(busy ? 'remoteWorking' : 'remoteCreate'))),
+      }, h('form', { id: formId, className: 't3-rename-form', onSubmit: submit },
+        h(Input, { value: name, onChange: event => setName(event.target.value), 'data-modal-autofocus': true,
+          'aria-label': t('folderName'), placeholder: t('folderName'), maxLength: 200, disabled: busy }),
+        error && h('div', { className: 't3-new-hint', role: 'alert' }, error)));
     }
+
     function ProjectDirectoryDialog({ target, machines, onTarget, close, onPicked, busy: adopting = false, t }) {
-      const titleId = React.useId();
       const [view, setView] = React.useState({ parent: null, selected: null, child: null });
       const [draft, setDraft] = React.useState(null);
       const [showHidden, setShowHidden] = React.useState(false);
@@ -1289,10 +1181,16 @@ window.__ModuleLoader__.load({
         const terminates = path?.endsWith(separator) || windows && path?.endsWith('/');
         setDraft(path && !terminates ? path + separator : path ?? '');
       };
-      return h(FolderModal, {
-        titleId, close: () => { if (!committing.current && !adopting) close(); },
-        onKeyDown: event => {
-          if (event.key === 'Escape' && !event.nativeEvent.isComposing && draft !== null) {
+      return h(Modal, {
+        open: true, title: t('projectFolderTitle'), className: 't3-folder-dialog', headless: true,
+        onClose: () => { if (!committing.current && !adopting && !newFolder) close(); },
+      },
+        h('style', null, css),
+        h('div', {
+          className: 't3-folder-scope',
+          ref: node => { if (node) node.inert = newFolder; },
+          onKeyDown: event => {
+            if (event.key !== 'Escape' || event.defaultPrevented || event.nativeEvent.isComposing || draft === null) return;
             event.preventDefault();
             event.stopPropagation();
             cancelScan();
@@ -1300,20 +1198,19 @@ window.__ModuleLoader__.load({
             setError('');
             setDraft(null);
             if (!parent && online) void load();
-          }
+          },
         },
-      },
-        h('style', null, css),
         h('header', { className: 't3-folder-head' },
           h('div', { className: 't3-folder-heading' },
-            h('h2', { id: titleId, className: 't3-folder-title' }, t('projectFolderTitle')),
-            machines?.length > 1 ? h('select', {
-              value: target.targetId ?? '', 'aria-label': t('remoteDeviceChip'), disabled: busy || newFolder,
-              onChange: event => onTarget(event.target.value || null),
-            }, machines.map(machine => h('option', { key: machine.targetId ?? '', value: machine.targetId ?? '' }, deviceLabel(machine, t))))
-              : target.targetId !== null && h('span', { className: 't3-folder-machine' }, h(MachineIcon, { kind: target.kind }), target.label)),
+            h('h2', { className: 't3-folder-title' }, t('projectFolderTitle')),
+            machines?.length > 1 ? h(PickerMenu, {
+              text: target.label, label: t('remoteDeviceChip'), items: deviceMenuItems(machines, t), selectedId: deviceMenuId(target.targetId),
+              icon: h(MachineIcon, { kind: target.kind, size: 16 }), disabled: busy || newFolder, compact: true,
+              onSelect: id => onTarget(targetForMenuId(id)),
+            }) : target.targetId !== null && h('span', { className: 't3-folder-machine' }, h(MachineIcon, { kind: target.kind }), target.label)),
+
           h('div', { className: 't3-folder-path' },
-            draft !== null ? h('input', {
+            draft !== null ? h(Input, {
               value: draft, ref: pathInput, spellCheck: false, autoComplete: 'off', autoFocus: true, 'aria-label': t('remotePath'), disabled: busy || !online,
               onChange: event => {
                 cancelScan();
@@ -1332,12 +1229,11 @@ window.__ModuleLoader__.load({
                 (homeIndex >= 0 || crumbs.length === 0) && h('button', { type: 'button', disabled: busy || !online,
                   'aria-current': activeListing?.home === path || undefined, onClick: () => void load() }, t('remoteHome')),
                 crumbs.slice(homeIndex + 1).map((crumb, index) => h(React.Fragment, { key: crumb.path },
-                  (homeIndex >= 0 || index > 0) && h(FolderChevron),
+                  (homeIndex >= 0 || index > 0) && h(IconChevronRightOutlineRegular, { size: 12 }),
                   h('button', { type: 'button', disabled: busy || !online, title: crumb.path, 'aria-current': crumb.path === path || undefined,
                     onClick: () => void load(crumb.path) }, crumb.name)))),
-              h('button', { ref: editButton, className: 't3-folder-edit', type: 'button', disabled: busy || !online,
-                'aria-label': t('remotePath'), title: t('remotePath'), onClick: editPath },
-                h('svg', { width: 14, height: 14, viewBox: '0 0 16 16', fill: 'none', stroke: 'currentColor', 'aria-hidden': true }, h('path', { d: 'm3 10 7.8-7.8 3 3L6 13H3zM9.5 3.5l3 3' })))))),
+              h(Button, { ref: editButton, className: 't3-folder-edit', variant: 'ghost', size: 'sm', disabled: busy || !online,
+                'aria-label': t('remotePath'), title: t('remotePath'), onClick: editPath }, h(IconEditOutlineRegular, { size: 14 }))))),
         h('div', { className: 't3-folder-columns', ref: columns, 'aria-busy': loading },
           parent && h(FolderColumn, { listing: parent, selected, showHidden, prefix: child ? '' : prefix, editing: draft !== null, onPick: pickFolder, disabled: busy || !online, t }),
           child && h(FolderColumn, { listing: child, showHidden, prefix, editing: draft !== null, onPick: pickFolder, disabled: busy || !online, t })),
@@ -1345,14 +1241,14 @@ window.__ModuleLoader__.load({
         loading && h('div', { className: 't3-folder-status', role: 'status' }, t('remoteLoading')),
         !loading && (parent?.truncated || child?.truncated) && h('div', { className: 't3-folder-status', role: 'status' }, t('remoteTruncated')),
         h('footer', { className: 't3-folder-footer' },
-          h(FolderButton, { disabled: !ready || !online, onClick: () => setNewFolder(true) }, h(PlusIcon), t('remoteNewFolder')),
-          h('button', { type: 'button', className: 't3-folder-hidden', 'aria-pressed': showHidden,
+          h(FolderButton, { disabled: !ready || !online, onClick: () => setNewFolder(true), icon: h(IconPlusOutlineRegular, { size: 14 }) }, t('remoteNewFolder')),
+          h(Button, { variant: 'ghost', size: 'sm', 'aria-pressed': showHidden, disabled: busy,
             onMouseDown: event => { if (draft !== null && event.button === 0) event.preventDefault(); },
             onClick: () => setShowHidden(value => !value),
-          }, t('remoteShowHidden'), showHidden && ' ✓'),
+          }, t('remoteShowHidden'), showHidden && h(IconCheckOutlineRegular, { size: 14 })),
           h('span', { className: 't3-folder-gap' }),
           h(FolderButton, { action: true, onClick: close, disabled: busy }, t('remoteCancel')),
-          h(FolderButton, { action: true, primary: true, disabled: !ready || !online, onClick: () => void choose() }, t(busy ? 'remoteWorking' : 'remoteChoose'))),
+          h(FolderButton, { action: true, primary: true, disabled: !ready || !online, onClick: () => void choose() }, t(busy ? 'remoteWorking' : 'remoteChoose')))),
         newFolder && h(NewFolderDialog, { path, create, close: () => setNewFolder(false), t }));
     }
     function AddProjectDialog({ machines, initialTargetId, close, t, onPicked, busy }) {
@@ -1366,8 +1262,8 @@ window.__ModuleLoader__.load({
       if (target) lastTarget.current = target;
       if (!lastTarget.current) return null;
       const device = target ?? { ...lastTarget.current, status: 'down' };
-      return createPortal(h(ProjectDirectoryDialog, { key: targetId ?? 'local', target: device,
-        machines: target ? machines : [device, ...machines], onTarget: setTargetId, close, onPicked, busy, t }), document.body);
+      return h(ProjectDirectoryDialog, { key: targetId ?? 'local', target: device,
+        machines: target ? machines : [device, ...machines], onTarget: setTargetId, close, onPicked, busy, t });
     }
     function DirectoryFlowDialog({ open, busy, onPicked, onCancel, targetId }) {
       const context = Sidebar.context;
@@ -1594,28 +1490,6 @@ window.__ModuleLoader__.load({
           }
         }
       };
-      // A new session in a mirrored project. The machine decides the id, and reuses the
-      // blank session it already has there rather than stacking up empty rows.
-      const createRemoteSession = async (targetId, workspaceId) => {
-        const key = targetId + '/project:' + workspaceId;
-        if (pending[key]) return;
-        setActionError(false);
-        const controller = new AbortController();
-        operations.current.add(controller);
-        setPending(value => ({ ...value, [key]: true }));
-        try {
-          await createAndOpenDeviceSession(targetId, workspaceId, controller.signal);
-        } catch {
-          if (alive.current && !controller.signal.aborted) setActionError(true);
-        } finally {
-          operations.current.delete(controller);
-          if (alive.current) {
-            setPending(value => { const next = { ...value }; delete next[key]; return next; });
-            // The machine made a session, so the mirror has a row to bring back now.
-            pollRef.current?.abort();
-          }
-        }
-      };
       const runUi = (fn, errorKey) => {
         setUiError('');
         try { Promise.resolve(fn()).catch(() => { if (alive.current) setUiError(errorKey); }); }
@@ -1769,7 +1643,6 @@ window.__ModuleLoader__.load({
               const canOpen = canOpenDevice(remote.targetId);
               const canVerb = online && Number.isInteger(mirrorContract) && machine.pluginContract === mirrorContract;
               const busy = !!pending[id];
-              const creating = !!pending[machine.targetId + '/project:' + (workspace?.workspaceId ?? '')];
               const pinAction = remote.pinned ? 'unpin' : 'pin';
               const settleAction = remote.settled ? 'unsettle' : 'settle';
               const target = { kind: 't3-device-session', value: { targetId: remote.targetId, sessionId: remote.sessionId, displayTitle: title } };
@@ -1792,11 +1665,6 @@ window.__ModuleLoader__.load({
                   h('span', { className: 't3-slot', 'data-host': true },
                     h(MachineName, { machine, t }),
                     h('span', { className: 't3-actions', onClick: event => event.stopPropagation() },
-                      workspace && h('button', {
-                        type: 'button', className: 't3-icon-button', disabled: !online || creating,
-                        title: t('remoteNewSession'), 'aria-label': t('remoteNewSession') + ': ' + workspace.path,
-                        onClick: () => { void createRemoteSession(machine.targetId, workspace.workspaceId); },
-                      }, h(PlusIcon)),
                       h('button', { className: 't3-icon-button', 'data-pinned': remote.pinned, type: 'button', disabled: !canVerb || busy, title: t(pinAction), 'aria-label': `${t(pinAction)}: ${title}`, onClick: () => { void actRemote(machine.targetId, remote.sessionId, pinAction); } }, h(PinIcon, { filled: remote.pinned, size: 14 })),
                       h('button', { className: 't3-icon-button', type: 'button', disabled: !canVerb || busy, title: t(settleAction), 'aria-label': `${t(settleAction)}: ${title}`, onClick: () => { void actRemote(machine.targetId, remote.sessionId, settleAction); } }, h(SettledIcon, { restored: remote.settled })),
                       renderFactorySlot('contextMenu.button', { target, label: `${t('more')}: ${title}`, className: 't3-icon-button' })))),
@@ -1840,26 +1708,337 @@ window.__ModuleLoader__.load({
           initialTargetId: deviceRuntime.active?.targetId, t, close: () => setDialog(null),
         }));
     }
+    const SSH_SETTINGS_ID = 't3-ssh';
+    const sshCopy = {
+      en: {
+        title: 'T3 SSH', addHost: 'Add host', addConnect: 'Add and connect', adding: 'Adding…',
+        config: 'SSH config hosts', chooseHost: 'Choose a host', noConfigHosts: 'No named hosts found in SSH config.',
+        address: 'SSH address', advanced: 'Advanced options', label: 'Name', directory: 'Remote directory',
+        executable: 'DSH executable', profile: 'Profile', remoteHome: 'Remote home directory',
+        connected: 'Connected', connecting: 'Connecting…', disconnected: 'Disconnected', error: 'Connection failed',
+        connect: 'Connect', disconnect: 'Disconnect', cancelConnection: 'Cancel connection', cancel: 'Cancel',
+        remove: 'Delete', close: 'Close', removeQuestion: 'Delete {host}?', removeActiveQuestion: 'Disconnect and delete {host}?',
+        hostAction: '{action} ({host})', loading: 'Loading SSH connections…', empty: 'No saved SSH hosts.',
+        refresh: 'Refresh', refreshing: 'Refreshing…', retry: 'Retry', requiredHost: 'Enter an SSH address or choose a host.',
+        duplicate: 'This SSH host is already saved with these options.',
+        requestFailed: 'Could not reach the SSH service.', requestTimedOut: 'The SSH request timed out.',
+        httpError: 'The SSH service returned HTTP {status}.', invalidResponse: 'The SSH service returned an invalid response.',
+      },
+      ['z' + 'h']: {
+        title: 'T3 SSH', addHost: '添加主机', addConnect: '添加并连接', adding: '正在添加…',
+        config: 'SSH 配置中的主机', chooseHost: '选择主机', noConfigHosts: 'SSH 配置中未找到已命名的主机。',
+        address: 'SSH 地址', advanced: '高级选项', label: '名称', directory: '远程目录',
+        executable: 'DSH 启动路径', profile: '配置名称', remoteHome: '远程用户主目录',
+        connected: '已连接', connecting: '连接中…', disconnected: '未连接', error: '连接失败',
+        connect: '连接', disconnect: '断开连接', cancelConnection: '取消连接', cancel: '取消',
+        remove: '删除', close: '关闭', removeQuestion: '删除 {host}？', removeActiveQuestion: '断开连接并删除 {host}？',
+        hostAction: '{action}（{host}）', loading: '正在加载 SSH 连接…', empty: '暂无已保存的 SSH 主机。',
+        refresh: '刷新', refreshing: '正在刷新…', retry: '重试', requiredHost: '请输入 SSH 地址或选择主机。',
+        duplicate: '已使用相同的选项保存了此 SSH 主机。',
+        requestFailed: '无法访问 SSH 服务。', requestTimedOut: 'SSH 请求超时。',
+        httpError: 'SSH 服务返回了 HTTP {status}。', invalidResponse: 'SSH 服务返回了无效响应。',
+      },
+    };
+    const sshCss = `
+      ${pickerCss}
+      .t3-ssh{container:t3-ssh / inline-size;box-sizing:border-box;min-width:0;padding:clamp(16px,3vw,24px);color:var(--dsw-alias-label-primary);font-size:14px;line-height:1.57}
+      .t3-ssh p{margin:0}
+      .t3-ssh-head,.t3-ssh-config-head,.t3-ssh-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+      .t3-ssh-head,.t3-ssh-config-head{justify-content:space-between}
+      .t3-ssh-head h2{margin:0;font-size:16px;font-weight:600;line-height:24px}
+      .t3-ssh-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;padding:16px 0;border-bottom:.5px solid var(--dsw-alias-border-l2)}
+      .t3-ssh-copy{flex:1 1 120px;min-width:0;overflow-wrap:anywhere}
+      .t3-ssh-status,.t3-ssh-meta,.t3-ssh-field{font-size:12px;color:var(--dsw-alias-label-secondary)}
+      .t3-ssh-status[data-status=connected]{color:var(--dsw-alias-state-success-primary)}
+      .t3-ssh-status[data-status=connecting]{color:var(--dsw-alias-brand-primary)}
+      .t3-ssh-status[data-status=error],.t3-ssh-error,button.t3-ssh-danger{color:var(--dsw-alias-state-error-primary)}
+      .t3-ssh-feedback{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-block:12px;overflow-wrap:anywhere}
+      .t3-ssh-form{display:grid;gap:12px;padding:16px 0}
+      .t3-ssh-field{display:grid;gap:5px;min-width:0}
+      .t3-ssh-warnings{margin:0;padding-inline-start:16px;overflow-wrap:anywhere}
+      .t3-ssh-fields:not([hidden]){display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin-top:10px}
+      .t3-ssh-form>.t3-ssh-actions{justify-content:flex-end}
+      @container t3-ssh (width < 420px){.t3-ssh-row>.t3-ssh-copy{flex-basis:100%}.t3-ssh-row>.t3-ssh-actions{margin-inline-start:auto}}
+`;
+
+    const sshDefaults = { host: '', label: '', cwd: '', dshPath: '', profile: '' };
+    const sshKey = target => JSON.stringify([target.host, target.cwd || '', target.dshPath || 'dsh', target.profile || 'web']);
+    const sshLive = connection => connection?.status === 'connecting' || connection?.status === 'connected';
+    const sshAddress = host => (host.user ? host.user + '@' : '') + (host.hostname || host.alias);
+    const sshMessage = value => String(value ?? '')
+      .replace(/([?&](?:token|auth|access_token|key)=)[^\s&#]+/gi, '$1[redacted]')
+      .replace(/(bearer\s+)[^\s,;]+/gi, '$1[redacted]')
+      .replace(/((?:token|password|authorization)["']?\s*[:=]\s*["']?)[^\s"',;]+/gi, '$1[redacted]');
+
+    function installSshSettings(ctx) {
+      ctx.effect(() => ctx.locale.register(SSH_SETTINGS_ID, sshCopy), 't3-ssh: dictionaries');
+      const t = ctx.locale.bind(SSH_SETTINGS_ID);
+      const subscribe = ctx.locale.subscribe.bind(ctx.locale);
+      const getLocale = ctx.locale.getSnapshot.bind(ctx.locale);
+      const invalidResponse = () => new Error(t('invalidResponse'));
+
+      async function request(signal, args) {
+        const timeout = AbortSignal.timeout(15000);
+        try {
+          const response = await fetch('/api/t3-ssh', {
+            method: args ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store',
+            signal: AbortSignal.any([signal, timeout]),
+            headers: args ? { 'content-type': 'application/json' } : undefined,
+            body: args ? JSON.stringify(args) : undefined,
+          });
+          const result = await response.json().catch(() => null);
+          signal.throwIfAborted();
+          timeout.throwIfAborted();
+          if (typeof result?.error === 'string' && result.error) throw new Error(sshMessage(result.error));
+          if (!response.ok) throw new Error(t('httpError', { status: response.status }));
+          if (!result || typeof result !== 'object' || Array.isArray(result)) throw invalidResponse();
+          return result;
+        } catch (failure) {
+          signal.throwIfAborted();
+          if (timeout.aborted) throw new Error(t('requestTimedOut'));
+          if (failure instanceof TypeError) throw new Error(t('requestFailed'));
+          throw failure;
+        }
+      }
+
+      function SshSettings() {
+        React.useSyncExternalStore(subscribe, getLocale, getLocale);
+        const formId = React.useId();
+        const [snapshot, setSnapshot] = React.useState(null);
+        const [loadError, setLoadError] = React.useState('');
+        const [error, setError] = React.useState('');
+        const [busy, setBusy] = React.useState('');
+        const [adding, setAdding] = React.useState(false);
+        const [advanced, setAdvanced] = React.useState(false);
+        const [draft, setDraft] = React.useState(sshDefaults);
+        const [removeId, setRemoveId] = React.useState('');
+        const sessionRef = React.useRef(null);
+        const addressInput = React.useRef(null);
+        const addButton = React.useRef(null);
+        const restoreAddFocus = React.useRef(false);
+
+        async function load(signal, args) {
+          const next = await request(signal, args);
+          signal.throwIfAborted();
+          if (!Array.isArray(next.config?.hosts) || !Array.isArray(next.config?.warnings)
+            || !Array.isArray(next.targets) || !Array.isArray(next.connections)) throw invalidResponse();
+          setSnapshot(next);
+          setLoadError('');
+        }
+
+        React.useEffect(() => {
+          const lifetime = new AbortController();
+          const session = { signal: lifetime.signal, poll: null, busy: false };
+          sessionRef.current = session;
+          const poll = async () => {
+            if (session.signal.aborted || session.busy || session.poll || document.visibilityState === 'hidden') return;
+            const controller = new AbortController();
+            session.poll = controller;
+            const signal = AbortSignal.any([session.signal, controller.signal]);
+            try { await load(signal); }
+            catch (failure) { if (!signal.aborted) setLoadError(failure.message); }
+            finally { session.poll = null; }
+          };
+          void poll();
+          const timer = setInterval(poll, 2000);
+          document.addEventListener('visibilitychange', poll);
+          return () => {
+            lifetime.abort();
+            clearInterval(timer);
+            document.removeEventListener('visibilitychange', poll);
+          };
+        }, []);
+        React.useEffect(() => { if (adding) addressInput.current?.focus(); }, [adding]);
+        React.useEffect(() => {
+          if (adding || busy || !restoreAddFocus.current) return;
+          restoreAddFocus.current = false;
+          addButton.current?.focus();
+        }, [adding, busy]);
+
+        const run = async (action, operation) => {
+          const session = sessionRef.current;
+          if (!session || session.signal.aborted || session.busy) return;
+          session.busy = true;
+          session.poll?.abort();
+          setBusy(action);
+          setError('');
+          try { await operation(session.signal); }
+          catch (failure) {
+            if (!session.signal.aborted) {
+              const setFailure = action === 'retry' ? setLoadError : setError;
+              setFailure(failure.message);
+            }
+          } finally {
+            session.busy = false;
+            if (!session.signal.aborted) setBusy('');
+          }
+        };
+        const hosts = snapshot?.config.hosts ?? [];
+        const targets = snapshot?.targets ?? [];
+        const connections = snapshot?.connections ?? [];
+        const byKey = new Map();
+        const savedKeys = new Set(targets.map(sshKey));
+        for (const connection of connections) {
+          const key = sshKey(connection);
+          if (sshLive(connection) || !sshLive(byKey.get(key))) byKey.set(key, connection);
+        }
+        const rows = targets.map(target => ({ target, connection: byKey.get(sshKey(target)) }));
+        for (const [key, connection] of byKey) {
+          if (sshLive(connection) && !savedKeys.has(key)) rows.push({ connection });
+        }
+        const closeAdd = () => {
+          restoreAddFocus.current = true;
+          setAdding(false);
+        };
+        const updateConnection = result => {
+          const connection = result.connection;
+          if (typeof connection?.id !== 'string' || !connection.id) throw invalidResponse();
+          setSnapshot(current => ({ ...current, connections: [...current.connections.filter(item => item.id !== connection.id), connection] }));
+        };
+        const submit = event => {
+          event.preventDefault();
+          const target = {
+            host: draft.host.trim(), label: draft.label.trim(), cwd: draft.cwd.trim(),
+            dshPath: draft.dshPath.trim() || 'dsh', profile: draft.profile.trim() || 'web',
+          };
+          if (!target.host) {
+            setError(t('requiredHost'));
+            addressInput.current?.focus();
+            return;
+          }
+          if (savedKeys.has(sshKey(target))) {
+            setError(t('duplicate'));
+            return;
+          }
+          target.label ||= target.host;
+          void run('add', async signal => {
+            const { target: saved } = await request(signal, { action: 'save', target });
+            if (typeof saved?.id !== 'string' || !saved.id) throw invalidResponse();
+            setSnapshot(current => ({ ...current, targets: [...current.targets.filter(item => item.id !== saved.id), saved] }));
+            closeAdd();
+            updateConnection(await request(signal, { action: 'connect', id: saved.id }));
+          });
+        };
+        const changeConnection = (action, id) => run(action, async signal => {
+          updateConnection(await request(signal, { action, id }));
+        });
+        const remove = target => run('remove', async signal => {
+          const result = await request(signal, { action: 'remove', id: target.id });
+          if (typeof result.removed !== 'boolean') throw invalidResponse();
+          const key = sshKey(target);
+          setSnapshot(current => ({
+            ...current, targets: current.targets.filter(item => item.id !== target.id),
+            connections: current.connections.filter(item => sshKey(item) !== key),
+          }));
+          restoreAddFocus.current = true;
+          setRemoveId('');
+        });
+
+        const button = (label, onClick, props = {}) => h(Button, {
+          type: 'button', variant: 'outline', size: 'sm', onClick, disabled: !!busy, ...props,
+        }, label);
+        const hostAction = (action, host) => t('hostAction', { action, host });
+        const hostRow = ({ target, connection }) => {
+          const { host, label: savedLabel, profile, cwd, dshPath } = target ?? connection;
+          const name = savedLabel || host;
+          const configHost = hosts.find(item => item.alias === host);
+          const address = configHost ? sshAddress(configHost) : host;
+          const details = [address !== name && address, profile !== 'web' && profile, cwd, dshPath !== 'dsh' && dshPath].filter(Boolean).join(' · ');
+          const status = connection?.status || 'disconnected';
+          const live = sshLive(connection);
+          const action = live ? 'disconnect' : 'connect';
+          const label = t(status === 'connecting' ? 'cancelConnection' : action);
+          return h('div', { key: target?.id ?? connection.id, className: 't3-ssh-row' },
+            h('div', { className: 't3-ssh-copy' },
+              h('div', { className: 't3-ssh-name' }, name),
+              details && h('div', { className: 't3-ssh-meta' }, details),
+              connection?.error && h('p', { className: 't3-ssh-meta t3-ssh-error' }, sshMessage(connection.error))),
+            h('span', { className: 't3-ssh-status', 'data-status': status, role: 'status' }, t(status)),
+            h('div', { className: 't3-ssh-actions' },
+              button(label, () => changeConnection(action, live ? connection.id : target.id), {
+                'aria-label': hostAction(label, name), variant: live ? 'outline' : 'primary',
+              }),
+              target && button(t('remove'), () => { setError(''); setRemoveId(target.id); }, {
+                'aria-label': hostAction(t('remove'), name), 'aria-haspopup': 'dialog', variant: 'ghost',
+              })));
+        };
+        const fieldProps = name => ({
+          value: draft[name], disabled: !!busy, autoComplete: 'off', spellCheck: false,
+          onChange: event => setDraft(current => ({ ...current, [name]: event.target.value })),
+        });
+        const advancedField = (name, label, placeholder) => h('label', { className: 't3-ssh-field' }, t(label),
+          h(Input, { ...fieldProps(name), placeholder, maxLength: name === 'label' ? 120 : 4096 }));
+        const configHost = hosts.find(host => host.alias === draft.host);
+        const configItems = hosts.map(host => {
+          const address = sshAddress(host);
+          return { id: host.alias, label: address === host.alias ? host.alias : host.alias + ' · ' + address };
+        });
+        const removing = rows.find(row => row.target?.id === removeId);
+        const cancelRemove = () => { if (!busy) { setError(''); setRemoveId(''); } };
+        return h('section', { className: 't3-ssh', 'aria-labelledby': formId },
+          h('style', null, sshCss),
+          h('div', { className: 't3-ssh-head' }, h('h2', { id: formId }, t('title')),
+            !adding && button(t('addHost'), () => {
+              setDraft(sshDefaults); setError(''); setRemoveId(''); setAdvanced(false); setAdding(true);
+            }, { ref: addButton, disabled: !!busy || !snapshot, icon: h(IconPlusOutlineRegular, { size: 14 }) })),
+          loadError && h('div', { className: 't3-ssh-feedback', role: 'alert' }, h('span', { className: 't3-ssh-error' }, loadError),
+            button(t('retry'), () => run('retry', signal => load(signal)))),
+          error && !removing && h('p', { className: 't3-ssh-feedback t3-ssh-error', role: 'alert' }, error),
+          rows.length > 0 && h('div', { className: 't3-ssh-list' }, rows.map(hostRow)),
+          !snapshot && !loadError && h('p', { className: 't3-ssh-meta', role: 'status' }, t('loading')),
+          snapshot && !rows.length && !adding && h('p', { className: 't3-ssh-meta' }, t('empty')),
+          adding && h('form', { className: 't3-ssh-form', onSubmit: submit },
+            h('div', { className: 't3-ssh-field' },
+              h('div', { className: 't3-ssh-config-head' },
+                h('span', null, t('config')),
+                button(t(busy === 'refresh' ? 'refreshing' : 'refresh'), () => run('refresh', signal => load(signal, { action: 'refresh' })), { variant: 'ghost' })),
+              hosts.length ? h(PickerMenu, {
+                text: configHost?.alias ?? t('chooseHost'), label: t('config'), items: configItems, selectedId: configHost?.alias,
+                disabled: !!busy, onSelect: host => setDraft(current => ({ ...current, host })),
+              }) : h('p', null, t('noConfigHosts')),
+              snapshot.config.warnings.length > 0 && h('ul', { className: 't3-ssh-warnings' },
+                snapshot.config.warnings.map((warning, index) => h('li', { key: index }, sshMessage(warning))))),
+            h('label', { className: 't3-ssh-field' }, t('address'),
+              h(Input, { ...fieldProps('host'), ref: addressInput, placeholder: 'user@host', maxLength: 512, autoCapitalize: 'none' })),
+            h('div', null,
+              button(t('advanced'), () => setAdvanced(!advanced), {
+                variant: 'ghost', 'aria-expanded': advanced, 'aria-controls': formId + '-advanced',
+                icon: h(advanced ? IconChevronDownOutlineRegular : IconChevronRightOutlineRegular, { size: 14 }),
+              }),
+              h('div', { id: formId + '-advanced', className: 't3-ssh-fields', hidden: !advanced },
+                advancedField('label', 'label'), advancedField('cwd', 'directory', t('remoteHome')),
+                advancedField('dshPath', 'executable', 'dsh'), advancedField('profile', 'profile', 'web'))),
+            h('div', { className: 't3-ssh-actions' },
+              button(t('cancel'), () => { closeAdd(); setError(''); }),
+              button(t(busy === 'add' ? 'adding' : 'addConnect'), undefined, { type: 'submit', variant: 'primary' }))),
+          removing && h(Modal, {
+            open: true, title: t('remove'), closeLabel: t('close'), onClose: cancelRemove,
+            description: t(sshLive(removing.connection) ? 'removeActiveQuestion' : 'removeQuestion', { host: removing.target.label || removing.target.host }),
+            footer: h(React.Fragment, null,
+              button(t('cancel'), cancelRemove, { 'data-modal-autofocus': true }),
+              button(t('remove'), () => remove(removing.target), { className: 't3-ssh-danger' })),
+          }, error && h('p', { className: 't3-ssh-error', role: 'alert' }, error)));
+      }
+
+      ctx.effect(() => ctx.slots.inject('settings.section', () => ctx.slots.register({
+        name: 'settings.section', id: SSH_SETTINGS_ID, order: 26, label: () => t('title'),
+      }, SshSettings)), 't3-ssh: settings section');
+      ctx.effect(() => ctx.slots.inject('settings.section.icon', () => ctx.slots.register({
+        name: 'settings.section.icon', id: SSH_SETTINGS_ID,
+      }, MachineIcon)), 't3-ssh: settings icon');
+    }
+
     return {
       inject: ['slots', 'locale', 'connection', 'uiWorkspace', 'contextMenus', 'workspaces', 'loader', 'modules', 'layout', 'sessions', 'uiSession', 'shortcuts'],
       apply(ctx) {
         Sidebar.context = ctx;
         runtimeClosed = false;
         ctx.effect(() => ctx.locale.register(NS, dictionaries), 't3-session-sidebar: dictionaries');
+        installSshSettings(ctx);
         ctx.slots.inject('contextMenu.icon', function* () {
           yield ctx.slots.register({ name: 'contextMenu.icon', key: NS + '.settle' }, SettledIcon);
           yield ctx.slots.register({ name: 'contextMenu.icon', key: NS + '.unsettle' }, () => h(SettledIcon, { restored: true }));
-          yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + 'project' }, ProjectIcon);
-          yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + 'add' }, PlusIcon);
-          for (const kind of ['server', 'macos', 'linux', 'windows', 'wsl']) {
-            yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + kind }, () => h(MachineIcon, { kind, size: 16 }));
-            yield ctx.slots.register({ name: 'contextMenu.icon', key: HERO_MENU_ICONS + kind + '.selected' }, () => h(SelectedPickerIcon, null, h(MachineIcon, { kind, size: 16 })));
-          }
         });
-        ctx.effect(() => ctx.contextMenus.register({
-          id: 't3-sidebar.hero-picker', target: HERO_MENU_KIND, order: 0,
-          resolve: ({ id }) => heroMenus.get(id)?.current ?? [],
-        }), 't3-session-sidebar: hero picker menu');
         ctx.effect(() => ctx.contextMenus.register({
           id: 't3-sidebar.settled', target: 'session', order: 150,
           observe: () => [ctx.locale, ctx.workspaces.list],

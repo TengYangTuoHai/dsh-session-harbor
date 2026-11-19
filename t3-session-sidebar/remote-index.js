@@ -127,6 +127,13 @@ export function createRemoteIndex({ storage, onWriteError = () => {} }) {
     for (const [key] of [...sessions.entries()]) if (key.startsWith(targetId + '/')) sessions.delete(key);
   }
 
+  /** Remove cached devices, sessions and projects outside the saved T3 device list. */
+  function retainTargets(targetIds) {
+    for (const [key, value] of workspaces.entries()) if (!targetIds.has(value.targetId)) workspaces.delete(key);
+    for (const [key, value] of sessions.entries()) if (!targetIds.has(value.targetId)) sessions.delete(key);
+    for (const [key] of targets.entries()) if (!targetIds.has(key)) targets.delete(key);
+  }
+
   function markAllDown(reason = 'The SSH connection is gone.') {
     for (const [targetId, state] of [...targets.entries()]) {
       if (state.status === 'down' && state.lastError === reason) continue;
@@ -263,7 +270,7 @@ export function createRemoteIndex({ storage, onWriteError = () => {} }) {
   }
 
   return {
-    putTarget, removeTarget, markAllDown, flush,
+    putTarget, removeTarget, retainTargets, markAllDown, flush,
     syncWorkspaces, syncSessions, applyPlacements, applyWorkspaceFlags, applyStatuses, setTitle,
     getTarget: id => targets.get(id),
     listTargets: () => Object.fromEntries([...targets.entries()]),

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { SSH_PROXY_PREFIX } from './ssh/remote-bridge.js';
 
 const OFFICIAL = /^@deepseek-ai\/[a-z0-9][a-z0-9._-]{0,120}$/;
 const ID = /^[A-Za-z0-9-]{1,80}$/;
@@ -195,34 +196,20 @@ export function createNativeRuntimeBroker({ ssh, bridge, webServer, connection }
     checkCancelled(signal);
     live(targetId, state.id);
     const remote = graphOf(remoteGlobals.__DSH_BOOT__);
-    let trusted = trustedLocal;
-    let cachedUI = null;
     if (!sameRelease(trustedLocal.release, remote.release)) {
-      const environments = ssh.environments;
-      if (typeof environments?.build !== 'function' || typeof environments.uiById?.get !== 'function') {
-        throw failure('unsupported-release', 'This SSH service cannot supply a verified Client for the remote DSH release.');
-      }
-      await cancellable(environments.build(state.id, connection.browserPeer), signal);
-      checkCancelled(signal);
-      live(targetId, state.id);
-      cachedUI = environments.uiById.get(state.id);
-      if (!cachedUI || typeof cachedUI.readResource !== 'function') throw failure('unsupported-release', 'No verified official Client cache matches the remote DSH release.');
-      trusted = graphOf(cachedUI.graph);
-      if (cachedUI.version !== remote.release.version || !sameRelease(trusted.release, remote.release)) {
-        throw failure('unsupported-release', 'The verified Client cache does not match the remote DSH release.');
-      }
+      throw failure('unsupported-release', 'The remote DSH release must match the local DSH release.');
     }
-    const graph = selectGraph(trusted, remote);
+    const graph = selectGraph(trustedLocal, remote);
     const description = bridge.describe(state.id);
     if (typeof description?.namespace !== 'string' || !/^[A-Za-z0-9_-]{1,80}$/.test(description.namespace)) throw failure('invalid-bootstrap', 'The SSH storage namespace is invalid.');
-    const baseUrl = `/ssh/environment/${state.id}/`;
+    const baseUrl = `${SSH_PROXY_PREFIX}${state.id}/`;
     const runtimeKey = 't3-' + createHash('sha256').update(JSON.stringify([targetId, state.id, graph.rev, graph.release])).digest('hex').slice(0, 40);
     const descriptor = {
       targetId, connectionId: state.id, namespace: description.namespace, baseUrl,
       release: { ...graph.release }, graph, globals: safeGlobals(remoteGlobals, graph), runtimeKey,
     };
     live(targetId, state.id);
-    records.set(targetId, { descriptor, cachedUI, entries: new Map(graph.entries.map(row => [row.id, row])) });
+    records.set(targetId, { descriptor, entries: new Map(graph.entries.map(row => [row.id, row])) });
     return structuredClone(descriptor);
   }
 
@@ -239,9 +226,7 @@ export function createNativeRuntimeBroker({ ssh, bridge, webServer, connection }
     }
     const row = record.entries.get(packageId);
     const path = file === 'client.js' ? clientPath(row) : `/plugins/${packageId}/${file}?rev=${row.rev}`;
-    let response;
-    if (record.cachedUI) response = await record.cachedUI.readResource(path);
-    else response = await webServer.readResource(new Request(new URL(path, webServer.getOrigin()), { signal }), connection.browserPeer);
+    const response = await webServer.readResource(new Request(new URL(path, webServer.getOrigin()), { signal }), connection.browserPeer);
     const source = await readScript(response, signal);
     live(targetId, connectionId);
     if (records.get(targetId) !== record) throw failure('connection-changed', 'The device runtime changed while loading its Client resource.');

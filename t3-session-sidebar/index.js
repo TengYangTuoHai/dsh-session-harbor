@@ -8,6 +8,9 @@ import { createRemoteIndex, REMOTE_INDEX_DOMAIN, remoteIndexSpec } from './remot
 import { TargetSupervisor } from './remote-supervisor.js';
 import { createNativeRuntimeBroker } from './native-runtime-host.js';
 import { settleExistingSessions } from './migration.js';
+import { SshService } from './ssh/ssh-service.js';
+import { RemoteBridge } from './ssh/remote-bridge.js';
+import { createSshSettingsHandler, mountSshTransport, sshTargetsSpec, SSH_SETTINGS_PATH } from './ssh/host.js';
 
 export const inject = ['storageDomain', 'workspaceRegistry', 'workspaceController', 'sessionController', 'connection', 'tools'];
 
@@ -301,11 +304,11 @@ export async function apply(ctx) {
   // Wake pending long polls before withdrawing their transport and storage.
   ctx.effect(() => () => { closed = true; notify(); });
 
-  // ---- the mirror of every machine reachable through the ssh plugin ----
-  // Rows are a cache of the owning machine's own state, so this host never writes them:
-  // the supervisor refreshes them, and the client renders them read-only.
+  // The remote mirror is a local cache of data owned by the connected devices.
   let remoteClosed = false;
-  const remoteSupervisors = new Set();
+  let closeRemoteWeb;
+  let supervisor = null;
+  let nativeBroker = null;
   const remoteWaiters = new Set();
   const remoteNotify = () => { for (const done of [...remoteWaiters]) done(); };
   const remoteDomain = await ctx.storageDomain.open(remoteIndexSpec);
@@ -314,15 +317,16 @@ export async function apply(ctx) {
     remoteClosed = true;
     remoteNotify();
     return remoteDisposal ??= (async () => {
-      await Promise.allSettled([...remoteSupervisors].map(owned => Promise.resolve().then(() => owned.stop({ markDown: false }))));
-      await remoteDomain.close();
+      try { await closeRemoteWeb?.(); }
+      finally { await remoteDomain.close(); }
     })();
   });
+  const remoteLog = (level, message) => { try { ctx.logger?.[level]?.(message); } catch { /* diagnostics are contained */ } };
   const remoteIndex = createRemoteIndex({
     onWriteError(error) {
       remoteRevision += 1;
       remoteNotify();
-      try { ctx.logger?.warn?.(`remote mirror persistence failed: ${String(error?.message ?? error)}`); } catch { /* diagnostics are contained */ }
+      remoteLog('warn', 'Remote mirror persistence failed: ' + String(error?.message ?? error));
     },
     storage: {
       targets: remoteDomain.table('targets'),
@@ -332,43 +336,78 @@ export async function apply(ctx) {
   });
   const remoteEpoch = randomUUID();
   let remoteRevision = 0;
+  const remoteChanged = () => { remoteRevision += 1; remoteNotify(); };
+  const readRemoteIndex = () => supervisor ? remoteIndex.snapshot() : { targets: {}, workspaces: {}, sessions: {} };
   ctx.on('domain/changed', (change) => {
-    if (change.domain !== REMOTE_INDEX_DOMAIN) return;
-    remoteRevision += 1;
-    remoteNotify();
+    if (change.domain === REMOTE_INDEX_DOMAIN) remoteChanged();
   });
-  let supervisor = null;
-  let nativeBroker = null;
-  // Each optional dependency generation owns its resources. Disposing an old
-  // SSH service must never stop the replacement service's supervisor or broker.
-  ctx.inject(['sshManager', 'sshRemoteBridge'], (host) => {
+
+  ctx.inject(['webServer'], host => {
     if (remoteClosed) return;
-    const ownedSupervisor = new TargetSupervisor({
-      ssh: host.sshManager,
-      bridge: host.sshRemoteBridge,
-      index: remoteIndex,
-      logger: (level, message) => { try { ctx.logger?.[level]?.(message); } catch { /* logging must never break a sync */ } },
-    });
-    supervisor = ownedSupervisor;
-    remoteSupervisors.add(ownedSupervisor);
-    ownedSupervisor.start();
+    const { webServer, connection } = host;
+    let disposed = false;
+    let domain;
+    let ssh;
+    let bridge;
+    let unmount;
+    let ownedSupervisor;
+    host.effect(() => webServer.register({
+      kind: 'prefix', path: '/t3-remote/native',
+      handler: createNativeResourceHandler(connection, () => nativeBroker),
+    }));
+    host.effect(() => webServer.register({
+      kind: 'exact', path: SSH_SETTINGS_PATH,
+      handler: createSshSettingsHandler(connection, () => ownedSupervisor && !disposed ? ssh : null, async targetId => {
+        remoteIndex.removeTarget(targetId);
+        await remoteIndex.flush();
+      }),
+    }));
+
+    const initialize = (async () => {
+      domain = await host.storageDomain.open(sshTargetsSpec);
+      if (disposed || remoteClosed) return;
+      ssh = new SshService({ targets: domain.table('targets') });
+      await ssh.initialize();
+      if (disposed || remoteClosed) return;
+      // The saved T3 IDs distinguish live devices from obsolete mirrored IDs,
+      // even when both sets contain the same SSH host alias.
+      remoteIndex.retainTargets(new Set(ssh.targets.keys()));
+      await remoteIndex.flush();
+      if (disposed || remoteClosed) return;
+      bridge = new RemoteBridge({ manager: ssh.manager, connection, requestTimeoutMs: 60000 });
+      unmount = mountSshTransport({ webServer, connection, bridge, manager: ssh.manager });
+      nativeBroker = createNativeRuntimeBroker({ ssh, bridge, webServer, connection });
+      supervisor = ownedSupervisor = new TargetSupervisor({ ssh, bridge, index: remoteIndex, logger: remoteLog });
+      ownedSupervisor.start();
+      ssh.startAutoConnect({ logger: remoteLog });
+      remoteChanged();
+    })().catch(error => remoteLog('warn', 'SSH service startup failed: ' + String(error?.message ?? error)));
+
+    let closing;
+    function dispose() {
+      disposed = true;
+      if (supervisor === ownedSupervisor) {
+        supervisor = null;
+        nativeBroker = null;
+        remoteChanged();
+      }
+      return closing ??= (async () => {
+        await initialize;
+        ssh?.stopAutoConnect();
+        try { await ownedSupervisor?.stop({ markDown: false }); }
+        finally {
+          try { unmount?.(); await bridge?.dispose(); }
+          finally {
+            try { await ssh?.dispose(); }
+            finally { await domain?.close(); }
+          }
+        }
+      })();
+    }
+    closeRemoteWeb = dispose;
     host.effect(() => async () => {
-      if (supervisor === ownedSupervisor) supervisor = null;
-      try { await ownedSupervisor.stop({ markDown: !remoteClosed }); }
-      catch (error) { try { ctx.logger?.warn?.(`remote mirror cleanup failed: ${String(error?.message ?? error)}`); } catch { /* teardown must stay contained */ } }
-      finally { remoteSupervisors.delete(ownedSupervisor); }
-    });
-    host.inject(['webServer'], runtimeHost => {
-      const ownedBroker = createNativeRuntimeBroker({
-        ssh: runtimeHost.sshManager, bridge: runtimeHost.sshRemoteBridge,
-        webServer: runtimeHost.webServer, connection: runtimeHost.connection,
-      });
-      nativeBroker = ownedBroker;
-      runtimeHost.effect(() => runtimeHost.webServer.register({
-        kind: 'prefix', path: '/t3-remote/native',
-        handler: createNativeResourceHandler(runtimeHost.connection, () => ownedBroker),
-      }));
-      runtimeHost.effect(() => () => { if (nativeBroker === ownedBroker) nativeBroker = null; });
+      try { await dispose(); }
+      finally { if (closeRemoteWeb === dispose) closeRemoteWeb = undefined; }
     });
   });
   ctx.effect(() => () => { remoteClosed = true; remoteNotify(); });
@@ -404,7 +443,7 @@ export async function apply(ctx) {
         await remoteIndex.flush();
         if (remoteClosed || request.signal.aborted) throw new Error('Request cancelled');
         result = { ok: true, value: { contract: PLACEMENT_CONTRACT, epoch: remoteEpoch, revision: remoteRevision,
-          ...remoteIndex.snapshot(), connections: supervisor?.runtimeConnections() ?? {} } };
+          ...readRemoteIndex(), connections: supervisor?.runtimeConnections() ?? {} } };
       } catch (error) {
         result = { ok: false, error: { code: 't3-remote/error', message: error instanceof Error ? error.message : String(error), details: {} } };
       }
@@ -439,7 +478,7 @@ export async function apply(ctx) {
   };
   const runWrite = (endpoint, call, signal) => {
     if (endpoint === 't3-remote/runtime') {
-      if (!nativeBroker) throw Object.assign(new Error('The installed SSH service cannot provide native device conversations.'), { code: 't3-native/unavailable' });
+      if (!nativeBroker) throw Object.assign(new Error('The SSH connection service cannot provide native device conversations.'), { code: 't3-native/unavailable' });
       return nativeBroker.describe(call.targetId, { signal });
     }
     if (endpoint === 't3-remote/browse') return supervisor.browse(call.targetId, call.path, { refresh: call.refresh === true, signal }).then(listing => ({ listing }));
@@ -464,7 +503,7 @@ export async function apply(ctx) {
         let result;
         try {
           const call = writeSchemas[endpoint].parse(message.payload);
-          if (!supervisor) throw Object.assign(new Error('The ssh plugin is not loaded, so no machine can be reached.'), { code: 't3-remote/plugin-unavailable' });
+          if (!supervisor) throw Object.assign(new Error('The SSH connection service is unavailable.'), { code: 't3-remote/plugin-unavailable' });
           result = { ok: true, value: await runWrite(endpoint, call, request.signal) };
         } catch (error) {
           result = { ok: false, error: { code: typeof error?.code === 'string' ? error.code : 't3-remote/error', message: error instanceof Error ? error.message : String(error), details: error?.details ?? {} } };
@@ -485,7 +524,7 @@ export async function apply(ctx) {
     },
     async execute({ targetId } = {}) {
       await remoteIndex.flush();
-      const snapshot = remoteIndex.snapshot();
+      const snapshot = readRemoteIndex();
       return {
         epoch: remoteEpoch, revision: remoteRevision, supervisor: supervisor !== null, nativeRuntime: nativeBroker !== null,
         targets: Object.values(snapshot.targets).filter(target => targetId === undefined || target.targetId === targetId).map(target => {

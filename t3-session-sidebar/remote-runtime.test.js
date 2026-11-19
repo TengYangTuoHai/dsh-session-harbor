@@ -39,7 +39,7 @@ function deferred() {
 }
 
 function descriptor(targetId, generation = 1) {
-  return { targetId, connectionId: `conn-${generation}`, runtimeKey: `${targetId}-${generation}`, baseUrl: `/ssh/environment/conn-${generation}/`, graph: { entries: [] } };
+  return { targetId, connectionId: `conn-${generation}`, runtimeKey: `${targetId}-${generation}`, baseUrl: `/t3-remote/ssh/conn-${generation}/`, graph: { entries: [] } };
 }
 
 function runtime(description, log) {

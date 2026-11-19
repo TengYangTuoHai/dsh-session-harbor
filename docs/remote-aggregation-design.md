@@ -12,7 +12,7 @@
 
 ## 可信官方模块与持久化
 
-`native-runtime-host.js` 读取远端结构化启动数据，按连接世代准备运行时描述。官方 Client 代码来自匹配 release 的本机资源；跨版本仅使用 SSH 服务已有的 verified official cache。缓存缺失或版本不匹配会明确拒绝，不能改用另一版本的本机代码，也不执行远端返回的 JavaScript。
+`native-runtime-host.js` 读取远端结构化启动数据，按连接世代准备运行时描述。远端 release 与本机匹配时，Host 从本机载入可信官方 Client 资源。版本不匹配会报告错误。
 
 描述与资源请求都带设备、连接和运行时身份。资源路由要求本机 owner，检查官方包身份、图依赖、包内 chunk、连接世代、MIME、UTF-8 和大小。代码的词法环境使用该设备的 `window/globalThis/localStorage/sessionStorage/document` facade，工厂注册进入该设备的模块表。
 
@@ -42,7 +42,7 @@
 
 ## 部署与验证
 
-本机插件要求 DSH `0.2.2-rc.3` 或 `0.2.2-rc.5`，以及提供 `sshManager`、`sshRemoteBridge` 的 SSH 插件。远端的 settled 和 placement 实时同步依赖远端安装本侧栏插件。原生会话可用性还取决于匹配 release 的可信官方 Client 图和所需远端 Web 能力。
+本机插件支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。设置弹窗里的 T3 SSH 管理设备连接，Host 通过 OpenSSH 建立隧道并为内嵌会话转发 HTTP 与 WebSocket。启动时按 T3 保存的设备 ID 清理已失效的本地镜像。远端的 settled 和 placement 实时同步依赖远端安装本侧栏插件，原生会话依赖匹配 release 的可信官方 Client 图和远端 Web 能力。
 
 远端首次安装侧栏插件会执行既有的一次性 idle 会话迁移；更新不应重新执行已完成的迁移。
 

@@ -55,8 +55,8 @@ function mountRoutes(baseUrl) {
   if ((!absolute && (!baseUrl.startsWith('/') || baseUrl.startsWith('//')))
     || !['http:', 'https:'].includes(base.protocol) || base.username || base.password || base.search || base.hash
     || !base.pathname.endsWith('/') || /(?:^|\/)\.\.?\//.test(baseUrl) || baseUrl.includes('\\')
-    || !/^\/ssh\/environment\/[A-Za-z0-9_-]+\/$/.test(base.pathname)) {
-    throw new TypeError('connection: baseUrl must name an SSH environment mount');
+    || !/^\/t3-remote\/ssh\/[A-Za-z0-9_-]+\/$/.test(base.pathname)) {
+    throw new TypeError('connection: baseUrl must name a T3 SSH device route');
   }
   return (path, socket = false) => {
     assertRoute(path);
@@ -303,7 +303,7 @@ function watchNetwork(loop) {
 /**
  * Create an independent ConnectionHandle plus an idempotent async dispose().
  * With a relative baseUrl, fetch/createWebSocket receive a mount-absolute path
- * (for example /ssh/environment/id/api/remote.mux). They must use the local
+ * (for example /t3-remote/ssh/id/api/remote.mux). They must use the local
  * authenticated carrier. An absolute baseUrl yields absolute HTTP/WS URLs.
  * No underlying RPC caller or generation is borrowed from baseConnection.
  * API Gateway registers the generation source and calls start(); onReset is
@@ -528,8 +528,8 @@ function namespaceStorage(backing, prefix, assertLive) {
 }
 
 function transportMapper(baseUrl) {
-  if (typeof baseUrl !== 'string' || !baseUrl.startsWith('/') || baseUrl.startsWith('//') || !/^\/ssh\/environment\/[A-Za-z0-9_-]+\/$/.test(baseUrl)) {
-    throw new TypeError('device realm requires an SSH environment baseUrl');
+  if (typeof baseUrl !== 'string' || !baseUrl.startsWith('/') || baseUrl.startsWith('//') || !/^\/t3-remote\/ssh\/[A-Za-z0-9_-]+\/$/.test(baseUrl)) {
+    throw new TypeError('device realm requires a T3 SSH device baseUrl');
   }
   return input => {
     const path = String(input);

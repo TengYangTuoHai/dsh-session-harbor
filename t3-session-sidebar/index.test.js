@@ -1,13 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
+import { Readable } from 'node:stream';
 import { apply, createNativeResourceHandler } from './index.js';
+import { REMOTE_INDEX_DOMAIN } from './remote-index.js';
+import { SshService } from './ssh/ssh-service.js';
+import { RemoteBridge } from './ssh/remote-bridge.js';
 
 async function fixture(options = {}) {
   const listeners = new Map();
   const effects = [];
   const records = new Map();
-  const domains = new Map();
+  const domains = options.domains ?? new Map();
   const pinned = new Set();
   const routes = new Map();
   const injected = [];
@@ -38,7 +42,9 @@ async function fixture(options = {}) {
           return {
             get: id => data.get(id),
             entries: () => data.entries(),
-            delete: id => data.delete(id),
+            async delete(id) {
+              if (data.delete(id)) emit('domain/changed', { domain: spec.name, table: name, key: id, operation: 'delete' });
+            },
             async put(id, value) { data.set(id, value); emit('domain/changed', { domain: spec.name, table: name, key: id, operation: 'put', value }); },
           };
         },
@@ -170,7 +176,7 @@ test('snapshot long poll wakes after durable placement changes and aborts cleanl
   } finally { await f.close(); }
 });
 
-test('the remote mirror answers even when the ssh plugin is absent', async () => {
+test('the remote mirror is empty without a Web host', async () => {
   const f = await fixture();
   try {
     const result = await f.call('t3-remote/snapshot', {}, signal());
@@ -182,29 +188,42 @@ test('the remote mirror answers even when the ssh plugin is absent', async () =>
   } finally { await f.close(); }
 });
 
-test('a connected machine is mirrored into the remote snapshot route', async () => {
-  const connection = { id: 'conn-1', targetId: 'target-1', status: 'connected', host: 'wsl', label: 'wsl' };
-  const services = {
-    sshManager: {
-      manager: { list: () => [connection], get: id => (id === connection.id ? connection : undefined), onChange: () => () => {} },
-      targetIdForConnection: state => state.targetId ?? null,
-    },
-    sshRemoteBridge: {
-      readBootstrap: async () => '{"version":"0.2.2-rc.1","commit":"c59d10a"}',
-      upgrade: async () => { throw new Error('streams are unavailable here'); },
-      async requestJson(id, path, envelope) {
-        if (path === '/api/session/list') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { items: [{ sessionId: 's-1', updatedAt: 7, running: false, blank: false, agentAvailable: true, cwd: '/home/dev', projections: { kind: 'cached', values: { title: 'Deploy fix' } } }] } } } };
-        if (path === '/api/t3-session-sidebar/snapshot') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { contract: 1, epoch: 'remote-epoch', revision: 4, placements: { 's-1': { settled: true, settledAt: 1, unsettledAt: null } } } } } };
-        return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: false, error: { code: 'gateway/unknown', message: 'no such route', details: {} } } } };
-      },
-    },
+function remoteDevice(t, state, bridge) {
+  t.mock.method(SshService.prototype, 'initialize', async function () {
+    this.targets.set(state.targetId, { id: state.targetId, host: state.host, label: state.label, cwd: '', dshPath: 'dsh', profile: 'web' });
+    this.manager = {
+      list: () => [state], get: id => id === state.id ? state : undefined,
+      getOpenUrl() { assert.fail('fixture should not use the network'); },
+      onChange: () => () => {}, async dispose() {},
+    };
+  });
+  Object.assign(state, { cwd: '', dshPath: 'dsh', profile: 'web' });
+  t.mock.method(SshService.prototype, 'startAutoConnect', () => {});
+  for (const [name, method] of Object.entries(bridge)) t.mock.method(RemoteBridge.prototype, name, method);
+  const peer = { principal: { kind: 'owner' } };
+  return {
+    connection: { browserPeer: peer, admit: () => ({ peer }) },
+    webServer: { register: () => () => {}, registerUpgrade: () => () => {}, collectIndexInjections: () => [], readResource() {} },
   };
+}
+
+test('a connected machine is mirrored into the remote snapshot route', async t => {
+  const connection = { id: 'conn-1', targetId: 'target-1', status: 'connected', host: 'wsl', label: 'wsl' };
+  const services = remoteDevice(t, connection, {
+    readBootstrap: async () => '{"version":"0.2.2-rc.1","commit":"c59d10a"}',
+    upgrade: async () => { throw new Error('streams are unavailable here'); },
+    async requestJson(id, path, envelope) {
+      if (path === '/api/session/list') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { items: [{ sessionId: 's-1', updatedAt: 7, running: false, blank: false, agentAvailable: true, cwd: '/home/dev', projections: { kind: 'cached', values: { title: 'Deploy fix' } } }] } } } };
+      if (path === '/api/t3-session-sidebar/snapshot') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { contract: 1, epoch: 'remote-epoch', revision: 4, placements: { 's-1': { settled: true, settledAt: 1, unsettledAt: null } } } } } };
+      return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: false, error: { code: 'gateway/unknown', message: 'no such route', details: {} } } } };
+    },
+  });
   const f = await fixture({ services });
   try {
     let value;
     for (let attempt = 0; attempt < 60; attempt += 1) {
       value = (await f.call('t3-remote/snapshot', {}, signal())).value;
-      if (value.targets['target-1']?.status === 'stale' && value.targets['target-1']?.release && value.targets['target-1']?.pluginContract === 1) break;
+      if (value.targets['target-1']?.status === 'stale' && value.targets['target-1']?.release && value.targets['target-1']?.pluginContract === 1 && value.sessions['target-1/s-1']?.settled) break;
       await new Promise(resolve => setTimeout(resolve, 25));
     }
     assert.equal(value.targets['target-1'].status, 'stale');
@@ -217,24 +236,16 @@ test('a connected machine is mirrored into the remote snapshot route', async () 
   } finally { await f.close(); }
 });
 
-test('the remote snapshot long poll wakes when the mirror changes', async () => {
+test('the remote snapshot long poll wakes when the mirror changes', async t => {
   const connection = { id: 'conn-1', targetId: 'target-1', status: 'connected', host: 'wsl', label: 'wsl' };
-  const f = await fixture({
-    services: {
-      sshManager: {
-        manager: { list: () => [connection], get: id => (id === connection.id ? connection : undefined), onChange: () => () => {} },
-        targetIdForConnection: state => state.targetId ?? null,
-      },
-      sshRemoteBridge: {
-        readBootstrap: async () => '{"version":"1.2.3","commit":"abc"}',
-        upgrade: async () => { throw new Error('no streams here'); },
-        async requestJson(id, path, envelope) {
-          const value = path === '/api/session/list' ? { items: [] } : { contract: 1, epoch: 'e', revision: 0, placements: {} };
-          return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value } } };
-        },
-      },
+  const f = await fixture({ services: remoteDevice(t, connection, {
+    readBootstrap: async () => '{"version":"1.2.3","commit":"abc"}',
+    upgrade: async () => { throw new Error('no streams here'); },
+    async requestJson(id, path, envelope) {
+      const value = path === '/api/session/list' ? { items: [] } : { contract: 1, epoch: 'e', revision: 0, placements: {} };
+      return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value } } };
     },
-  });
+  }) });
   try {
     let value;
     for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -262,7 +273,7 @@ test('the remote snapshot long poll wakes when the mirror changes', async () => 
   } finally { await f.close(); }
 });
 
-test('the machine doors validate, wait for the ssh plugin, and write through it', async () => {
+test('the machine doors validate, wait for the SSH service, and write through it', async t => {
   const bare = await fixture();
   try {
     const refused = await bare.call('t3-remote/browse', { targetId: 'target-1' }, signal());
@@ -272,31 +283,25 @@ test('the machine doors validate, wait for the ssh plugin, and write through it'
 
   const connection = { id: 'conn-1', targetId: 'target-1', status: 'connected', host: 'wsl', label: 'wsl' };
   const seen = [];
-  const services = {
-    sshManager: {
-      manager: { list: () => [connection], get: id => (id === connection.id ? connection : undefined), onChange: () => () => {} },
-      targetIdForConnection: state => state.targetId ?? null,
+  const services = remoteDevice(t, connection, {
+    readBootstrap: async () => '{"version":"0.2.2-rc.1","commit":"c59d10a"}',
+    upgrade: async () => { throw new Error('streams are unavailable here'); },
+    async requestJson(id, path, envelope) {
+      seen.push(path);
+      const args = envelope.payload.args;
+      if (path === '/api/session/list') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { items: [] } } } };
+      if (path === '/api/t3-session-sidebar/snapshot') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { contract: 1, epoch: 'remote-epoch', revision: 4, placements: {} } } } };
+      // The plugin's own endpoints carry their body at the payload root, not under args.
+      if (path === '/api/t3-session-sidebar/action') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { sessionId: envelope.payload.sessionId, action: envelope.payload.action } } } };
+      if (path === '/api/directoryPicker/list') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { path: args.path, home: '/home/dev', crumbs: [], entries: [{ name: 'app', path: '/home/dev/app', hidden: false }], truncated: false } } } };
+      if (path === '/api/workspace/create') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { workspace: { workspaceId: 'w-new', path: args.request.path, title: 'app', sessionIds: [], createdAt: '', updatedAt: '' }, created: true } } } };
+      if (path === '/api/workspace/delete') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { deleted: true } } } };
+      if (path === '/api/session/rename') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { title: args.request.title, seq: 3 } } } };
+      if (path === '/api/session/fork') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { sessionId: 'forked-session' } } } };
+      if (path === '/api/workspace/archiveSession') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { archivedSessionIds: [args.request.sessionId] } } } };
+      return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: false, error: { code: 'gateway/unknown', message: 'no such route', details: {} } } } };
     },
-    sshRemoteBridge: {
-      readBootstrap: async () => '{"version":"0.2.2-rc.1","commit":"c59d10a"}',
-      upgrade: async () => { throw new Error('streams are unavailable here'); },
-      async requestJson(id, path, envelope) {
-        seen.push(path);
-        const args = envelope.payload.args;
-        if (path === '/api/session/list') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { items: [] } } } };
-        if (path === '/api/t3-session-sidebar/snapshot') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { contract: 1, epoch: 'remote-epoch', revision: 4, placements: {} } } } };
-        // The plugin's own endpoints carry their body at the payload root, not under args.
-        if (path === '/api/t3-session-sidebar/action') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { sessionId: envelope.payload.sessionId, action: envelope.payload.action } } } };
-        if (path === '/api/directoryPicker/list') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { path: args.path, home: '/home/dev', crumbs: [], entries: [{ name: 'app', path: '/home/dev/app', hidden: false }], truncated: false } } } };
-        if (path === '/api/workspace/create') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { workspace: { workspaceId: 'w-new', path: args.request.path, title: 'app', sessionIds: [], createdAt: '', updatedAt: '' }, created: true } } } };
-        if (path === '/api/workspace/delete') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { deleted: true } } } };
-        if (path === '/api/session/rename') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { title: args.request.title, seq: 3 } } } };
-        if (path === '/api/session/fork') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { sessionId: 'forked-session' } } } };
-        if (path === '/api/workspace/archiveSession') return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: true, value: { archivedSessionIds: [args.request.sessionId] } } } };
-        return { status: 200, headers: {}, value: { type: 'server-response', rpcId: envelope.rpcId, result: { ok: false, error: { code: 'gateway/unknown', message: 'no such route', details: {} } } } };
-      },
-    },
-  };
+  });
   const f = await fixture({ services });
   try {
     for (let attempt = 0; attempt < 60; attempt += 1) {
@@ -352,6 +357,78 @@ function httpFixture(url, method = 'GET') {
   });
   return { req, res };
 }
+
+test('SSH settings persist saved devices and prune only orphaned mirrors at startup', async t => {
+  // Keep the real storage and initialization path while leaving the saved host offline.
+  t.mock.method(SshService.prototype, 'startAutoConnect', () => {});
+  const savedDevice = { id: 't3-wsl', host: 'wsl', label: 'T3 WSL', cwd: '', dshPath: 'dsh', profile: 'web' };
+  const cachedTargets = new Map(['old-wsl', 't3-wsl'].map(targetId => [targetId, {
+    targetId, label: 'wsl', host: 'wsl', kind: 'wsl', release: null, pluginContract: null,
+    status: 'ready', lastSyncAt: 3, lastError: null,
+  }]));
+  const cachedWorkspaces = new Map(['old-wsl', 't3-wsl', 'orphan'].map(targetId => [targetId + '/w-1', { targetId, workspaceId: 'w-1' }]));
+  const cachedSessions = new Map(['old-wsl', 't3-wsl', 'orphan'].map(targetId => [targetId + '/s-1', { targetId, sessionId: 's-1' }]));
+  const domains = new Map([
+    [REMOTE_INDEX_DOMAIN, { targets: cachedTargets, workspaces: cachedWorkspaces, sessions: cachedSessions }],
+    ['local_t3_ssh', { targets: new Map([[savedDevice.id, savedDevice]]) }],
+  ]);
+  const routes = new Map();
+  const peer = { principal: { kind: 'owner' } };
+  const f = await fixture({ domains, services: {
+    connection: { browserPeer: peer, admit: req => req.admission ?? { peer } },
+    webServer: {
+      register(route) { routes.set(route.path, route.handler); return () => routes.delete(route.path); },
+      registerUpgrade() { assert.fail('no fixture device should connect'); },
+      collectIndexInjections() { return []; },
+      readResource() { assert.fail('no fixture should load a resource'); },
+    },
+  } });
+  try {
+    const settings = routes.get('/api/t3-ssh');
+    assert.equal(typeof settings, 'function');
+    const callSettings = async (input, admission) => {
+      const method = input === undefined ? 'GET' : 'POST';
+      const { req, res } = httpFixture('/api/t3-ssh', method);
+      const request = Object.assign(Readable.from(input === undefined ? [] : [JSON.stringify(input)]), {
+        url: req.url, method, admission, headers: { 'content-type': 'application/json' },
+      });
+      await settings(request, res);
+      return { status: res.status, body: JSON.parse(res.body) };
+    };
+    assert.equal((await callSettings(undefined, { rejection: 401 })).status, 401);
+    assert.equal((await callSettings(undefined, { peer: { principal: { kind: 'guest' } } })).status, 403);
+    for (let attempt = 0; !routes.has('/t3-remote/ssh') && attempt < 50; attempt++) {
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    const initialSettings = await callSettings();
+    assert.equal(initialSettings.status, 200);
+    assert.deepEqual(initialSettings.body.targets, [savedDevice]);
+    const { value } = await f.call('t3-remote/snapshot', {}, signal());
+    assert.deepEqual(Object.keys(value.targets), ['t3-wsl']);
+    assert.equal(value.targets['t3-wsl'].status, 'down');
+    assert.deepEqual([...cachedTargets.keys()], ['t3-wsl']);
+    assert.deepEqual([...cachedWorkspaces.keys()], ['t3-wsl/w-1']);
+    assert.deepEqual([...cachedSessions.keys()], ['t3-wsl/s-1']);
+    assert.deepEqual(Object.keys(value.workspaces), ['t3-wsl/w-1']);
+    assert.deepEqual(Object.keys(value.sessions), ['t3-wsl/s-1']);
+    const saved = await callSettings({ action: 'save', target: { host: 'fixture.invalid', label: 'Fixture' } });
+    assert.equal(saved.status, 200);
+    assert.equal(saved.body.target.label, 'Fixture');
+    const { id } = saved.body.target;
+    assert.deepEqual((await callSettings()).body.targets, [savedDevice, saved.body.target]);
+    assert.equal((await callSettings({ action: 'save', target: { host: 'fixture.invalid' } })).body.target.id, id);
+    assert.equal((await callSettings({ action: 'environment', id })).status, 400);
+    const proxy = routes.get('/t3-remote/ssh');
+    const { req, res } = httpFixture('/t3-remote/ssh/conn-1/');
+    await proxy(req, res);
+    assert.equal(res.status, 404);
+    assert.equal(res.headers.location, undefined);
+    assert.equal(routes.has('/ssh/environment'), false);
+    assert.deepEqual((await callSettings({ action: 'remove', id })).body, { removed: true });
+    assert.deepEqual((await callSettings()).body.targets, [savedDevice]);
+  } finally { await f.close(); }
+  assert.equal(routes.size, 0);
+});
 
 test('native Client resources require the local owner and never dispatch rejected requests', async () => {
   let calls = 0;

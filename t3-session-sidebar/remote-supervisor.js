@@ -217,6 +217,8 @@ export class TargetSupervisor {
     if (this.#stopped || !state) return;
     const targetId = this.#ssh.targetIdForConnection(state);
     if (!targetId) return;
+    const label = this.#ssh.targets?.get?.(targetId)?.label;
+    if (label) state = { ...state, label };
     if (state.status === 'connected') { this.#ensure(targetId, state); return; }
     const task = this.#tasks.get(targetId);
     if (state.status === 'connecting') {

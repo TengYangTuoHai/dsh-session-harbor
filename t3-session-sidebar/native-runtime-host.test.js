@@ -16,21 +16,13 @@ function graph(entries = [entry(modulesId), entry(chatId)], version = release) {
 function html(globals) {
   return Object.entries(globals).map(([name, value]) => `<script>globalThis[${JSON.stringify(name)}] = ${JSON.stringify(value)};</script>`).join('\n');
 }
-function harness({ localGraph = graph(), remoteGraph = graph(), globals = {}, source, cache, build } = {}) {
+function harness({ localGraph = graph(), remoteGraph = graph(), globals = {}, source } = {}) {
   const calls = [];
   let state = { id: connectionId, status: 'connected' };
   const peer = { principal: { kind: 'owner' } };
   const resources = new Map();
   const ssh = {
     connectionFor(id) { calls.push(['connectionFor', id]); return id === 'target-1' ? state : undefined; },
-    environments: {
-      uiById: new Map(),
-      async build(id, passedPeer) {
-        calls.push(['build', id, passedPeer]);
-        if (build) return build(id, passedPeer);
-        if (cache) this.uiById.set(id, cache);
-      },
-    },
   };
   const bridge = {
     async readBootstrap(id) { calls.push(['bootstrap', id]); return html({ __DSH_BOOT__: remoteGraph, ...globals }); },
@@ -74,13 +66,13 @@ test('descriptor uses trusted official graph intersection and removes unavailabl
   assert.deepEqual(description.graph.entries.map(row => row.id), [modulesId, chatId]);
   assert.deepEqual(description.release, release);
   assert.equal(description.connectionId, connectionId);
-  assert.equal(description.baseUrl, '/ssh/environment/connection-1/');
+  assert.equal(description.baseUrl, '/t3-remote/ssh/connection-1/');
   assert.equal(description.namespace, 'safe-namespace');
   assert.match(description.runtimeKey, /^t3-[a-f0-9]{40}$/);
   assert.deepEqual(description.globals.__DSH_LOCALE__, { language: 'en' });
   for (const name of ['__DSH_TRANSPORT__', '__DSH_FILE_UPLOAD__', '__DSH_HOST_PATHS__', '__DSH_TOKEN__', '__DSH_STORAGE__']) assert.equal(description.globals[name], undefined);
   assert.deepEqual(description.globals.__DSH_BOOT__, description.graph);
-  assert.equal(h.calls.some(([name]) => name === 'resource' || name === 'build'), false);
+  assert.equal(h.calls.some(([name]) => name === 'resource'), false);
   description.graph.entries.length = 0;
   assert.equal((await h.broker.resource('target-1', resourceRequest)).status, 200, 'returned descriptors cannot mutate the broker authorization');
 });
@@ -142,27 +134,9 @@ test('connection changes during preparation and resource reads are refused', asy
   await assert.rejects(h.broker.resource('target-1', resourceRequest), { code: 't3-native/connection-changed' });
 });
 
-test('cross release uses only the existing verified official cache', async () => {
-  const oldRelease = { version: '0.2.2-rc.1', commit: 'c59d10a' };
-  const cacheCalls = [];
-  const cache = { version: oldRelease.version, graph: graph(undefined, oldRelease), async readResource(path) { cacheCalls.push(path); return new Response('window.__ModuleLoader__.load({id:"old-official"});', { headers: { 'content-type': 'text/javascript' } }); } };
-  const h = harness({ remoteGraph: graph(undefined, oldRelease), cache });
-  const descriptor = await h.broker.describe('target-1');
-  assert.deepEqual(descriptor.release, oldRelease);
-  const source = await (await h.broker.resource('target-1', resourceRequest)).text();
-  assert.match(source, /old-official/);
-  assert.equal(cacheCalls.length, 1);
-  assert.equal(h.calls.some(([name]) => name === 'resource'), false);
-  assert.deepEqual(h.calls.find(([name]) => name === 'build').slice(1), [connectionId, h.peer]);
-  cache.readResource = async () => null;
-  await assert.rejects(h.broker.resource('target-1', resourceRequest), { code: 't3-native/resource-unavailable' });
-  assert.equal(h.calls.some(([name]) => name === 'resource'), false, 'a cache miss must not use another release from the local install');
-});
-
-test('missing or mismatched verified cache fails before any resource request', async () => {
-  const oldRelease = { version: '0.2.2-rc.1', commit: 'c59d10a' };
-  for (const cache of [undefined, { version: oldRelease.version, graph: graph(), readResource() {} }]) {
-    const h = harness({ remoteGraph: graph(undefined, oldRelease), cache });
+test('mismatched releases are rejected before serving any local resources', async () => {
+  for (const remoteRelease of [{ version: '0.2.2-rc.1', commit: 'c59d10a' }, { ...release, commit: 'another-commit' }]) {
+    const h = harness({ remoteGraph: graph(undefined, remoteRelease) });
     await assert.rejects(h.broker.describe('target-1'), { code: 't3-native/unsupported-release' });
     assert.equal(h.calls.some(([name]) => name === 'resource'), false);
   }

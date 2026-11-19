@@ -8,7 +8,7 @@ A DeepSeek Harness plugin that groups local and SSH device sessions in one works
 
 ## 构建与安装
 
-当前插件版本 `0.2.1`，支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。先在仓库根目录构建：
+当前插件版本 `0.2.2`，支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。先在仓库根目录构建：
 
 ```sh
 node tools/build-client.mjs
@@ -16,7 +16,7 @@ node tools/build-client.mjs
 
 在 DSH 插件管理器中安装或更新本地 `t3-session-sidebar` 目录。该目录的 manifest 声明 bundle patch、元数据、图标、Host 和 Client 入口。替换已加载版本后，按插件管理器返回的应用状态重启当前 DSH，再刷新原工作台。新开开发服务器不会更新已有 GUI。
 
-SSH 设备需配置在提供 `sshManager` / `sshRemoteBridge` 的 SSH 插件中；远端也安装侧栏插件才能持久化并同步该设备的 Settled 状态。设备连接与远端项目仍归各自机器所有。
+在 DeepSeek Harness 的「设置 → T3 SSH」里，可从本机 SSH 配置选主机，也可手动输入 SSH 地址。连接就绪后，远端会话会同步到侧栏。远端安装 T3 侧栏插件后，可持久化并同步该设备的 Settled 状态。
 
 ## 验证
 

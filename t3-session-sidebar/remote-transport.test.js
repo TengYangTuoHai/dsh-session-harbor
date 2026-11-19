@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createDeviceConnection } from './remote-transport.js';
 
-const baseUrl = '/ssh/environment/connection-123/';
+const baseUrl = '/t3-remote/ssh/connection-123/';
 const deferred = () => {
   let resolve, reject;
   const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
@@ -191,12 +191,12 @@ test('socket carrier receives the selected mount and every remaining owned socke
 });
 
 test('absolute mount selects HTTP/WS schemes; baseConnection supplies only a socket opener', async t => {
-  const { connection, calls, sockets } = harness({ baseUrl: 'https://local.example/ssh/environment/connection-123/' });
+  const { connection, calls, sockets } = harness({ baseUrl: 'https://local.example/t3-remote/ssh/connection-123/' });
   t.after(() => connection.dispose());
   await connection.rpc.call('/api', 'session/list', {});
   connection.openWebSocket('/api/remote.mux');
-  assert.equal(calls[0][0], 'https://local.example/ssh/environment/connection-123/api/session/list');
-  assert.equal(sockets[0][0], 'wss://local.example/ssh/environment/connection-123/api/remote.mux');
+  assert.equal(calls[0][0], 'https://local.example/t3-remote/ssh/connection-123/api/session/list');
+  assert.equal(sockets[0][0], 'wss://local.example/t3-remote/ssh/connection-123/api/remote.mux');
   let opened;
   const base = {
     get generation() { throw new Error('local generation must never be read'); },
@@ -204,7 +204,7 @@ test('absolute mount selects HTTP/WS schemes; baseConnection supplies only a soc
     rpc: { call() { throw new Error('local RPC must never be used'); } },
     openWebSocket(path) { opened = path; return new FakeSocket(); },
   };
-  const remote = createDeviceConnection({ baseConnection: base, baseUrl: 'https://local.example/ssh/environment/connection-123/', fetch: async (_, init) => Response.json({
+  const remote = createDeviceConnection({ baseConnection: base, baseUrl: 'https://local.example/t3-remote/ssh/connection-123/', fetch: async (_, init) => Response.json({
     type: 'server-response', rpcId: JSON.parse(init.body).rpcId, result: { ok: true, value: 'remote' },
   }) });
   t.after(() => remote.dispose());
@@ -400,7 +400,7 @@ test('readiness deadline aborts its source; cancelled late ready cannot publish'
 });
 
 test('invalid or absent mounts and authentication functions never fall back to page transports', () => {
-  for (const baseUrl of [undefined, '/', '//elsewhere/ssh/environment/id/', '/ssh/environment/id', '/ssh/environment/../', 'https://user:secret@local/ssh/environment/id/', '/ssh/environment/id/?x=1']) {
+  for (const baseUrl of [undefined, '/', '/ssh/environment/id/', '//elsewhere/t3-remote/ssh/id/', '/t3-remote/ssh/id', '/t3-remote/ssh/../', 'https://user:secret@local/t3-remote/ssh/id/', '/t3-remote/ssh/id/?x=1']) {
     assert.throws(() => harness({ baseUrl }), /baseUrl/);
   }
   assert.throws(() => createDeviceConnection({ baseUrl }), /authenticated fetch/);

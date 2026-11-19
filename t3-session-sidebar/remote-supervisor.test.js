@@ -89,7 +89,7 @@ function fakeClient(behaviour) {
 
 const bridge = {
   readBootstrap: async () => '{"version":"0.2.2-rc.1","commit":"c59d10a"}',
-  describe: id => ({ id, host: 'fixture', url: `/ssh/environment/${id}/`, namespace: 'namespace00000000000000aa' }),
+  describe: id => ({ id, host: 'fixture', url: `/t3-remote/ssh/${id}/`, namespace: 'namespace00000000000000aa' }),
 };
 
 async function harness(behaviour, { connections, options = {}, localRelease = null } = {}) {

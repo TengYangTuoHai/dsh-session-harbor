@@ -24,7 +24,7 @@ const row = (id, extras = {}) => ({ id, rev: 'r1', url: 'https://must-not-load.e
 function descriptor(namespace = 'device-a', entries = [row(A)]) {
   return {
     targetId: namespace, connectionId: `connection-${namespace}`, namespace, runtimeKey: `runtime-${namespace}-r1`,
-    baseUrl: `/ssh/environment/connection-${namespace}/`,
+    baseUrl: `/t3-remote/ssh/connection-${namespace}/`,
     graph: { rev: 'graph-r1', release: { version: '0.2.2-rc.3', commit: 'trusted' }, entries, batches: [] },
     globals: { __DSH_REMOTE_ACCESS__: { owner: true, resources: [] }, __DSH_TEST__: { value: namespace } },
   };
@@ -242,7 +242,7 @@ test('require.asset maps only trusted package assets to the selected device moun
   const { realm } = fixture({ scripts: { [`${A}/client.js`]: require => ({ asset: require.asset }) } });
   t.after(() => realm.dispose());
   const { asset } = await realm.import(A);
-  assert.equal(asset(`plugins/${A}/assets/a%20b.0123456789ab.svg`), `/ssh/environment/connection-device-a/plugins/${A}/assets/a%20b.0123456789ab.svg`);
+  assert.equal(asset(`plugins/${A}/assets/a%20b.0123456789ab.svg`), `/t3-remote/ssh/connection-device-a/plugins/${A}/assets/a%20b.0123456789ab.svg`);
   for (const input of [`plugins/${B}/assets/a.svg`, `plugins/${A}/assets/../local.svg`, `plugins/${A}/assets/%2e%2e/local.svg`, `plugins/${A}/assets/a%2fb.svg`, 'https://remote.example/a.svg']) {
     assert.throws(() => asset(input), /asset/);
   }
@@ -262,12 +262,12 @@ test('private transport and raw-upload hooks always map paths into the same envi
   await realm.globalThis.__DSH_FILE_UPLOAD__.fetch('/api/file-uploads?sessionId=same-id', { body: 'bytes' });
   transport.createWebSocket('/api/remote.mux');
   assert.deepEqual(calls.map(([url]) => url), [
-    '/ssh/environment/connection-device-a/api/session/list', '/ssh/environment/connection-device-a/api/file-uploads?sessionId=same-id',
+    '/t3-remote/ssh/connection-device-a/api/session/list', '/t3-remote/ssh/connection-device-a/api/file-uploads?sessionId=same-id',
   ]);
-  assert.deepEqual(sockets, ['/ssh/environment/connection-device-a/api/remote.mux']);
+  assert.deepEqual(sockets, ['/t3-remote/ssh/connection-device-a/api/remote.mux']);
   assert.equal(pageGlobal.__DSH_TRANSPORT__.local, true);
   assert.equal(pageGlobal.__DSH_FILE_UPLOAD__.local, true);
-  for (const path of ['/ssh/environment/connection-device-a/api/../local', 'api/%2e%2e/local', 'api/a%2fb', '//other/api', 'https://other/api']) {
+  for (const path of ['/t3-remote/ssh/connection-device-a/api/../local', 'api/%2e%2e/local', 'api/a%2fb', '//other/api', 'https://other/api']) {
     assert.throws(() => transport.createWebSocket(path), /path|mount/);
   }
 });
