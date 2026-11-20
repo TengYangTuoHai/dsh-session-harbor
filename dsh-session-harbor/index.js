@@ -1,13 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { homedir } from 'node:os';
+import { join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { createPlacementController } from './placement-controller.js';
+import { openPlacementStore } from './placement-store.js';
 import { createRemoteIndex, REMOTE_INDEX_DOMAIN, remoteIndexSpec } from './remote-index.js';
 import { TargetSupervisor } from './remote-supervisor.js';
 import { createNativeRuntimeBroker } from './native-runtime-host.js';
-import { settleExistingSessions } from './migration.js';
+import { MIGRATION_KEY, settleExistingSessions } from './migration.js';
 import { SshService } from './ssh/ssh-service.js';
 import { RemoteBridge } from './ssh/remote-bridge.js';
 import { createSshSettingsHandler, mountSshTransport, sshTargetsSpec, SSH_SETTINGS_PATH } from './ssh/host.js';
@@ -80,12 +83,38 @@ export function createNativeResourceHandler(connection, getBroker) {
   };
 }
 
-export async function apply(ctx) {
+async function readLegacyPlacement(ctx) {
   const domain = await ctx.storageDomain.open({
     name: DOMAIN, version: 1, tables: { placements: { valueSchema: recordSchema } },
   });
-  const table = domain.table('placements');
-  ctx.effect(() => () => domain.close());
+  let placements;
+  try {
+    placements = [...domain.table('placements').entries()];
+  } finally {
+    await domain.close();
+  }
+  const migrationDomain = await ctx.storageDomain.open({
+    name: 'local_t3_sidebar_migrations', version: 1,
+    tables: { migrations: { valueSchema: migrationSchema } },
+  });
+  try {
+    return { placements, migration: migrationDomain.table('migrations').get(MIGRATION_KEY) };
+  } finally {
+    await migrationDomain.close();
+  }
+}
+
+function placementHome(ctx) {
+  const home = ctx.get('profileContext')?.home ?? process.env.DSH_HOME;
+  if (!home?.trim()) return join(homedir(), '.dsh');
+  if (home === '~') return homedir();
+  if (home.startsWith('~/') || home.startsWith('~\\')) return join(homedir(), home.slice(2));
+  return resolve(home);
+}
+
+export async function apply(ctx) {
+  const table = await openPlacementStore(placementHome(ctx), () => readLegacyPlacement(ctx));
+  ctx.effect(() => () => table.close());
 
   const epoch = randomUUID();
   let revision = 0;
@@ -120,11 +149,25 @@ export async function apply(ctx) {
   ctx.on('api-session/removed', (sessionId) => { if (statuses.delete(sessionId)) { revision += 1; notify(); } });
   let closed = false;
   const notify = () => { for (const done of [...waiters]) done(); };
-  ctx.on('domain/changed', (change) => {
-    if (change.domain !== DOMAIN) return;
-    revision++;
-    notify();
-  });
+  const placementChanged = () => { revision += 1; notify(); };
+  let dataVersion = table.dataVersion();
+  function refreshPlacement() {
+    const seen = table.dataVersion();
+    if (seen === dataVersion) return;
+    dataVersion = seen;
+    placementChanged();
+  }
+  let placementPoll;
+  function stopPlacementPoll() {
+    clearInterval(placementPoll);
+    placementPoll = undefined;
+  }
+  function startPlacementPoll() {
+    placementPoll ??= setInterval(() => {
+      try { refreshPlacement(); }
+      catch { notify(); } // Let pending RPC requests report a storage error.
+    }, 500).unref();
+  }
 
   async function workspaceBaseline(signal) {
     const iterator = ctx.workspaceController.follow(signal)[Symbol.asyncIterator]();
@@ -140,7 +183,10 @@ export async function apply(ctx) {
   const controller = createPlacementController({
     storage: {
       get: (id) => table.get(id),
-      set: (id, value) => table.put(id, recordSchema.parse(value)),
+      set(id, value, options) {
+        if (table.put(id, recordSchema.parse(value), options)) placementChanged();
+      },
+      canMigrate: table.canMigrate,
     },
     host: {
       async getPinned(id) {
@@ -158,19 +204,10 @@ export async function apply(ctx) {
     },
   });
 
-  const migrationDomain = await ctx.storageDomain.open({
-    name: 'local_t3_sidebar_migrations', version: 1,
-    tables: { migrations: { valueSchema: migrationSchema } },
-  });
-  ctx.effect(() => () => migrationDomain.close());
   const migrationAbort = new AbortController();
   ctx.effect(() => () => migrationAbort.abort());
-  const migrationTable = migrationDomain.table('migrations');
   await settleExistingSessions({
-    migrations: {
-      get: (key) => migrationTable.get(key),
-      put: (key, value) => migrationTable.put(key, migrationSchema.parse(value)),
-    },
+    migrations: table.migrations,
     placements: table,
     controller,
     listSessions: async (signal) => (await ctx.sessionController.list({}, signal)).items,
@@ -200,6 +237,7 @@ export async function apply(ctx) {
   }
 
   function currentSnapshot() {
+    refreshPlacement();
     return { contract: PLACEMENT_CONTRACT, epoch, revision, self, placements: Object.fromEntries(table.entries()), statuses: Object.fromEntries(statuses) };
   }
   function waitForChange(signal) {
@@ -210,11 +248,13 @@ export async function apply(ctx) {
         clearTimeout(timer);
         signal.removeEventListener('abort', done);
         waiters.delete(done);
+        if (!waiters.size) stopPlacementPoll();
         resolve();
       };
       waiters.add(done);
       signal.addEventListener('abort', done, { once: true });
       timer = setTimeout(done, 25000);
+      startPlacementPoll();
     });
   }
 
@@ -241,6 +281,7 @@ export async function apply(ctx) {
           if (endpoint.endsWith('/action')) result = { ok: true, value: await perform(message.payload, request.signal) };
           else {
             const cursor = snapshotSchema.parse(message.payload);
+            refreshPlacement();
             if (cursor.epoch === epoch && cursor.revision === revision) await waitForChange(request.signal);
             if (closed || request.signal.aborted) throw new Error('Request cancelled');
             result = { ok: true, value: currentSnapshot() };

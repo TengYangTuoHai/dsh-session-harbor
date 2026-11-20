@@ -35,6 +35,7 @@
     "shortcuts-bridge.js",
     "logic.js",
     "placement-controller.js",
+    "placement-store.js",
     "migration.js",
     "contract.js",
     "remote-ws.js",

@@ -1,24 +1,35 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import { EventEmitter } from 'node:events';
+import { mkdtempDisposableSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { Readable } from 'node:stream';
+import { promisify } from 'node:util';
 import { apply, createNativeResourceHandler } from './index.js';
 import { REMOTE_INDEX_DOMAIN } from './remote-index.js';
 import { SshService } from './ssh/ssh-service.js';
 import { RemoteBridge } from './ssh/remote-bridge.js';
+import { MIGRATION_KEY } from './migration.js';
+import { openPlacementStore } from './placement-store.js';
+
+const exec = promisify(execFile);
 
 async function fixture(options = {}) {
+  const temporary = options.home === undefined ? mkdtempDisposableSync(join(tmpdir(), 'harbor-host-test-')) : undefined;
+  const home = options.home ?? temporary.path;
   const listeners = new Map();
   const effects = [];
-  const records = new Map();
   const domains = options.domains ?? new Map();
+  const sessionRows = options.sessions ?? [{ sessionId: 'valid', running: true, blank: false }];
   const pinned = new Set();
   const routes = new Map();
   const injected = [];
   let tool;
   const emit = (name, ...args) => { for (const fn of [...(listeners.get(name) ?? [])]) fn(...args); };
   const ctx = {
-    get: name => options.services?.[name],
+    get: name => name === 'profileContext' ? { home } : options.services?.[name],
     effect(fn) { effects.push(fn()); },
     on(name, fn) {
       const list = listeners.get(name) ?? [];
@@ -38,7 +49,7 @@ async function fixture(options = {}) {
       domains.set(spec.name, tables);
       return {
         table(name) {
-          const data = spec.name === 'local_t3_session_sidebar' ? records : (tables[name] ??= new Map());
+          const data = tables[name] ??= new Map();
           return {
             get: id => data.get(id),
             entries: () => data.entries(),
@@ -56,11 +67,16 @@ async function fixture(options = {}) {
       async unpinSession(id) { pinned.delete(id); },
     },
     workspaceController: { async *follow() { yield { type: 'baseline', value: { pinnedSessionIds: [...pinned], archivedSessionIds: [] } }; } },
-    sessionController: { async list(_request, signal) { if (tool) await options.inspect?.('valid', signal); return { items: [{ sessionId: 'valid', running: true, blank: false }] }; } },
+    sessionController: { async list(_request, signal) { if (tool) await options.inspect?.('valid', signal); return { items: sessionRows }; } },
     connection: { fetch: { register(route) { routes.set(route.path, route); return async () => routes.delete(route.path); } } },
     tools: { register(definition) { tool = definition; } },
   };
-  await apply(ctx);
+  async function close() {
+    try { for (const cleanup of effects.reverse()) await cleanup?.(); }
+    finally { temporary?.remove(); }
+  }
+  try { await apply(ctx); }
+  catch (error) { await close(); throw error; }
   async function call(endpoint, payload, signal) {
     const route = routes.get(`/api/${endpoint}`);
     assert.deepEqual(route.methods, ['POST']);
@@ -72,10 +88,16 @@ async function fixture(options = {}) {
     assert.equal(envelope.type, 'server-response');
     return envelope.result;
   }
-  return { routes, call, tool, pinned, records, emit, async close() { for (const cleanup of effects.reverse()) await cleanup?.(); } };
+  return { routes, call, tool, pinned, emit, close };
 }
 
 const signal = () => new AbortController().signal;
+
+async function readPlacement(host, cursor = {}, requestSignal = signal()) {
+  const response = await host.call('t3-session-sidebar/snapshot', cursor, requestSignal);
+  assert.equal(response.ok, true, response.error?.message);
+  return response.value;
+}
 
 test('local folder requests use the local browse capability without SSH and validate folder names', async () => {
   const calls = [];
@@ -121,7 +143,7 @@ test('requests retain arrival order and cancelled queued requests do not write',
     assert.equal((await second).ok, true);
     assert.equal((await third).ok, false);
     assert.equal(f.pinned.has('valid'), true);
-    assert.equal(f.records.get('valid').settled, false);
+    assert.equal((await readPlacement(f)).placements.valid.settled, false);
     assert.equal(inspections, 2);
   } finally { release(); await f.close(); }
 });
@@ -131,9 +153,9 @@ test('actions persist settled independently of archive and use the same tool pat
   try {
     let result = await f.call('t3-session-sidebar/action', { sessionId: 'valid', action: 'settle' }, signal());
     assert.equal(result.ok, true);
-    assert.equal(f.records.get('valid').settled, true);
+    assert.equal((await readPlacement(f)).placements.valid.settled, true);
     await f.tool.execute({ sessionId: 'valid', action: 'pin' });
-    assert.equal(f.records.get('valid').settled, false);
+    assert.equal((await readPlacement(f)).placements.valid.settled, false);
     assert.equal(f.pinned.has('valid'), true);
     result = await f.call('t3-session-sidebar/action', { sessionId: 'valid', action: 'bad' }, signal());
     assert.equal(result.ok, false);
@@ -174,6 +196,111 @@ test('snapshot long poll wakes after durable placement changes and aborts cleanl
     abort.abort();
     assert.equal((await cancelled).ok, false);
   } finally { await f.close(); }
+});
+
+test('a live placement snapshot follows writes by another process and retains other rows', async () => {
+  using temporary = mkdtempDisposableSync(join(tmpdir(), 'harbor-placement-sync-test-'));
+  const observer = await fixture({ home: temporary.path });
+  const childSource = `
+    import { setTimeout as wait } from 'node:timers/promises';
+    import { openPlacementStore } from ${JSON.stringify(new URL('./placement-store.js', import.meta.url).href)};
+    const store = await openPlacementStore(process.argv[1], () => { throw new Error('unexpected legacy import'); });
+    try {
+      store.put('another-session', { settled: true, settledAt: 43, unsettledAt: null });
+      store.put('valid', { settled: true, settledAt: 42, unsettledAt: null });
+      const deadline = Date.now() + 5000;
+      while (store.get('valid').settled) {
+        if (Date.now() >= deadline) throw new Error('The other process did not reactivate the session');
+        await wait(25);
+      }
+    } finally { store.close(); }
+  `;
+  const childAbort = new AbortController();
+  let child;
+  try {
+    const before = await readPlacement(observer);
+    const verifySnapshots = async () => {
+      const after = await readPlacement(observer, { epoch: before.epoch, revision: before.revision }, AbortSignal.timeout(5000));
+      assert.ok(after.revision > before.revision);
+      assert.equal(after.placements.valid.settled, true);
+
+      const peer = await fixture({ home: temporary.path });
+      try {
+        const start = await readPlacement(peer);
+        const watchingPeer = readPlacement(peer, { epoch: start.epoch, revision: start.revision }, AbortSignal.timeout(5000));
+        const [restored, write] = await Promise.all([
+          watchingPeer,
+          observer.call('t3-session-sidebar/action', { sessionId: 'valid', action: 'unsettle' }, signal()),
+        ]);
+        assert.equal(write.ok, true);
+        assert.ok(restored.revision > start.revision);
+        assert.equal(restored.placements.valid.settled, false);
+        assert.equal(restored.placements['another-session'].settled, true);
+      } finally { await peer.close(); }
+    };
+    child = exec(process.execPath, ['--input-type=module', '--eval', childSource, temporary.path], { signal: childAbort.signal });
+    await Promise.all([verifySnapshots(), child]);
+  } finally {
+    childAbort.abort();
+    await child?.catch(() => {});
+    await observer.close();
+  }
+});
+
+test('imports settled and restored sessions and resumes only the remaining legacy migration', async () => {
+  using temporary = mkdtempDisposableSync(join(tmpdir(), 'harbor-placement-import-test-'));
+  const oldRows = new Map([
+    ['before', { settled: true, settledAt: 15, unsettledAt: null }],
+    ['valid', { settled: false, settledAt: null, unsettledAt: 20 }],
+  ]);
+  const domains = new Map([
+    ['local_t3_session_sidebar', { placements: oldRows }],
+    ['local_t3_sidebar_migrations', { migrations: new Map([
+      [MIGRATION_KEY, { sessionIds: ['before', 'remaining', 'valid'], next: 1, startedAt: 12 }],
+    ]) }],
+  ]);
+  const sessions = ['before', 'remaining', 'valid', 'new'].map(sessionId => ({ sessionId, running: false, blank: false }));
+  const settings = { home: temporary.path, domains, sessions };
+  const host = await fixture(settings);
+  try {
+    const { placements } = await readPlacement(host);
+    assert.deepEqual(placements.before, oldRows.get('before'));
+    assert.deepEqual(placements.valid, oldRows.get('valid'));
+    assert.equal(placements.remaining.settled, true);
+    assert.equal(placements.new, undefined);
+    assert.equal((await host.call('t3-session-sidebar/action', { sessionId: 'before', action: 'unsettle' }, signal())).ok, true);
+  } finally { await host.close(); }
+
+  const reopened = await fixture(settings);
+  try {
+    const { placements } = await readPlacement(reopened);
+    assert.equal(placements.before.settled, false);
+    assert.equal(placements.remaining.settled, true);
+    assert.equal(placements.new, undefined);
+  } finally { await reopened.close(); }
+});
+
+test('late migration writes preserve explicit choices and disjoint session records', async () => {
+  using temporary = mkdtempDisposableSync(join(tmpdir(), 'harbor-placement-race-test-'));
+  const legacy = () => ({ placements: [] });
+  const [first, second] = await Promise.all([
+    openPlacementStore(temporary.path, legacy),
+    openPlacementStore(temporary.path, legacy),
+  ]);
+  try {
+    const startedAt = 100;
+    const stale = { settled: true, settledAt: 115, unsettledAt: null };
+    first.put('another-session', stale);
+    second.put('valid', { settled: false, settledAt: null, unsettledAt: 120 }, { action: 'unsettle', writtenAt: 120 });
+    assert.equal(first.put('valid', stale, { action: 'settle', migrationStartedAt: startedAt }), false);
+    assert.equal(first.get('valid').settled, false);
+    assert.equal(first.put('valid', stale, { action: 'settle' }), true);
+    assert.deepEqual(second.get('valid'), { ...stale, unsettledAt: 120 });
+    assert.deepEqual(second.get('another-session'), stale);
+  } finally {
+    first.close();
+    second.close();
+  }
 });
 
 test('the remote mirror is empty without a Web host', async () => {

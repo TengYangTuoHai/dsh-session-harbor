@@ -21,7 +21,7 @@ The earlier T3 Session Sidebar used a different package name. Uninstall it in DS
 
 Version `0.2.8` supports DSH `0.2.2-rc.3` and `0.2.2-rc.5`. The workbench initializes remote clients in the background for ready SSH connections and reuses them when switching sessions. The sidebar fills the space below the host navigation. The entire list scrolls when space is limited. An active remote session receives its own shortcuts while the local window handles the left sidebar.
 
-At startup, the plugin connects to devices saved in **Settings → Session Harbor SSH**. The sidebar keeps the last sync for each device and clears that cache when you remove it. Settled state and live placement updates for remote sessions require Session Harbor on the remote device. The native remote session view requires matching DSH versions on both devices.
+At startup, the plugin connects to devices saved in **Settings → Session Harbor SSH**. The sidebar keeps the last sync for each device and clears that cache when you remove it. Marking a session as settled or reactivating it syncs between Session Harbor instances that use the same DSH data directory on the session's device. After upgrading, restart DSH on that device and reconnect SSH so both processes load the update. The native remote session view requires matching DSH versions on both devices.
 
 On a first remote installation, existing ordinary sessions that are nonempty, unarchived, and idle are migrated to Settled once. Existing migration records are preserved. Pinning and settling span two storage services. After a failure, the plugin rereads the actual state. If the remote device creates a session but the response is lost, a retry across connections cannot guarantee distributed exactly-once creation.
 

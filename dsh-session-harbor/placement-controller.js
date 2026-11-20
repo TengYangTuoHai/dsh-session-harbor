@@ -6,8 +6,9 @@ const ACTIONS = new Set(['settle', 'unsettle', 'pin', 'unpin']);
  * Create a host-independent placement controller.
  *
  * storage.get(id) returns a structured-cloneable record or null/undefined;
- * storage.set(id, record) replaces it. host.getPinned(id) returns a boolean;
- * host.setPinned(id, boolean) writes it. All four methods may be async.
+ * storage.set(id, record, { action, migrationStartedAt }) writes it. An optional
+ * storage.canMigrate(id, startedAt) checks for a more recent write. The host
+ * provides getPinned(id) and setPinned(id, boolean). These methods may be async.
  * The record owns settled, settledAt and unsettledAt; the host owns pinned.
  * Extra record fields are preserved. An adapter should reject on failed writes.
  *
@@ -63,7 +64,7 @@ export function createPlacementController({ storage, host, now = Date.now } = {}
     validateId(id);
     return enqueue(async () => ({ ...await readRecord(id), pinned: await readPinned(id) }));
   }
-  async function apply(id, action) {
+  async function apply(id, action, migrationStartedAt) {
     validateId(id);
     if (!ACTIONS.has(action)) throw new TypeError(`Unknown placement action: ${String(action)}`);
     return enqueue(async () => {
@@ -72,6 +73,7 @@ export function createPlacementController({ storage, host, now = Date.now } = {}
         return;
       }
       const record = await readRecord(id);
+      if (migrationStartedAt !== undefined && storage.canMigrate && !(await storage.canMigrate(id, migrationStartedAt))) return;
       let timestamp = 0;
       if (action === 'settle' || action === 'unsettle') {
         timestamp = now();
@@ -79,23 +81,19 @@ export function createPlacementController({ storage, host, now = Date.now } = {}
       }
       const next = transitionPlacement(record, action, timestamp);
       delete next.pinned;
-      if (action === 'settle') {
-        await host.setPinned(id, false);
-        await storage.set(id, next);
-      } else if (action === 'pin') {
+      if (action === 'settle') await host.setPinned(id, false);
+      else if (action === 'pin') {
         // A refused pin (e.g. for an archived session) must preserve settled.
         // A later storage failure can leave both flags set until a retry.
         await host.setPinned(id, true);
-        await storage.set(id, next);
-      } else {
-        await storage.set(id, next);
       }
+      await storage.set(id, next, { action, migrationStartedAt });
     });
   }
   return Object.freeze({
     snapshot,
     apply,
-    settle: (id) => apply(id, 'settle'),
+    settle: (id, migrationStartedAt) => apply(id, 'settle', migrationStartedAt),
     unsettle: (id) => apply(id, 'unsettle'),
     pin: (id) => apply(id, 'pin'),
     unpin: (id) => apply(id, 'unpin'),
