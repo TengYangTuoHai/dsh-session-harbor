@@ -14,7 +14,7 @@
 
 ## 直接安装
 
-**插件 v0.2.11** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
+**插件 v0.2.12** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
 
 1. 在 DSH 左侧打开「插件」，点击「添加插件」。
 2. 在「包名或地址」输入以下包名，点击「安装」。
@@ -47,7 +47,9 @@
 
 SSH 登录沿用本机 OpenSSH 配置和 SSH agent。**打开远端原生会话需要远端安装与本机相同版本的 DSH。** 启动远端 DSH 前，Session Harbor 会检查 SSH 目标使用的 DSH 配置。远端缺少插件时安装本机版本，远端较旧时升级到本机版本，远端同版或更新时跳过安装。
 
-自动安装使用远端的 Node.js、pnpm 和已配置的 npm 源，该 npm 源需提供本机插件版本。检查或安装失败时，SSH 设置会显示提示，连接仍可打开远端会话。置顶或标记远端会话为「已完成」需要在远端启用 Session Harbor。
+如果远端仍在用旧版「T3 会话侧边栏」，SSH 连接会先安装并启用 Session Harbor，再移除旧包。新版安装失败时旧插件继续启用。原有会话数据会保留。
+
+自动安装使用远端的 Node.js 和已配置的 npm 源。远端缺少 pnpm 时，会通过 npm 临时运行固定版本的 pnpm。该 npm 源需提供本机插件版本。检查或安装失败时，SSH 设置会显示提示，连接仍会继续。置顶或标记远端会话为「已完成」需要启用兼容的远端插件。
 
 安装或连接遇到问题时，可以附上版本信息和复现步骤。[报告问题](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
 

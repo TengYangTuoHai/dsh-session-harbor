@@ -329,11 +329,22 @@ function remoteCommand({ dshPath, profile, cwd }, localPort) {
   const executable = shellPath(dshPath);
   const profileArg = quote(profile);
   const command = `${executable} --profile ${profileArg} --host 127.0.0.1 --port 0 --no-open --trusted-host ${quote(`127.0.0.1:${localPort}`)}`;
-  const sync = `${executable} plugin --profile ${profileArg} exec --config.verify-deps-before-run=false node -e ${quote(pluginSyncScript)} ${quote(pluginName)} ${quote(pluginVersion)}`;
+  const sync = `${executable} plugin --profile ${profileArg} exec node -e ${quote(pluginSyncScript)} ${quote(pluginName)} ${quote(pluginVersion)}`;
   const directory = cwd ? `cd ${shellPath(cwd.startsWith('-') ? `./${cwd}` : cwd)}\n` : '';
   const script = `set -eu
 child=''
 watcher=''
+sync_plugin() (
+  export PNPM_CONFIG_VERIFY_DEPS_BEFORE_RUN=false npm_config_verify_deps_before_run=false
+  if command -v pnpm >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
+    exec ${sync}
+  fi
+  shim=$(mktemp -d "\${TMPDIR:-/tmp}/session-harbor-pnpm.XXXXXX") || exit
+  trap 'rm -f -- "$shim/pnpm"; rmdir -- "$shim"' EXIT
+  printf '%s\\n' '#!/bin/sh' 'exec npm --fetch-retries=0 --fetch-timeout=20000 exec --yes --ignore-scripts --package=pnpm@10.34.9 -- pnpm "$@"' >"$shim/pnpm" || exit
+  chmod 700 "$shim/pnpm" || exit
+  PATH="$shim:$PATH" ${sync}
+)
 cleanup() {
   trap - EXIT HUP INT TERM
   if [ -n "$watcher" ]; then kill "$watcher" 2>/dev/null || :; wait "$watcher" 2>/dev/null || :; fi
@@ -354,7 +365,7 @@ ${directory}exec 3<&0
 ( while IFS= read -r line; do :; done <&3; kill -TERM "$$" 2>/dev/null || : ) &
 watcher=$!
 printf '\\n%s\\n' ${quote(PLUGIN_SYNC_START)}
-if ${sync} </dev/null >&2; then
+if sync_plugin </dev/null >&2; then
   printf '%s\\n' ${quote(PLUGIN_SYNC_READY)}
 else
   printf '%s\\n' ${quote(PLUGIN_SYNC_FAILED)}

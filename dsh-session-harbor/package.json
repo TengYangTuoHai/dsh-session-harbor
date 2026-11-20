@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-harbor",
-  "version": "0.2.11",
+  "version": "0.2.12",
   "description": "Manage local and SSH device sessions from one DeepSeek Harness sidebar.",
   "keywords": ["dsh-plugin", "deepseek-harness", "session-management", "ssh", "sidebar"],
   "repository": {
