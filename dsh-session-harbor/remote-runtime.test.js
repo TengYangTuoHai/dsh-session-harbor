@@ -286,11 +286,11 @@ test('startup waits for an explicit current selection before revealing the works
   let ready = false;
   const actual = {
     openSession(id) { calls.push(['open', id, ready]); },
-    startSession(workspaceId) { calls.push(['create', workspaceId]); },
+    startSession(workspaceId, options) { calls.push(['create', workspaceId, options]); },
   };
   const navigation = createDeferredNavigation({
-    context: {}, targetId: 'device-a',
-    onChooseDevice: id => calls.push(['choose', id]),
+    context: {},
+    onChooseDevice: () => calls.push(['choose']),
     activate() {
       calls.push(['activate']);
       return { service: actual, showWorkspaces() {
@@ -307,9 +307,11 @@ test('startup waits for an explicit current selection before revealing the works
   await navigation.open('another-session');
   navigation.service.startSession();
   navigation.service.startSession('explicit-project');
+  navigation.service.startSession(undefined, { agentPreset: 'cordis', clearPreviousDraft: false });
   assert.deepEqual(calls, [
     ['activate'], ['open', 'requested-session', false], ['show'], ['open', 'another-session', true],
-    ['choose', 'device-a'], ['create', 'explicit-project'],
+    ['choose'], ['create', 'explicit-project', undefined],
+    ['create', undefined, { agentPreset: 'cordis', clearPreviousDraft: false }],
   ]);
 });
 

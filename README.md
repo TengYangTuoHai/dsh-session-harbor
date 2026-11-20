@@ -14,7 +14,7 @@ Manage local sessions and sessions on multiple SSH devices from one DeepSeek Har
 
 ## Install
 
-**Plugin v0.2.8** supports DeepSeek Harness `0.2.2-rc.3` and `0.2.2-rc.5`.
+**Plugin v0.2.9** supports DeepSeek Harness `0.2.2-rc.3` and `0.2.2-rc.5`.
 
 1. Open **Plugins** in the DSH sidebar and select **Add plugin**.
 2. Enter the package name under **Package name or address**, then select **Install**.
@@ -43,7 +43,7 @@ Select **Use native** at the bottom of the sidebar to switch back to the built-i
 
 1. Go to **Settings → Session Harbor SSH**, select **Add host**, and choose a host from your local SSH config or enter `user@host`.
 2. Select **Add and connect**. The device's sessions appear in the sidebar once the connection is ready.
-3. Select an existing session to continue it. To start a new one, select **New session** in the upper left of DeepSeek Harness, then choose a device and project above the composer.
+3. Select an existing session to continue it. **New session** in the upper left preselects the last device and project used to start a session and the local default mode when available. Review the selections and choose **Create**.
 
 SSH uses your local OpenSSH configuration and SSH agent. **Opening a remote session requires the same DSH version on both devices.** Install Session Harbor on the remote device too if you want to mark remote sessions as settled from the local sidebar and sync that state.
 

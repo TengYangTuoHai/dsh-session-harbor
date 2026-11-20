@@ -1304,7 +1304,7 @@ function createRuntimeLayout({ sidebar, hasPanel = () => true } = {}) {
 
 /** Keep the native navigation service stable without running its restore/create
  * policy while a device is merely subscribed for status and approvals. */
-function createDeferredNavigation({ context, activate, onChooseDevice, targetId, Service }) {
+function createDeferredNavigation({ context, activate, onChooseDevice, Service }) {
   let actual = null;
   let activation = null;
   let showWorkspaces = () => {};
@@ -1313,7 +1313,6 @@ function createDeferredNavigation({ context, activate, onChooseDevice, targetId,
   const service = Service ? new Service(context, 'uiWorkspace') : { ctx: context };
   for (const name of methods) service[name] = function(...args) {
     if (!actual) throw new Error('Open a device session before using its navigation');
-    if (name === 'startSession' && args[0] === undefined && onChooseDevice) return onChooseDevice(targetId);
     return actual[name](...args);
   };
   service.whenAccess = function(workspaceId, action, callback) {
@@ -1331,9 +1330,9 @@ function createDeferredNavigation({ context, activate, onChooseDevice, targetId,
           showWorkspaces = result.showWorkspaces;
           if (onChooseDevice && typeof actual.startSession === 'function') {
             const nativeStart = actual.startSession;
-            actual.startSession = function(workspaceId, ...args) {
-              if (workspaceId === undefined) return onChooseDevice(targetId);
-              return nativeStart.call(this, workspaceId, ...args);
+            actual.startSession = function(workspaceId, options) {
+              if (workspaceId === undefined && options === undefined) return onChooseDevice();
+              return nativeStart.call(this, workspaceId, options);
             };
           }
         }).catch(error => { activation = null; throw error; });
@@ -1396,7 +1395,7 @@ function waitForSource(source, predicate, signal, timeoutMs = 15000) {
 /** Keeps the local application resident while native Client trees address devices. */
 function createDeviceRuntimePool({
   context, React, platformRequire, describe, onChooseDevice, installWorkspacePicker,
-  installSessionOpenNotice,
+  installSessionOpenNotice, observeWorkspaceStarts,
   onStatusChange = () => {}, pageGlobal = globalThis, fetch: suppliedFetch,
   loadScript: suppliedScriptLoader, buildRuntime: suppliedBuilder,
 }) {
@@ -1572,7 +1571,7 @@ function createDeviceRuntimePool({
       if (!navigationRow) throw new Error('The device has no compatible native project navigation');
       instance.navigation = createDeferredNavigation({
         context: device, Service: nativePlatform.Service,
-        targetId: descriptor.targetId, onChooseDevice,
+        onChooseDevice,
         async activate() {
           abort.signal.throwIfAborted();
           const namespace = await realm.import(navigationRow.id);
@@ -1605,6 +1604,7 @@ function createDeviceRuntimePool({
             abort.signal.throwIfAborted();
             const service = navigationContext.get('uiWorkspace');
             if (!service) throw new Error('Native device workspace services did not activate');
+            if (observeWorkspaceStarts) instance.subscriptions.push(observeWorkspaceStarts(service, descriptor.targetId));
             return { service, showWorkspaces() {
               if (ready) return;
               ready = true;

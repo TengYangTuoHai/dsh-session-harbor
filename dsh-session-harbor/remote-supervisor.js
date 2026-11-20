@@ -53,6 +53,7 @@ export function sessionRow(item) {
     origin: typeof item.origin === 'string' ? item.origin : null,
   };
   if (title) row.displayTitle = title;
+  if (typeof values.agentPreset === 'string' && values.agentPreset) row.agentPreset = values.agentPreset;
   return row;
 }
 
@@ -405,9 +406,9 @@ export class TargetSupervisor {
     this.#index.applyPlacements(targetId, task.snapshot?.placements ?? {});
     this.#index.applyStatuses(targetId, task.snapshot?.statuses ?? {});
     this.#applyWorkspaceFlags(task);
-    for (const [workspaceId, pending] of task.pendingCreations) {
+    for (const [key, pending] of task.pendingCreations) {
       const row = rows.find(row => row.sessionId === pending.sessionId);
-      if (row || listRequest > pending.afterListRequest) task.pendingCreations.delete(workspaceId);
+      if (row || listRequest > pending.afterListRequest) task.pendingCreations.delete(key);
     }
     await task.workspaceFirst.promise;
     this.#assertCurrent(task);
@@ -622,32 +623,53 @@ export class TargetSupervisor {
     if (confirmed !== true) throw new RemoteFailure('t3-remote/confirmation-required', 'Deleting a project needs an explicit confirmation.', { targetId, workspaceId });
     const task = this.#live(targetId);
     const value = await this.#write(task, (client, signal) => client.call('workspace/delete', { request: { workspaceId } }, { signal }));
-    task.pendingCreations.delete(workspaceId);
+    for (const [key, pending] of task.pendingCreations) {
+      if (pending.workspaceId === workspaceId) task.pendingCreations.delete(key);
+    }
     this.#kick(targetId);
     return value;
   }
 
-  async createSession(targetId, workspaceId, { signal } = {}) {
+  async createSession(targetId, workspaceId, { agentPreset, signal } = {}) {
     if (signal?.aborted) throw new RemoteFailure('remote/cancelled', 'The Remote operation was cancelled.');
     const task = this.#live(targetId);
-    if (task.creations.has(workspaceId)) return withSignal(task.creations.get(workspaceId), signal);
+    const key = JSON.stringify([workspaceId, agentPreset]);
+    if (task.creations.has(key)) return withSignal(task.creations.get(key), signal);
     const creation = this.#write(task, async (client, operationSignal) => {
       const workspace = this.#index.workspace?.(targetId, workspaceId);
       if (!workspace) throw new RemoteFailure('t3-remote/workspace-unknown', 'That project is not in the mirror, so a session cannot start in it.', { targetId, workspaceId });
-      const reusable = this.#index.blankSession?.(targetId, workspace.path);
-      if (reusable) return { sessionId: reusable.sessionId, reused: true };
-      const pending = task.pendingCreations.get(workspaceId);
-      if (pending?.cwd === workspace.path) return { sessionId: pending.sessionId, reused: true };
-      const value = await client.call('session/create', { request: { workspaceId } }, { signal: operationSignal });
+      const reusable = this.#index.blankSession?.(targetId, workspace.path, { workspaceId, agentPreset });
+      if (reusable && agentPreset === undefined) return { sessionId: reusable.sessionId, reused: true };
+      const pending = task.pendingCreations.get(key);
+      if (pending?.cwd === workspace.path) {
+        return { sessionId: pending.sessionId, reused: true, ...(agentPreset === undefined ? {} : { agentPreset }) };
+      }
+      const request = { workspaceId };
+      if (agentPreset !== undefined) request.agentPreset = agentPreset;
+      if (reusable) {
+        // Presets can change on an idle session between list refreshes. Read the
+        // owner's projections before asking its create command to recheck the blank.
+        const projections = await client.call('session/projections', { request: { sessionId: reusable.sessionId } }, { signal: operationSignal }).catch(() => null);
+        this.#assertCurrent(task);
+        if (projections?.kind === 'sequenced' && projections.values?.agentPreset === agentPreset) request.sessionId = reusable.sessionId;
+      }
+      const value = await client.call('session/create', { request }, { signal: operationSignal });
       this.#assertCurrent(task);
       const sessionId = typeof value?.sessionId === 'string' ? value.sessionId : null;
       if (!sessionId) throw new RemoteFailure('t3-remote/create-failed', 'That machine did not answer with a session id.', { targetId, workspaceId });
-      task.pendingCreations.set(workspaceId, { sessionId, cwd: workspace.path, afterListRequest: task.listRequest });
+      const confirmedPreset = typeof value.agentPreset === 'string' && value.agentPreset ? value.agentPreset : undefined;
+      const reused = sessionId === request.sessionId;
+      if (!reused && (agentPreset === undefined || confirmedPreset === agentPreset)) {
+        task.pendingCreations.set(key, { workspaceId, sessionId, cwd: workspace.path, afterListRequest: task.listRequest });
+      }
       this.#kick(targetId);
-      return { sessionId, reused: false };
+      if (agentPreset !== undefined && confirmedPreset !== undefined && confirmedPreset !== agentPreset) {
+        throw new RemoteFailure('t3-remote/create-failed', 'That machine returned a different mode for the session.', { targetId, workspaceId, sessionId, agentPreset: confirmedPreset });
+      }
+      return { sessionId, reused, ...(agentPreset !== undefined && confirmedPreset !== undefined ? { agentPreset: confirmedPreset } : {}) };
     });
-    task.creations.set(workspaceId, creation);
-    const clear = () => { if (task.creations.get(workspaceId) === creation) task.creations.delete(workspaceId); };
+    task.creations.set(key, creation);
+    const clear = () => { if (task.creations.get(key) === creation) task.creations.delete(key); };
     void creation.then(clear, clear);
     return withSignal(creation, signal);
   }

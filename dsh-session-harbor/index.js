@@ -511,7 +511,9 @@ export async function apply(ctx) {
     't3-remote/workspace-delete': z.object({ targetId: targetIdSchema, workspaceId: z.string().min(1).max(200), confirmed: z.literal(true) }).strict(),
     // The same four verbs the local rows offer, handed to the machine that owns them.
     't3-remote/action': z.object({ targetId: targetIdSchema, sessionId: z.string().min(1).max(200), action: z.enum(['pin', 'unpin', 'settle', 'unsettle']) }).strict(),
-    't3-remote/session-create': z.object({ targetId: targetIdSchema, workspaceId: z.string().min(1).max(200) }).strict(),
+    't3-remote/session-create': z.object({
+      targetId: targetIdSchema, workspaceId: z.string().min(1).max(200), agentPreset: z.string().min(1).optional(),
+    }).strict(),
     't3-remote/session-command': z.discriminatedUnion('action', [
       z.object({ targetId: targetIdSchema, sessionId: z.string().min(1).max(200), action: z.literal('rename'), title: z.string().trim().min(1).max(500) }).strict(),
       z.object({ targetId: targetIdSchema, sessionId: z.string().min(1).max(200), action: z.literal('fork') }).strict(),
@@ -527,7 +529,7 @@ export async function apply(ctx) {
     if (endpoint === 't3-remote/create-directory') return supervisor.createDirectory(call.targetId, call.path, call.name).then(path => ({ path }));
     if (endpoint === 't3-remote/workspace-create') return supervisor.createWorkspace(call.targetId, call.path).then(value => ({ workspace: value?.workspace ?? null }));
     if (endpoint === 't3-remote/action') return supervisor.act(call.targetId, call.sessionId, call.action, { signal }).then(done => ({ done: done ?? null }));
-    if (endpoint === 't3-remote/session-create') return supervisor.createSession(call.targetId, call.workspaceId, { signal }).then(session => ({ session }));
+    if (endpoint === 't3-remote/session-create') return supervisor.createSession(call.targetId, call.workspaceId, { agentPreset: call.agentPreset, signal }).then(session => ({ session }));
     if (endpoint === 't3-remote/session-command') return supervisor.sessionCommand(call.targetId, call.sessionId, call.action, { title: call.title, signal });
     return supervisor.deleteWorkspace(call.targetId, call.workspaceId, { confirmed: true }).then(value => ({ deleted: value?.deleted === true }));
   };
@@ -591,6 +593,7 @@ export async function apply(ctx) {
         targetId: { type: 'string', description: 'Saved SSH device ID.' },
         action: { type: 'string', enum: ['create', 'rename', 'fork', 'archive'] },
         workspaceId: { type: 'string', description: 'Project on that device; required for create.' },
+        agentPreset: { type: 'string', description: 'Optional agent preset ID on that device for create.' },
         sessionId: { type: 'string', description: 'Session on that device; required for rename, fork, or archive.' },
         title: { type: 'string', description: 'New title; required only for rename.' },
       }, required: ['targetId', 'action'], additionalProperties: false,
@@ -602,7 +605,7 @@ export async function apply(ctx) {
     async execute(args, execution) {
       const endpoint = args.action === 'create' ? 't3-remote/session-create' : 't3-remote/session-command';
       const payload = args.action === 'create'
-        ? { targetId: args.targetId, workspaceId: args.workspaceId }
+        ? { targetId: args.targetId, workspaceId: args.workspaceId, agentPreset: args.agentPreset }
         : { targetId: args.targetId, sessionId: args.sessionId, action: args.action, ...(args.title === undefined ? {} : { title: args.title }) };
       const call = writeSchemas[endpoint].parse(payload);
       if (!supervisor) throw new Error('The SSH device service is unavailable');

@@ -8,13 +8,19 @@ const placeholders = text => (text.match(/\{[\w]+\}/g) ?? []).sort();
 
 const noop = () => {};
 
-function loadClient({ list = noop, openSession = noop } = {}) {
+function loadClient({ list = noop, openSession = noop, navigation, storage = new Map() } = {}) {
   const source = readFileSync(new URL('./client.js', import.meta.url), 'utf8');
   const registered = new Map();
+  const panels = [];
+  const uiWorkspace = { openSession, ...navigation };
   let notice;
   const createElement = (type, props, ...children) => ({ type, props, children });
   const window = {
-    localStorage: { getItem: () => null },
+    localStorage: {
+      getItem: key => storage.get(key) ?? null,
+      setItem: (key, value) => storage.set(key, value),
+      removeItem: key => storage.delete(key),
+    },
     __ModuleLoader__: {
       load({ factory }) {
         const plugin = factory(name => name === 'react' ? { createElement } : {});
@@ -31,14 +37,15 @@ function loadClient({ list = noop, openSession = noop } = {}) {
             register: (options, component) => { notice = { options, component }; },
           },
           get: name => name === 'remote.commands' ? { list } : undefined,
-          uiWorkspace: { openSession },
+          uiWorkspace,
+          layout: { selectPanel: panel => panels.push(panel) },
           contextMenus: { register: noop },
         });
       },
     },
   };
   runInNewContext(source, { window }, { filename: 'client.js' });
-  return { dictionaries: registered, notice };
+  return { dictionaries: registered, notice, panels, uiWorkspace };
 }
 
 test('each DSH language has a complete sidebar and SSH dictionary', () => {
@@ -108,4 +115,29 @@ test('retry reopens only its own session after the host resolves its Agent', asy
   assert.equal(await retryOpen(new AbortController().signal), response);
   assert.deepEqual(probed, [sessionId, sessionId, sessionId]);
   assert.deepEqual(opened, [sessionId]);
+});
+
+test('new-session navigation remembers the last successful project and preserves explicit preset requests', async () => {
+  const storage = new Map();
+  const starts = [];
+  const navigation = {
+    startSession(workspaceId, options) { starts.push({ workspaceId, options }); },
+    async openWorkspace(workspaceId, beforeOpen) {
+      if (workspaceId === 'failed') throw new Error('Creation failed');
+      if (workspaceId !== 'superseded') beforeOpen('created-session');
+    },
+  };
+  const { panels, uiWorkspace } = loadClient({ navigation, storage });
+  const options = { agentPreset: 'cordis', clearPreviousDraft: false };
+  uiWorkspace.startSession(undefined, options);
+  uiWorkspace.startSession('explicit-project');
+  assert.deepEqual(starts, [{ workspaceId: undefined, options }, { workspaceId: 'explicit-project', options: undefined }]);
+  uiWorkspace.startSession();
+  assert.equal(panels.length, 1);
+  assert.equal(storage.has('dsh.t3.last-new-session'), false);
+
+  await uiWorkspace.openWorkspace('chosen-project', undefined, options);
+  await assert.rejects(uiWorkspace.openWorkspace('failed'), /Creation failed/);
+  await uiWorkspace.openWorkspace('superseded');
+  assert.deepEqual(JSON.parse(storage.get('dsh.t3.last-new-session')), { targetId: null, workspaceId: 'chosen-project' });
 });

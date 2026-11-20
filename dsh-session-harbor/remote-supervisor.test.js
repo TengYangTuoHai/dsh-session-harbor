@@ -557,7 +557,7 @@ function frameQueue(signal) {
   return queue;
 }
 
-function controlledMirror({ sessions = [], initialSnapshot, onList, onCreate, onSnapshot, onCommand, cachedTarget, connections = [connection], options = {} } = {}) {
+function controlledMirror({ sessions = [], baseline = project, initialSnapshot, onList, onCreate, onProjections, onSnapshot, onCommand, cachedTarget, connections = [connection], options = {} } = {}) {
   const listeners = new Set();
   const changes = [];
   const storage = memoryStorage();
@@ -596,7 +596,7 @@ function controlledMirror({ sessions = [], initialSnapshot, onList, onCreate, on
         if (endpoint === 'session/create') return onCreate ? onCreate(client, args, options) : { sessionId: 'created-1' };
         if (['session/rename', 'session/fork', 'workspace/archiveSession'].includes(endpoint)) return onCommand?.(client, endpoint, args, options);
         if (endpoint === 'workspace/create') return { workspace: { workspaceId: 'w-new', path: args.request.path }, created: true };
-        if (endpoint === 'session/projections') return { values: { title: args.request.sessionId } };
+        if (endpoint === 'session/projections') return onProjections?.(args.request.sessionId) ?? { values: { title: args.request.sessionId } };
         if (endpoint === 'directoryPicker/list') return { path: '/srv', home: '/srv', entries: [], crumbs: [] };
         return {};
       },
@@ -604,7 +604,7 @@ function controlledMirror({ sessions = [], initialSnapshot, onList, onCreate, on
         calls.push(['follow:' + endpoint, args]);
         const stream = frameQueue(signal);
         streams.push(stream);
-        stream.push({ type: 'baseline', value: project });
+        stream.push({ type: 'baseline', value: baseline });
         notify();
         return stream;
       },
@@ -709,6 +709,123 @@ test('same-project creation is single flight and reuses its result before the mi
   const third = await h.supervisor.createSession('target-1', 'w-1');
   assert.deepEqual(third, { sessionId: 'created-1', reused: true });
   assert.equal(h.clients[0].calls.filter(([name]) => name === 'session/create').length, 1);
+});
+
+const blankWithPreset = (sessionId, agentPreset) => ({
+  ...ordinary, sessionId, blank: true, projections: { values: { title: sessionId, agentPreset } },
+});
+
+const nativeCreations = client => client.calls.filter(([name]) => name === 'session/create').map(([, args]) => args.request);
+
+test('explicit mode skips different and unknown blank modes and same-mode blanks in other projects', async t => {
+  const h = controlledMirror({
+    sessions: [blankWithPreset('s-1', 'standard'), blankWithPreset('s-unknown'), blankWithPreset('s-other', 'cordis')],
+    baseline: { items: [
+      { ...project.items[0], sessionIds: ['s-1', 's-unknown'] },
+      { ...project.items[0], workspaceId: 'w-2', sessionIds: ['s-other'] },
+    ] },
+    onCreate: (_client, { request }) => ({ sessionId: 'created-1', agentPreset: request.agentPreset }),
+  });
+  t.after(() => h.supervisor.stop());
+  await h.until(() => h.index.getTarget('target-1')?.status === 'ready');
+  const rows = h.index.snapshot().sessions;
+  assert.equal(rows['target-1/s-1'].agentPreset, 'standard');
+  assert.equal(rows['target-1/s-other'].workspaceId, 'w-2');
+  assert.equal(Object.hasOwn(rows['target-1/s-unknown'], 'agentPreset'), false);
+  assert.deepEqual(await h.supervisor.createSession('target-1', 'w-1'), { sessionId: 's-1', reused: true });
+  assert.deepEqual(await h.supervisor.createSession('target-1', 'w-1', { agentPreset: 'cordis' }), {
+    sessionId: 'created-1', reused: false, agentPreset: 'cordis',
+  });
+  assert.deepEqual(nativeCreations(h.clients[0]), [{ workspaceId: 'w-1', agentPreset: 'cordis' }]);
+});
+
+test('explicit mode names a freshly confirmed blank and uses the owning host result', async t => {
+  const replies = [
+    { sessionId: 's-1', agentPreset: 'cordis' },
+    { sessionId: 's-1', agentPreset: 'standard' },
+    { sessionId: 'created-1', agentPreset: 'cordis' },
+  ];
+  const h = controlledMirror({
+    sessions: [blankWithPreset('s-1', 'cordis')],
+    onProjections: () => ({ kind: 'sequenced', values: { agentPreset: 'cordis' } }),
+    onCreate: () => replies.shift(),
+  });
+  t.after(() => h.supervisor.stop());
+  await h.until(() => h.index.getTarget('target-1')?.status === 'ready');
+  const create = () => h.supervisor.createSession('target-1', 'w-1', { agentPreset: 'cordis' });
+  assert.deepEqual(await create(), { sessionId: 's-1', reused: true, agentPreset: 'cordis' });
+  await assert.rejects(create, error => error.code === 't3-remote/create-failed');
+  assert.deepEqual(await create(), { sessionId: 'created-1', reused: false, agentPreset: 'cordis' });
+  const named = { workspaceId: 'w-1', agentPreset: 'cordis', sessionId: 's-1' };
+  assert.deepEqual(nativeCreations(h.clients[0]), [named, named, named]);
+});
+
+test('an explicit create skips a mirror blank whose preset changed on the host', async t => {
+  const h = controlledMirror({
+    sessions: [blankWithPreset('s-1', 'cordis')],
+    onProjections: () => ({ kind: 'sequenced', values: { agentPreset: 'standard' } }),
+    onCreate: () => ({ sessionId: 'created-1', agentPreset: 'cordis' }),
+  });
+  t.after(() => h.supervisor.stop());
+  await h.until(() => h.index.getTarget('target-1')?.status === 'ready');
+  assert.deepEqual(await h.supervisor.createSession('target-1', 'w-1', { agentPreset: 'cordis' }), {
+    sessionId: 'created-1', reused: false, agentPreset: 'cordis',
+  });
+  assert.deepEqual(nativeCreations(h.clients[0]), [{ workspaceId: 'w-1', agentPreset: 'cordis' }]);
+});
+
+test('creation only shares in-flight and pending results for the same requested mode', async t => {
+  const creation = deferred();
+  const started = deferred();
+  const refreshing = deferred();
+  const h = controlledMirror({
+    onList: (_client, count) => count > 1 ? refreshing.promise : { items: [] },
+    onCreate: (_client, { request: { agentPreset } }) => {
+      if (agentPreset === 'cordis') { started.resolve(); return creation.promise; }
+      return { sessionId: agentPreset === undefined ? 'created-default' : 'created-standard', agentPreset: 'standard' };
+    },
+  });
+  t.after(() => { refreshing.resolve({ items: [] }); return h.supervisor.stop(); });
+  await h.until(() => h.index.getTarget('target-1')?.status === 'ready');
+  const create = agentPreset => h.supervisor.createSession('target-1', 'w-1', { agentPreset });
+  const cordis = create('cordis');
+  await started.promise;
+  const standard = create('standard');
+  const defaultMode = create();
+  const sameCordis = create('cordis');
+  creation.resolve({ sessionId: 'created-cordis', agentPreset: 'cordis' });
+  const expected = [
+    { sessionId: 'created-cordis', reused: false, agentPreset: 'cordis' },
+    { sessionId: 'created-standard', reused: false, agentPreset: 'standard' },
+    { sessionId: 'created-default', reused: false },
+  ];
+  assert.deepEqual(await Promise.all([cordis, standard, defaultMode, sameCordis]), [...expected, expected[0]]);
+  assert.deepEqual(await create('cordis'), { ...expected[0], reused: true });
+  assert.deepEqual(await create('standard'), { ...expected[1], reused: true });
+  assert.deepEqual(await create(), { ...expected[2], reused: true });
+  assert.deepEqual(nativeCreations(h.clients[0]), [
+    { workspaceId: 'w-1', agentPreset: 'cordis' }, { workspaceId: 'w-1', agentPreset: 'standard' }, { workspaceId: 'w-1' },
+  ]);
+});
+
+test('explicit mode rejects a conflicting confirmation and only caches a matching one', async t => {
+  const refreshing = deferred();
+  const replies = [
+    { sessionId: 'created-1' },
+    { sessionId: 'created-2', agentPreset: 'standard' },
+    { sessionId: 'created-3', agentPreset: 'cordis' },
+  ];
+  const h = controlledMirror({
+    onList: (_client, count) => count > 1 ? refreshing.promise : { items: [] },
+    onCreate: () => replies.shift(),
+  });
+  t.after(() => { refreshing.resolve({ items: [] }); return h.supervisor.stop(); });
+  await h.until(() => h.index.getTarget('target-1')?.status === 'ready');
+  const create = () => h.supervisor.createSession('target-1', 'w-1', { agentPreset: 'cordis' });
+  assert.deepEqual(await create(), { sessionId: 'created-1', reused: false });
+  await assert.rejects(create(), { code: 't3-remote/create-failed' });
+  assert.deepEqual(await create(), { sessionId: 'created-3', reused: false, agentPreset: 'cordis' });
+  assert.deepEqual(await create(), { sessionId: 'created-3', reused: true, agentPreset: 'cordis' });
 });
 
 test('a kick received during an in-flight sync causes another pass without waiting a heartbeat', async t => {

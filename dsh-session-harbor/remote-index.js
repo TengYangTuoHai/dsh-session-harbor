@@ -45,6 +45,7 @@ export const sessionRowSchema = z.object({
   blank: z.boolean(),
   agentAvailable: z.boolean(),
   origin: z.string().max(40).nullable(),
+  agentPreset: z.string().min(1).optional(),
   pinned: z.boolean(),
   archived: z.boolean(),
   settled: z.boolean(),
@@ -275,12 +276,12 @@ export function createRemoteIndex({ storage, onWriteError = () => {} }) {
     getTarget: id => targets.get(id),
     listTargets: () => Object.fromEntries([...targets.entries()]),
     workspace: (targetId, workspaceId) => workspaces.get(targetId + '/' + workspaceId),
-    // The machine's own sidebar reuses a blank session before making one, and it
-    // matches them by cwd — so the mirror has to answer the same question.
-    blankSession: (targetId, cwd) => {
+    blankSession: (targetId, cwd, { workspaceId, agentPreset } = {}) => {
       for (const [key, row] of sessions.entries()) {
         if (!key.startsWith(targetId + '/')) continue;
-        if (row.blank && !row.running && !row.archived && row.cwd === cwd) return row;
+        if (!row.blank || row.running || row.archived || row.cwd !== cwd) continue;
+        if (agentPreset !== undefined && (row.workspaceId !== workspaceId || row.agentPreset !== agentPreset)) continue;
+        return row;
       }
       return null;
     },
