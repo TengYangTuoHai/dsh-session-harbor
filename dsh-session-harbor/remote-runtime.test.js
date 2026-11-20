@@ -284,12 +284,17 @@ test('connection identities replace a ready runtime even when the down snapshot 
 test('startup waits for an explicit current selection before revealing the workspaces', async () => {
   const calls = [];
   let ready = false;
+  let remembered = false;
   const actual = {
     openSession(id) { calls.push(['open', id, ready]); },
     startSession(workspaceId, options) { calls.push(['create', workspaceId, options]); },
   };
   const navigation = createDeferredNavigation({
     context: {},
+    startLastNewSession() {
+      if (remembered) calls.push(['remembered']);
+      return remembered;
+    },
     onChooseDevice: () => calls.push(['choose']),
     activate() {
       calls.push(['activate']);
@@ -306,11 +311,13 @@ test('startup waits for an explicit current selection before revealing the works
   await navigation.open('requested-session');
   await navigation.open('another-session');
   navigation.service.startSession();
+  remembered = true;
+  navigation.service.startSession();
   navigation.service.startSession('explicit-project');
   navigation.service.startSession(undefined, { agentPreset: 'cordis', clearPreviousDraft: false });
   assert.deepEqual(calls, [
     ['activate'], ['open', 'requested-session', false], ['show'], ['open', 'another-session', true],
-    ['choose'], ['create', 'explicit-project', undefined],
+    ['choose'], ['remembered'], ['create', 'explicit-project', undefined],
     ['create', undefined, { agentPreset: 'cordis', clearPreviousDraft: false }],
   ]);
 });

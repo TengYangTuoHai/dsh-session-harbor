@@ -1304,7 +1304,7 @@ function createRuntimeLayout({ sidebar, hasPanel = () => true } = {}) {
 
 /** Keep the native navigation service stable without running its restore/create
  * policy while a device is merely subscribed for status and approvals. */
-function createDeferredNavigation({ context, activate, onChooseDevice, Service }) {
+function createDeferredNavigation({ context, activate, onChooseDevice, startLastNewSession, Service }) {
   let actual = null;
   let activation = null;
   let showWorkspaces = () => {};
@@ -1328,10 +1328,13 @@ function createDeferredNavigation({ context, activate, onChooseDevice, Service }
           if (!value || value === service || typeof value.openSession !== 'function') throw new Error('Native device navigation did not activate');
           actual = value;
           showWorkspaces = result.showWorkspaces;
-          if (onChooseDevice && typeof actual.startSession === 'function') {
+          if ((startLastNewSession || onChooseDevice) && typeof actual.startSession === 'function') {
             const nativeStart = actual.startSession;
             actual.startSession = function(workspaceId, options) {
-              if (workspaceId === undefined && options === undefined) return onChooseDevice();
+              if (workspaceId === undefined && options === undefined) {
+                if (startLastNewSession?.()) return;
+                if (onChooseDevice) return onChooseDevice();
+              }
               return nativeStart.call(this, workspaceId, options);
             };
           }
@@ -1395,7 +1398,7 @@ function waitForSource(source, predicate, signal, timeoutMs = 15000) {
 /** Keeps the local application resident while native Client trees address devices. */
 function createDeviceRuntimePool({
   context, React, platformRequire, describe, onChooseDevice, installWorkspacePicker,
-  installSessionOpenNotice, observeWorkspaceStarts,
+  installSessionOpenNotice, observeWorkspaceStarts, startLastNewSession,
   onStatusChange = () => {}, pageGlobal = globalThis, fetch: suppliedFetch,
   loadScript: suppliedScriptLoader, buildRuntime: suppliedBuilder,
 }) {
@@ -1571,7 +1574,8 @@ function createDeviceRuntimePool({
       if (!navigationRow) throw new Error('The device has no compatible native project navigation');
       instance.navigation = createDeferredNavigation({
         context: device, Service: nativePlatform.Service,
-        onChooseDevice,
+        startLastNewSession,
+        onChooseDevice: onChooseDevice && (() => onChooseDevice(descriptor.targetId)),
         async activate() {
           abort.signal.throwIfAborted();
           const namespace = await realm.import(navigationRow.id);

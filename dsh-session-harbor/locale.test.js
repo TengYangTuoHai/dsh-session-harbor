@@ -8,7 +8,7 @@ const placeholders = text => (text.match(/\{[\w]+\}/g) ?? []).sort();
 
 const noop = () => {};
 
-function loadClient({ list = noop, openSession = noop, navigation, storage = new Map() } = {}) {
+function loadClient({ list = noop, openSession = noop, navigation, projects = [], storage = new Map() } = {}) {
   const source = readFileSync(new URL('./client.js', import.meta.url), 'utf8');
   const registered = new Map();
   const panels = [];
@@ -38,6 +38,7 @@ function loadClient({ list = noop, openSession = noop, navigation, storage = new
           },
           get: name => name === 'remote.commands' ? { list } : undefined,
           uiWorkspace,
+          workspaces: { list: { getSnapshot: () => ({ items: projects }) } },
           layout: { selectPanel: panel => panels.push(panel) },
           contextMenus: { register: noop },
         });
@@ -117,7 +118,7 @@ test('retry reopens only its own session after the host resolves its Agent', asy
   assert.deepEqual(opened, [sessionId]);
 });
 
-test('new-session navigation remembers the last successful project and preserves explicit preset requests', async () => {
+test('new-session navigation restores the last successful local project in the native composer', async () => {
   const storage = new Map();
   const starts = [];
   const navigation = {
@@ -129,15 +130,29 @@ test('new-session navigation remembers the last successful project and preserves
   };
   const { panels, uiWorkspace } = loadClient({ navigation, storage });
   const options = { agentPreset: 'cordis', clearPreviousDraft: false };
-  uiWorkspace.startSession(undefined, options);
-  uiWorkspace.startSession('explicit-project');
-  assert.deepEqual(starts, [{ workspaceId: undefined, options }, { workspaceId: 'explicit-project', options: undefined }]);
   uiWorkspace.startSession();
-  assert.equal(panels.length, 1);
+  assert.deepEqual(starts, [{ workspaceId: undefined, options: undefined }]);
+  assert.deepEqual(panels, []);
   assert.equal(storage.has('dsh.t3.last-new-session'), false);
 
   await uiWorkspace.openWorkspace('chosen-project', undefined, options);
   await assert.rejects(uiWorkspace.openWorkspace('failed'), /Creation failed/);
   await uiWorkspace.openWorkspace('superseded');
   assert.deepEqual(JSON.parse(storage.get('dsh.t3.last-new-session')), { targetId: null, workspaceId: 'chosen-project' });
+
+  const reloaded = loadClient({ navigation, storage, projects: [{ workspaceId: 'chosen-project' }] });
+  reloaded.uiWorkspace.startSession();
+  reloaded.uiWorkspace.startSession(undefined, options);
+  reloaded.uiWorkspace.startSession('explicit-project');
+  assert.deepEqual(starts.slice(1), [
+    { workspaceId: 'chosen-project', options: undefined },
+    { workspaceId: undefined, options },
+    { workspaceId: 'explicit-project', options: undefined },
+  ]);
+  assert.deepEqual(reloaded.panels, []);
+
+  const missing = loadClient({ navigation, storage });
+  missing.uiWorkspace.startSession();
+  assert.deepEqual(starts.at(-1), { workspaceId: undefined, options: undefined });
+  assert.deepEqual(missing.panels, []);
 });

@@ -36,7 +36,7 @@ window.__ModuleLoader__.load({
         remoteDeviceFailed: 'Could not start that session', remoteDeviceUnreachable: 'That machine is not reachable',
         remoteDeviceCreated: 'Session started on {name}',
         newSession: 'New session', chooseDeviceProject: 'Choose a device and project', project: 'Project', chooseProject: 'Choose a project',
-        sessionMode: 'Mode', defaultSessionMode: 'Device default',
+        deviceHint: 'Choose where this session runs, then select a project on that device.',
         remoteOpening: 'Opening session…', remoteOpen: 'Open session', retry: 'Retry',
         remoteDisconnected: 'The device disconnected. The session will reopen when it reconnects.',
         remoteStreamReconnecting: 'Reconnecting to the session…',
@@ -108,8 +108,7 @@ window.__ModuleLoader__.load({
         chooseDeviceProject: 'デバイスとプロジェクトを選択',
         project: 'プロジェクト',
         chooseProject: 'プロジェクトを選択',
-        sessionMode: 'モード',
-        defaultSessionMode: 'デバイスの既定値',
+        deviceHint: 'セッションを実行するデバイスを選んでから、そのデバイス上のプロジェクトを選択してください。',
         remoteOpening: 'セッションを開いています…',
         remoteOpen: 'セッションを開く',
         retry: '再試行',
@@ -205,8 +204,7 @@ window.__ModuleLoader__.load({
         chooseDeviceProject: 'Elegir un dispositivo y un proyecto',
         project: 'Proyecto',
         chooseProject: 'Elegir un proyecto',
-        sessionMode: 'Modo',
-        defaultSessionMode: 'Predeterminado del dispositivo',
+        deviceHint: 'Elige en qué dispositivo se ejecutará la sesión y selecciona un proyecto en él.',
         remoteOpening: 'Abriendo sesión…',
         remoteOpen: 'Abrir sesión',
         retry: 'Reintentar',
@@ -302,8 +300,7 @@ window.__ModuleLoader__.load({
         chooseDeviceProject: 'Choisir un appareil et un projet',
         project: 'Projet',
         chooseProject: 'Choisir un projet',
-        sessionMode: 'Mode',
-        defaultSessionMode: 'Par défaut sur cet appareil',
+        deviceHint: 'Choisissez l’appareil sur lequel exécuter la session, puis sélectionnez un projet sur cet appareil.',
         remoteOpening: 'Ouverture de la session…',
         remoteOpen: 'Ouvrir la session',
         retry: 'Réessayer',
@@ -399,8 +396,7 @@ window.__ModuleLoader__.load({
         chooseDeviceProject: 'Gerät und Projekt auswählen',
         project: 'Projekt',
         chooseProject: 'Projekt auswählen',
-        sessionMode: 'Modus',
-        defaultSessionMode: 'Gerätestandard',
+        deviceHint: 'Wählen Sie das Gerät für die Sitzung und anschließend ein Projekt auf diesem Gerät aus.',
         remoteOpening: 'Sitzung wird geöffnet…',
         remoteOpen: 'Sitzung öffnen',
         retry: 'Erneut versuchen',
@@ -496,8 +492,7 @@ window.__ModuleLoader__.load({
         chooseDeviceProject: 'Выберите устройство и проект',
         project: 'Проект',
         chooseProject: 'Выбрать проект',
-        sessionMode: 'Режим',
-        defaultSessionMode: 'Режим устройства по умолчанию',
+        deviceHint: 'Выберите устройство для запуска сеанса, затем выберите проект на этом устройстве.',
         remoteOpening: 'Открытие сеанса…',
         remoteOpen: 'Открыть сеанс',
         retry: 'Повторить',
@@ -593,8 +588,7 @@ window.__ModuleLoader__.load({
         chooseDeviceProject: 'Escolha um dispositivo e um projeto',
         project: 'Projeto',
         chooseProject: 'Escolher projeto',
-        sessionMode: 'Modo',
-        defaultSessionMode: 'Padrão do dispositivo',
+        deviceHint: 'Escolha o dispositivo em que a sessão será executada e selecione um projeto nele.',
         remoteOpening: 'Abrindo sessão…',
         remoteOpen: 'Abrir sessão',
         retry: 'Tentar novamente',
@@ -653,7 +647,7 @@ window.__ModuleLoader__.load({
         remoteDeviceFailed: '没能在那个项目里新建会话', remoteDeviceUnreachable: '那台机器现在连不上',
         remoteDeviceCreated: '已在 {name} 上新建会话',
         newSession: '新会话', chooseDeviceProject: '选择设备和项目', project: '项目', chooseProject: '选择项目',
-        sessionMode: '模式', defaultSessionMode: '设备默认模式',
+        deviceHint: '先选择会话运行的设备，再选择该设备上的项目。',
         remoteOpening: '正在打开会话…', remoteOpen: '打开会话', retry: '重试',
         remoteDisconnected: '设备已断开，重新连接后将打开此会话。',
         remoteStreamReconnecting: '正在重新连接会话…',
@@ -1060,8 +1054,8 @@ window.__ModuleLoader__.load({
     let deviceChoice = { targetId: null, revision: 0 };
     const choiceListeners = new Set();
     const choiceSubscribe = listener => { choiceListeners.add(listener); return () => choiceListeners.delete(listener); };
-    function pickDevice(selection) {
-      deviceChoice = { ...selection, revision: deviceChoice.revision + 1 };
+    function pickDevice(targetId) {
+      deviceChoice = { targetId: targetId ?? null, revision: deviceChoice.revision + 1 };
       for (const listener of [...choiceListeners]) listener();
     }
     function currentMachine(targetId) { return mirrorState.snapshot?.targets?.[targetId]; }
@@ -1088,12 +1082,27 @@ window.__ModuleLoader__.load({
       pool?.deactivate();
       publishRuntime({ active: null, phase: 'idle', error: null });
     }
-    function chooseDeviceProject(targetId) {
-      const saved = readLastNewSession();
-      const device = targetId === undefined ? saved?.targetId ?? null : targetId;
-      pickDevice({ targetId: device, workspaceId: saved?.targetId === device ? saved.workspaceId : undefined });
+    function chooseDeviceProject(targetId = null) {
       Sidebar.context.layout.selectPanel(NEW_PANEL);
       deactivateDevice();
+      pickDevice(targetId);
+    }
+    function startLastNewSession() {
+      const saved = readLastNewSession();
+      if (!saved) return false;
+      const { targetId, workspaceId } = saved;
+      const context = Sidebar.context;
+      if (targetId === null) {
+        if (!context.workspaces.list.getSnapshot().items.some(project => project.workspaceId === workspaceId)) return false;
+        context.uiWorkspace.startSession(workspaceId);
+        return true;
+      }
+      if (!canManageDevice(targetId) || !Object.hasOwn(mirrorState.snapshot.workspaces, `${targetId}/${workspaceId}`)) return false;
+      void createAndOpenDeviceSession(targetId, workspaceId).catch(error => {
+        const title = context.locale.bind(NS)('remoteDeviceFailed');
+        context.contextMenus.notify(errorWithDetail(title, error?.message), false);
+      });
+      return true;
     }
     async function devicePool() {
       if (pool) return pool;
@@ -1106,6 +1115,7 @@ window.__ModuleLoader__.load({
           context, React, platformRequire: require,
           describe: (targetId, { signal } = {}) => remoteCall('t3-remote/runtime', { targetId }, signal),
           onChooseDevice: chooseDeviceProject,
+          startLastNewSession,
           observeWorkspaceStarts,
           installWorkspacePicker: installDeviceWorkspacePicker,
           installSessionOpenNotice(device) {
@@ -1172,14 +1182,29 @@ window.__ModuleLoader__.load({
       if (requireRemoteReady(targetId) !== connectionId) {
         throw new Error(Sidebar.context.locale.bind(NS)('remoteDeviceUnreachable'));
       }
-      return runtime.ctx;
+      return { device: runtime.ctx, connectionId };
     }
-    async function createAndOpenDeviceSession(targetId, workspaceId, signal, agentPreset) {
+    async function localDefaultPresetOn(device) {
+      const local = Sidebar.context;
+      try {
+        const [configured, available] = await Promise.all([
+          local.get('remote.agentPresets')?.list(), device.get('remote.agentPresets')?.list(),
+        ]);
+        const preferred = configured?.value?.presets.find(preset => preset.isDefault && preset.broken === undefined)?.id;
+        if (preferred && available?.value?.presets.some(preset => preset.id === preferred && preset.broken === undefined)) return preferred;
+      } catch { /* use the device's default if its presets cannot be checked */ }
+    }
+    async function createAndOpenDeviceSession(targetId, workspaceId, signal) {
       const navigation = Sidebar.context.layout.beginNavigation();
-      const request = AbortSignal.any([navigation, signal]);
+      const request = signal ? AbortSignal.any([navigation, signal]) : navigation;
       let session;
       try {
-        await prepareRemoteNavigation(targetId, request);
+        const { device, connectionId } = await prepareRemoteNavigation(targetId, request);
+        const agentPreset = await localDefaultPresetOn(device);
+        request.throwIfAborted();
+        if (requireRemoteReady(targetId) !== connectionId) {
+          throw new Error(Sidebar.context.locale.bind(NS)('remoteDeviceUnreachable'));
+        }
         ({ session } = await remoteCall('t3-remote/session-create', {
           targetId, workspaceId, ...(agentPreset === undefined ? {} : { agentPreset }),
         }, request));
@@ -1422,15 +1447,15 @@ window.__ModuleLoader__.load({
       const online = local || canManageDevice(targetId);
       const projects = (local ? (workspaces?.items ?? []).slice() : Object.values(snapshot?.workspaces ?? {}).filter(item => item.targetId === targetId))
         .sort((a, b) => (a.title || a.path).localeCompare(b.title || b.path));
-      const start = async (workspaceId, agentPreset) => {
-        if (request.current || !online || !projects.some(project => project.workspaceId === workspaceId)) return;
+      const start = async workspaceId => {
+        if (request.current || !online) return;
         const controller = new AbortController();
         request.current = controller;
         setBusy(true);
         setError('');
         try {
-          if (local) await Sidebar.context.uiWorkspace.openWorkspace(workspaceId, undefined, { agentPreset });
-          else await createAndOpenDeviceSession(targetId, workspaceId, controller.signal, agentPreset);
+          if (local) await Sidebar.context.uiWorkspace.openWorkspace(workspaceId);
+          else await createAndOpenDeviceSession(targetId, workspaceId, controller.signal);
         } catch (error) {
           if (!controller.signal.aborted) setError(error?.message ?? String(error));
         } finally {
@@ -1465,15 +1490,14 @@ window.__ModuleLoader__.load({
         minWidthFromAnchor: !compact,
       });
     }
-    function DeviceProjectPicker({ targetName, flow, roster, statusId, t }) {
+    function DeviceProjectPicker({ targetName, flow, statusId, t }) {
       const projects = projectMenuItems(flow.projects);
       const add = { id: ADD_PROJECT, label: t('addWorkspace'), icon: h(IconPlusOutlineRegular, { size: 16 }) };
       return h(PickerMenu, {
         text: t(flow.busy ? 'remoteDeviceStarting' : 'chooseProject'), icon: h(IconFolderCloseRegular, { size: 16 }),
         items: projects.length ? projects : [add], footer: projects.length ? [add] : undefined,
-        onSelect: id => { if (id === ADD_PROJECT) flow.add(); else void flow.start(id, roster?.defaultPreset?.id); },
-        label: t('chooseProject') + ' · ' + targetName, statusId,
-        disabled: !flow.online || !roster || flow.adding || flow.busy, compact: true,
+        onSelect: id => { if (id === ADD_PROJECT) flow.add(); else void flow.start(id); },
+        label: t('chooseProject') + ' · ' + targetName, statusId, disabled: !flow.online || flow.adding || flow.busy, compact: true,
       });
     }
     function DeviceHeroWorkspace({ currentTargetId, open, anchorRef, selectedId, onPick, onClose, renderFactorySlot }) {
@@ -1487,7 +1511,6 @@ window.__ModuleLoader__.load({
       const targetId = selection ? selection.targetId : currentTargetId;
       const staged = targetId !== currentTargetId;
       const flow = useDeviceProjects(targetId, workspaces, snapshot);
-      const roster = useSessionPresets(targetId, staged && flow.online, snapshot?.connections?.[targetId]);
       const machines = remoteTargetsOf(snapshot).sort((a, b) => a.label.localeCompare(b.label));
       if (targetId && !flow.machine) machines.push({ targetId, label: selection?.label ?? targetId, status: 'down' });
       const t3StatusId = React.useId();
@@ -1522,9 +1545,9 @@ window.__ModuleLoader__.load({
         setSelection({ targetId, label: machine?.label ?? t('remoteDeviceThisMachine') });
         flow.clearError();
       };
-      let status = flow.error ? errorWithDetail(t('remoteDeviceFailed'), flow.error) : roster?.error;
+      let status = flow.error && errorWithDetail(t('remoteDeviceFailed'), flow.error);
       if (!status && !flow.online) status = t(flow.machine?.status === 'connecting' ? 'remoteConnecting' : 'remoteDeviceUnreachable');
-      if (!status && (!roster || !flow.projects.length)) status = t(!roster || flow.local && workspaces?.phase !== 'ready'
+      if (!status && !flow.projects.length) status = t(flow.local && workspaces?.phase !== 'ready'
         ? 'remoteLoading' : flow.local ? 'localNoProjects' : 'remoteDeviceNoProjects');
       return h(React.Fragment, null,
         !staged && renderFactorySlot('workspace.picker', { open, anchorRef, selectedId, onPick, onClose }),
@@ -1536,8 +1559,8 @@ window.__ModuleLoader__.load({
               selectedId: deviceMenuId(targetId), onSelect: selectDevice, compact: true,
               beforeOpen: open ? onClose : undefined,
             }),
-            staged && h(DeviceProjectPicker, { key: targetId, targetName, flow, roster, statusId: status ? t3StatusId : undefined, t }),
-            staged && status && h('span', { className: 't3-hero-picker-status', id: t3StatusId, role: flow.error || roster?.error ? 'alert' : 'status' }, status))), seat),
+            staged && h(DeviceProjectPicker, { key: targetId, targetName, flow, statusId: status ? t3StatusId : undefined, t }),
+            staged && status && h('span', { className: 't3-hero-picker-status', id: t3StatusId, role: flow.error ? 'alert' : 'status' }, status))), seat),
         flow.adding && h(AddProjectDialog, { machines: [deviceForFolder(targetId, snapshot, t)], t, close: flow.closeAdd }));
     }
     function installDeviceWorkspacePicker(context, targetId = null) {
@@ -1549,119 +1572,37 @@ window.__ModuleLoader__.load({
       }, props => h(DeviceHeroWorkspace, { ...props, currentTargetId: targetId }))));
       return () => { for (const dispose of disposers) dispose(); };
     }
-    const builtInPresetNames = new Map([
-      ['standard', 'presetStandardName'], ['ptc', 'presetPtcName'],
-      ['minimal', 'presetMinimalName'], ['cordis', 'presetCordisName'],
-    ]);
-    async function readSessionPresets(context) {
-      const result = await context.get('remote.agentPresets')?.list();
-      return !result || result.error?.code === 'gateway/invocation-unavailable' ? [] : unwrap(result).presets;
-    }
-    function useSessionPresets(targetId, online, connectionId) {
-      const [roster, setRoster] = React.useState(null);
-      React.useEffect(() => {
-        if (!online) return;
-        const controller = new AbortController();
-        let stop = () => {};
-        const load = async () => {
-          const local = Sidebar.context;
-          const device = targetId === null ? Promise.resolve(local) : prepareRemoteNavigation(targetId, controller.signal);
-          const localRoster = readSessionPresets(local);
-          const [localPresets, presets] = await Promise.all([
-            localRoster, targetId === null ? localRoster : device.then(readSessionPresets),
-          ]);
-          if (controller.signal.aborted) return;
-          const localDefault = localPresets.find(preset => preset.isDefault)?.id;
-          const developerTools = local.get('configForms')?.developerTools?.enabled;
-          const update = () => {
-            const showCodingModes = developerTools?.getSnapshot();
-            const available = presets.filter(preset => !preset.broken
-              && (showCodingModes || preset.name !== undefined || !['ptc', 'minimal'].includes(preset.id)));
-            const defaultPreset = available.find(preset => preset.id === localDefault)
-              ?? available.find(preset => preset.isDefault)
-              ?? available.find(preset => preset.id === 'standard') ?? available[0];
-            setRoster({ targetId, connectionId, presets: available, defaultPreset });
-          };
-          stop = developerTools?.subscribe(update) ?? stop;
-          update();
-        };
-        void load().catch(error => {
-          if (!controller.signal.aborted) setRoster({ targetId, connectionId, presets: [], error: error?.message ?? String(error) });
-        });
-        return () => { controller.abort(); stop(); };
-      }, [targetId, online, connectionId]);
-      return online && roster?.targetId === targetId && roster.connectionId === connectionId ? roster : null;
-    }
     function NewDeviceSession({ t, useWorkspaces }) {
       const choice = React.useSyncExternalStore(choiceSubscribe, () => deviceChoice, () => deviceChoice);
       const { snapshot } = useRemoteMachines(Sidebar.context);
       const workspaces = useWorkspaces(value => value);
-      const removed = choice.targetId !== null && snapshot && !Object.hasOwn(snapshot.targets, choice.targetId);
-      const targetId = removed ? null : choice.targetId;
-      return h(NewDeviceSessionForm, { key: `${choice.revision}/${targetId}`, t, targetId, snapshot, workspaces,
-        initialWorkspaceId: removed ? undefined : choice.workspaceId, initialPreset: choice.agentPreset });
-    }
-    function NewDeviceSessionForm({ t, targetId, snapshot, workspaces, initialWorkspaceId, initialPreset }) {
-      const [workspaceId, setWorkspaceId] = React.useState(initialWorkspaceId);
-      const [wantedPreset, setWantedPreset] = React.useState(initialPreset);
-      const flow = useDeviceProjects(targetId, workspaces, snapshot);
-      const roster = useSessionPresets(targetId, flow.online, snapshot?.connections?.[targetId]);
+      const flow = useDeviceProjects(choice.targetId, workspaces, snapshot);
       const machines = remoteTargetsOf(snapshot).sort((a, b) => a.label.localeCompare(b.label));
-      const deviceName = flow.machine?.label ?? targetId ?? t('remoteDeviceThisMachine');
+      const deviceName = flow.machine?.label ?? choice.targetId ?? t('remoteDeviceThisMachine');
       const devices = deviceMenuItems([deviceForFolder(null, snapshot, t), ...machines], t);
-      const projects = projectMenuItems(flow.projects);
-      const project = projects.find(item => item.id === workspaceId);
-      const presets = roster?.presets ?? [];
-      const preset = presets.find(item => item.id === wantedPreset) ?? roster?.defaultPreset;
-      const modeText = Sidebar.context.locale.bind('settings.agentPreset');
-      const presetName = ({ id, name }) => {
-        const key = builtInPresetNames.get(id);
-        const label = key && modeText(key);
-        return name ?? (label && label !== key ? label : id);
-      };
-      const disabled = flow.busy || flow.adding;
-      const projectReady = flow.online && (!flow.local || workspaces?.phase === 'ready');
-      const selectDevice = id => {
-        const nextTargetId = targetForMenuId(id);
-        if (nextTargetId === targetId) return;
-        const saved = readLastNewSession();
-        pickDevice({ targetId: nextTargetId, workspaceId: saved?.targetId === nextTargetId ? saved.workspaceId : undefined, agentPreset: wantedPreset });
-      };
-      let status;
-      if (!flow.online) status = t(!snapshot ? 'remoteLoading' : flow.machine?.status === 'connecting' ? 'remoteConnecting' : 'remoteDeviceUnreachable');
-      else if (flow.local && workspaces?.phase !== 'ready') status = t('remoteLoading');
-      else if (!projects.length) status = t(flow.local ? 'localNoProjects' : 'remoteDeviceNoProjects');
       return h('section', { className: 't3-new-session' }, h('style', null, css),
         h('div', { className: 't3-new-card' },
           h('h1', null, t('newSession')),
+          h('p', { className: 't3-new-hint' }, t('deviceHint')),
           h('div', { className: 't3-new-fields' },
             h('div', { className: 't3-new-field' }, h('span', null, t('remoteDeviceChip')),
               h(PickerMenu, {
-                text: deviceName, label: `${t('remoteDeviceChip')} · ${deviceName}`, items: devices, selectedId: deviceMenuId(targetId),
-                icon: h(MachineIcon, { kind: flow.machine?.kind, size: 16 }), disabled, onSelect: selectDevice,
+                text: deviceName, label: t('remoteDeviceChip'), items: devices, selectedId: deviceMenuId(choice.targetId),
+                icon: h(MachineIcon, { kind: flow.machine?.kind, size: 16 }), disabled: flow.busy || flow.adding,
+                onSelect: id => { pickDevice(targetForMenuId(id)); flow.clearError(); },
               })),
             h('div', { className: 't3-new-field' }, h('span', null, t('project')),
               h(PickerMenu, {
-                text: project?.label ?? t('chooseProject'), label: project ? `${t('project')} · ${project.label}` : t('project'),
-                icon: h(IconFolderCloseRegular, { size: 16 }), items: projects, selectedId: project?.id,
-                disabled: disabled || !projectReady || !projects.length,
-                onSelect: id => { setWorkspaceId(id); flow.clearError(); },
-              })),
-            h('div', { className: 't3-new-field' }, h('span', null, t('sessionMode')),
-              h(PickerMenu, {
-                text: preset ? presetName(preset) : t(flow.online && !roster ? 'remoteLoading' : 'defaultSessionMode'),
-                label: preset ? `${t('sessionMode')} · ${presetName(preset)}` : t('sessionMode'),
-                items: presets.map(item => ({ id: item.id, label: presetName(item) })), selectedId: preset?.id,
-                disabled: disabled || !presets.length, onSelect: id => { setWantedPreset(id); flow.clearError(); },
+                text: t(flow.busy ? 'remoteDeviceStarting' : 'chooseProject'), label: t('project'),
+                icon: h(IconFolderCloseRegular, { size: 16 }), items: projectMenuItems(flow.projects),
+                disabled: flow.busy || flow.adding || !flow.online || !flow.projects.length, onSelect: id => { void flow.start(id); },
               }))),
-          status && h('p', { className: 't3-new-hint', role: 'status' }, status),
-          (flow.error || roster?.error) && h('p', { className: 't3-new-hint', role: 'alert' },
-            flow.error ? errorWithDetail(t('remoteDeviceFailed'), flow.error) : roster.error),
+          !flow.online && h('p', { className: 't3-new-hint', role: 'status' }, t('remoteDeviceUnreachable')),
+          flow.online && !flow.projects.length && h('p', { className: 't3-new-hint' }, t(flow.local ? 'localNoProjects' : 'remoteDeviceNoProjects')),
+          flow.error && h('p', { className: 't3-new-hint', role: 'alert' }, errorWithDetail(t('remoteDeviceFailed'), flow.error)),
           h('div', { className: 't3-new-actions' },
-            h(Button, { variant: 'primary', disabled: disabled || !projectReady || !project || !roster,
-              onClick: () => { if (project) void flow.start(project.id, preset?.id); } }, t(flow.busy ? 'remoteDeviceStarting' : 'remoteCreate')),
-            h(Button, { variant: 'outline', icon: h(IconPlusOutlineRegular, { size: 16 }), disabled: disabled || !flow.online, onClick: flow.add }, t('addWorkspace')))),
-        flow.adding && h(AddProjectDialog, { machines: [deviceForFolder(targetId, snapshot, t)], t, close: flow.closeAdd }));
+            h(Button, { variant: 'outline', icon: h(IconPlusOutlineRegular, { size: 16 }), disabled: flow.busy || !flow.online, onClick: flow.add }, t('addWorkspace')))),
+        flow.adding && h(AddProjectDialog, { machines: [deviceForFolder(choice.targetId, snapshot, t)], t, close: flow.closeAdd }));
     }
 
     let renameTarget = null;
@@ -3072,7 +3013,7 @@ window.__ModuleLoader__.load({
           const install = () => {
             const dispose = ctx.slots.inject('sidebar.workspaces', () => ctx.slots.register({ name: 'sidebar.workspaces', priority: -1000, locale: NS }, Sidebar));
             const restore = wrapWorkspaceMethod(ctx.uiWorkspace, 'startSession', original => function(workspaceId, options) {
-              if (workspaceId === undefined && options === undefined) return chooseDeviceProject();
+              if (workspaceId === undefined && options === undefined && startLastNewSession()) return;
               return original.call(this, workspaceId, options);
             });
             return () => { restore(); dispose?.(); };
