@@ -54,8 +54,8 @@ async function readAction(req) {
   return result.data;
 }
 
-function publicConnection({ id, host, label, dshPath, profile, cwd, status, error }) {
-  return { id, host, label, dshPath, profile, cwd, status, error };
+function publicConnection({ id, host, label, dshPath, profile, cwd, status, phase, error, pluginSyncFailedVersion }) {
+  return { id, host, label, dshPath, profile, cwd, status, phase, error, pluginSyncFailedVersion };
 }
 
 function publicTarget({ id, host, label, dshPath, profile, cwd }) {

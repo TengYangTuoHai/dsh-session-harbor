@@ -4,9 +4,14 @@ import { createServer } from 'node:net';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { StringDecoder } from 'node:string_decoder';
+import { pluginName, pluginVersion, pluginSyncScript } from './plugin-sync.js';
 
 const CONTROL = /[\x00-\x1f\x7f]/;
 const MAX_LINE_BYTES = 16384;
+const PLUGIN_SYNC_TIMEOUT_MS = 150000;
+const PLUGIN_SYNC_START = 'session-harbor ssh: checking plugin';
+const PLUGIN_SYNC_READY = 'session-harbor ssh: plugin check complete';
+const PLUGIN_SYNC_FAILED = 'session-harbor ssh: plugin check failed';
 
 export function validateConnectOptions(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) throw new TypeError('Connection options must be an object.');
@@ -70,7 +75,7 @@ export class ConnectionManager {
     record.connected.promise.catch(() => {});
     record.readiness.promise.catch(() => {});
     this.records.set(record.state.id, record);
-    record.timer = setTimeout(() => this._fail(record, new Error(`SSH startup timed out after ${this.options.startupTimeoutMs} ms.`)), this.options.startupTimeoutMs);
+    this._armTimeout(record);
     this._emit(record);
     void this._run(record).catch(error => this._fail(record, error));
     return this._public(record);
@@ -98,6 +103,7 @@ export class ConnectionManager {
       record.state.phase = 'stopped';
       record.remoteUrl = null;
       delete record.state.error;
+      delete record.state.pluginSyncFailedVersion;
       const error = new Error('SSH connection was disconnected.');
       record.controller.abort(error);
       record.readiness.reject(error);
@@ -159,14 +165,18 @@ export class ConnectionManager {
     const attach = (stream, output) => {
       if (!stream) return;
       const framing = lineFramer(line => {
-        if (kind === 'remote' && output === 'stdout' && /^dsh web:\s*/.test(stripAnsi(line))) {
-          if (record.remoteUrl || record.state.phase !== 'starting') return;
-          try {
-            const url = parseReadiness(line);
-            record.readiness.resolve(url);
-            this._log(record, 'Remote DSH announced its authenticated loopback endpoint.');
-          } catch (error) { this._fail(record, error); }
-          return;
+        if (kind === 'remote' && output === 'stdout') {
+          const message = stripAnsi(line);
+          if (this._handlePluginSync(record, message)) return;
+          if (/^dsh web:\s*/.test(message)) {
+            if (record.remoteUrl || record.state.phase !== 'starting') return;
+            try {
+              const url = parseReadiness(line);
+              record.readiness.resolve(url);
+              this._log(record, 'Remote DSH announced its authenticated loopback endpoint.');
+            } catch (error) { this._fail(record, error); }
+            return;
+          }
         }
         this._log(record, `[${kind} ${output}] ${line}`);
       });
@@ -187,6 +197,32 @@ export class ConnectionManager {
       if (isActive(record)) this._fail(record, new Error(`OpenSSH ${kind} exited (${signal ? `signal ${signal}` : `code ${code}`}). ${sshFailureHint(record.state.logs)}`));
     });
     return child;
+  }
+
+  _armTimeout(record, timeoutMs = this.options.startupTimeoutMs, stage = 'SSH startup') {
+    clearTimeout(record.timer);
+    record.timer = setTimeout(() => this._fail(record, new Error(`${stage} timed out after ${timeoutMs} ms.`)), timeoutMs);
+  }
+
+  _handlePluginSync(record, message) {
+    const { state } = record;
+    if (message === PLUGIN_SYNC_START) {
+      if (state.phase === 'starting' && !record.pluginSyncStarted) {
+        record.pluginSyncStarted = true;
+        this._armTimeout(record, PLUGIN_SYNC_TIMEOUT_MS, 'Remote Session Harbor update');
+        this._phase(record, 'syncing-plugin');
+      }
+      return true;
+    }
+    if (message !== PLUGIN_SYNC_READY && message !== PLUGIN_SYNC_FAILED) return false;
+    if (state.phase === 'syncing-plugin') {
+      if (message === PLUGIN_SYNC_FAILED) {
+        state.pluginSyncFailedVersion = pluginVersion;
+      }
+      this._armTimeout(record);
+      this._phase(record, 'starting');
+    }
+    return true;
   }
 
   async _checkHealth(record) {
@@ -290,7 +326,10 @@ export class ConnectionManager {
 }
 
 function remoteCommand({ dshPath, profile, cwd }, localPort) {
-  const command = `${shellPath(dshPath)} --profile ${quote(profile)} --host 127.0.0.1 --port 0 --no-open --trusted-host ${quote(`127.0.0.1:${localPort}`)}`;
+  const executable = shellPath(dshPath);
+  const profileArg = quote(profile);
+  const command = `${executable} --profile ${profileArg} --host 127.0.0.1 --port 0 --no-open --trusted-host ${quote(`127.0.0.1:${localPort}`)}`;
+  const sync = `${executable} plugin --profile ${profileArg} exec --config.verify-deps-before-run=false node -e ${quote(pluginSyncScript)} ${quote(pluginName)} ${quote(pluginVersion)}`;
   const directory = cwd ? `cd ${shellPath(cwd.startsWith('-') ? `./${cwd}` : cwd)}\n` : '';
   const script = `set -eu
 child=''
@@ -312,10 +351,16 @@ trap 'exit 129' HUP
 trap 'exit 130' INT
 trap 'exit 143' TERM
 ${directory}exec 3<&0
-${command} </dev/null &
-child=$!
 ( while IFS= read -r line; do :; done <&3; kill -TERM "$$" 2>/dev/null || : ) &
 watcher=$!
+printf '\\n%s\\n' ${quote(PLUGIN_SYNC_START)}
+if ${sync} </dev/null >&2; then
+  printf '%s\\n' ${quote(PLUGIN_SYNC_READY)}
+else
+  printf '%s\\n' ${quote(PLUGIN_SYNC_FAILED)}
+fi
+DSH_SESSION_HARBOR_SSH_HOST=1 ${command} </dev/null &
+child=$!
 wait "$child"
 `;
   // Load the user's login-shell PATH (for pnpm/nvm/Homebrew installations),

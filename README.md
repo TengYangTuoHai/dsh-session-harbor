@@ -14,7 +14,7 @@ Manage local sessions and sessions on multiple SSH devices from one DeepSeek Har
 
 ## Install
 
-**Plugin v0.2.10** supports DeepSeek Harness `0.2.2-rc.3` and `0.2.2-rc.5`.
+**Plugin v0.2.11** supports DeepSeek Harness `0.2.2-rc.3` and `0.2.2-rc.5`.
 
 1. Open **Plugins** in the DSH sidebar and select **Add plugin**.
 2. Enter the package name under **Package name or address**, then select **Install**.
@@ -45,7 +45,9 @@ Select **Use native** at the bottom of the sidebar to switch back to the built-i
 2. Select **Add and connect**. The device's sessions appear in the sidebar once the connection is ready.
 3. Select an existing session to continue it. **New session** opens the DSH composer in the last available device and project used to start a session in this browser. You can change the selection above the composer.
 
-SSH uses your local OpenSSH configuration and SSH agent. **Opening a remote session requires the same DSH version on both devices.** Install Session Harbor on the remote device too if you want to mark remote sessions as settled from the local sidebar and sync that state.
+SSH uses your local OpenSSH configuration and SSH agent. **Opening a remote session requires the same DSH version on both devices.** Before the remote DSH starts, Session Harbor checks the SSH target's DSH profile. It installs the local plugin version if missing and upgrades older installations to that version. An equal or newer remote version is kept.
+
+Automatic installation uses the remote device's Node.js, pnpm, and configured npm registry. The local plugin version must be available there. If the check or installation fails, the SSH settings show a warning and the connection can still open remote sessions. Remote pinning and settling require an enabled Session Harbor bundle.
 
 If installation or connection fails, include your version information and steps to reproduce it. [Report an issue](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
 

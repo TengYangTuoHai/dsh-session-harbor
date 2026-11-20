@@ -421,7 +421,8 @@ export async function apply(ctx) {
       nativeBroker = createNativeRuntimeBroker({ ssh, bridge, webServer, connection });
       supervisor = ownedSupervisor = new TargetSupervisor({ ssh, bridge, index: remoteIndex, logger: remoteLog });
       ownedSupervisor.start();
-      ssh.startAutoConnect({ logger: remoteLog });
+      // An SSH-launched host serves this connection without following its saved devices.
+      if (process.env.DSH_SESSION_HARBOR_SSH_HOST !== '1') ssh.startAutoConnect({ logger: remoteLog });
       remoteChanged();
     })().catch(error => remoteLog('warn', 'SSH service startup failed: ' + String(error?.message ?? error)));
 

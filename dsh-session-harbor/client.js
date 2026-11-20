@@ -2331,6 +2331,9 @@ window.__ModuleLoader__.load({
         address: 'SSH address', advanced: 'Advanced options', label: 'Name', directory: 'Remote directory',
         executable: 'DSH executable', profile: 'Profile', remoteHome: 'Remote home directory',
         connected: 'Connected', connecting: 'Connecting…', disconnected: 'Disconnected', error: 'Connection failed',
+        checkingPlugin: 'Checking Session Harbor…',
+        pluginSyncNote: 'Connecting installs Session Harbor on the remote device if missing and upgrades older versions to the local version.',
+        pluginSyncFailed: 'Could not install Session Harbor {version} on this host. Remote pinning and settling may be limited. Check pnpm and registry access, then reconnect.',
         connect: 'Connect', disconnect: 'Disconnect', cancelConnection: 'Cancel connection', cancel: 'Cancel',
         remove: 'Delete', close: 'Close', removeQuestion: 'Delete {host}?', removeActiveQuestion: 'Disconnect and delete {host}?',
         hostAction: '{action} ({host})', loading: 'Loading SSH connections…', empty: 'No saved SSH hosts.',
@@ -2358,6 +2361,9 @@ window.__ModuleLoader__.load({
         connecting: '接続中…',
         disconnected: '未接続',
         error: '接続に失敗しました',
+        checkingPlugin: 'Session Harbor を確認中…',
+        pluginSyncNote: '接続時にリモートの Session Harbor を確認し、未インストールまたは旧バージョンの場合はローカルと同じバージョンをインストールします。',
+        pluginSyncFailed: 'このホストに Session Harbor {version} をインストールできませんでした。リモートセッションのピン留めや完了操作が制限される場合があります。pnpm とレジストリへの接続を確認してから再接続してください。',
         connect: '接続',
         disconnect: '切断',
         cancelConnection: '接続をキャンセル',
@@ -2398,6 +2404,9 @@ window.__ModuleLoader__.load({
         connecting: 'Conectando…',
         disconnected: 'Desconectado',
         error: 'Error de conexión',
+        checkingPlugin: 'Comprobando Session Harbor…',
+        pluginSyncNote: 'Al conectar, Session Harbor se instala en el dispositivo remoto si falta y las versiones anteriores se actualizan a la versión local.',
+        pluginSyncFailed: 'No se pudo instalar Session Harbor {version} en este host. Puede que las opciones para fijar o dar por finalizadas sesiones remotas estén limitadas. Comprueba pnpm y el acceso al registro y vuelve a conectar.',
         connect: 'Conectar',
         disconnect: 'Desconectar',
         cancelConnection: 'Cancelar conexión',
@@ -2438,6 +2447,9 @@ window.__ModuleLoader__.load({
         connecting: 'Connexion…',
         disconnected: 'Déconnecté',
         error: 'Échec de la connexion',
+        checkingPlugin: 'Vérification de Session Harbor…',
+        pluginSyncNote: 'À la connexion, Session Harbor est installé sur l’appareil distant s’il est absent. Les anciennes versions sont mises à jour vers la version locale.',
+        pluginSyncFailed: 'Impossible d’installer Session Harbor {version} sur cet hôte. L’épinglage ou la clôture des sessions distantes peut être limité. Vérifiez pnpm et l’accès au registre, puis reconnectez-vous.',
         connect: 'Connecter',
         disconnect: 'Déconnecter',
         cancelConnection: 'Annuler la connexion',
@@ -2478,6 +2490,9 @@ window.__ModuleLoader__.load({
         connecting: 'Verbindung wird hergestellt…',
         disconnected: 'Getrennt',
         error: 'Verbindung fehlgeschlagen',
+        checkingPlugin: 'Session Harbor wird geprüft…',
+        pluginSyncNote: 'Beim Verbinden wird Session Harbor auf dem entfernten Gerät installiert, falls es fehlt. Ältere Versionen werden auf die lokale Version aktualisiert.',
+        pluginSyncFailed: 'Session Harbor {version} konnte auf diesem Host nicht installiert werden. Anheften und Abschließen entfernter Sitzungen sind möglicherweise eingeschränkt. Prüfe pnpm und den Zugriff auf die Registry und stelle die Verbindung erneut her.',
         connect: 'Verbinden',
         disconnect: 'Trennen',
         cancelConnection: 'Verbindungsaufbau abbrechen',
@@ -2518,6 +2533,9 @@ window.__ModuleLoader__.load({
         connecting: 'Подключение…',
         disconnected: 'Отключено',
         error: 'Не удалось подключиться',
+        checkingPlugin: 'Проверяется Session Harbor…',
+        pluginSyncNote: 'При подключении Session Harbor устанавливается на удалённое устройство, если плагина там нет. Старые версии обновляются до локальной версии.',
+        pluginSyncFailed: 'Не удалось установить Session Harbor {version} на этом устройстве. Закрепление и завершение удалённых сессий могут быть ограничены. Проверьте pnpm и доступ к реестру, затем подключитесь снова.',
         connect: 'Подключиться',
         disconnect: 'Отключиться',
         cancelConnection: 'Отменить подключение',
@@ -2558,6 +2576,9 @@ window.__ModuleLoader__.load({
         connecting: 'Conectando…',
         disconnected: 'Desconectado',
         error: 'Falha na conexão',
+        checkingPlugin: 'Verificando o Session Harbor…',
+        pluginSyncNote: 'Ao conectar, o Session Harbor é instalado no dispositivo remoto se estiver ausente. Versões antigas são atualizadas para a versão local.',
+        pluginSyncFailed: 'Não foi possível instalar o Session Harbor {version} neste host. Fixar e concluir sessões remotas pode ficar limitado. Verifique o pnpm e o acesso ao registro e tente se conectar novamente.',
         connect: 'Conectar',
         disconnect: 'Desconectar',
         cancelConnection: 'Cancelar conexão',
@@ -2585,6 +2606,9 @@ window.__ModuleLoader__.load({
         address: 'SSH 地址', advanced: '高级选项', label: '名称', directory: '远程目录',
         executable: 'DSH 启动路径', profile: '配置名称', remoteHome: '远程用户主目录',
         connected: '已连接', connecting: '连接中…', disconnected: '未连接', error: '连接失败',
+        checkingPlugin: '正在检查 Session Harbor…',
+        pluginSyncNote: '连接时会为远端安装缺失的 Session Harbor，或将旧版升级到本机版本。',
+        pluginSyncFailed: '无法在此设备上安装 Session Harbor {version}。远端会话的置顶和完成操作可能受限。请检查远端的 pnpm 和 npm 源，再重新连接。',
         connect: '连接', disconnect: '断开连接', cancelConnection: '取消连接', cancel: '取消',
         remove: '删除', close: '关闭', removeQuestion: '删除 {host}？', removeActiveQuestion: '断开连接并删除 {host}？',
         hostAction: '{action}（{host}）', loading: '正在加载 SSH 连接…', empty: '暂无已保存的 SSH 主机。',
@@ -2607,6 +2631,7 @@ window.__ModuleLoader__.load({
       .t3-ssh-status[data-status=connected]{color:var(--dsw-alias-state-success-primary)}
       .t3-ssh-status[data-status=connecting]{color:var(--dsw-alias-brand-primary)}
       .t3-ssh-status[data-status=error],.t3-ssh-error,button.t3-ssh-danger{color:var(--dsw-alias-state-error-primary)}
+      .t3-ssh-warning{color:var(--dsw-alias-state-warn-label)}
       .t3-ssh-feedback{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-block:12px;overflow-wrap:anywhere}
       .t3-ssh-form{display:grid;gap:12px;padding:16px 0}
       .t3-ssh-field{display:grid;gap:5px;min-width:0}
@@ -2801,6 +2826,9 @@ window.__ModuleLoader__.load({
           const address = configHost ? sshAddress(configHost) : host;
           const details = [address !== name && address, profile !== 'web' && profile, cwd, dshPath !== 'dsh' && dshPath].filter(Boolean).join(' · ');
           const status = connection?.status || 'disconnected';
+          const statusLabel = connection?.phase === 'syncing-plugin' ? t('checkingPlugin') : t(status);
+          const pluginWarning = connection?.pluginSyncFailedVersion
+            ? t('pluginSyncFailed', { version: connection.pluginSyncFailedVersion }) : '';
           const live = sshLive(connection);
           const action = live ? 'disconnect' : 'connect';
           const label = t(status === 'connecting' ? 'cancelConnection' : action);
@@ -2808,8 +2836,9 @@ window.__ModuleLoader__.load({
             h('div', { className: 't3-ssh-copy' },
               h('div', { className: 't3-ssh-name' }, name),
               details && h('div', { className: 't3-ssh-meta' }, details),
-              connection?.error && h('p', { className: 't3-ssh-meta t3-ssh-error' }, sshMessage(connection.error))),
-            h('span', { className: 't3-ssh-status', 'data-status': status, role: 'status' }, t(status)),
+              connection?.error && h('p', { className: 't3-ssh-meta t3-ssh-error' }, sshMessage(connection.error)),
+              h('p', { className: 't3-ssh-meta t3-ssh-warning', role: 'status' }, pluginWarning)),
+            h('span', { className: 't3-ssh-status', 'data-status': status, role: 'status' }, statusLabel),
             h('div', { className: 't3-ssh-actions' },
               button(label, () => changeConnection(action, live ? connection.id : target.id), {
                 'aria-label': hostAction(label, name), variant: live ? 'outline' : 'primary',
@@ -2837,6 +2866,7 @@ window.__ModuleLoader__.load({
             !adding && button(t('addHost'), () => {
               setDraft(sshDefaults); setError(''); setRemoveId(''); setAdvanced(false); setAdding(true);
             }, { ref: addButton, disabled: !!busy || !snapshot, icon: h(IconPlusOutlineRegular, { size: 14 }) })),
+          h('p', { className: 't3-ssh-meta' }, t('pluginSyncNote')),
           loadError && h('div', { className: 't3-ssh-feedback', role: 'alert' }, h('span', { className: 't3-ssh-error' }, loadError),
             button(t('retry'), () => run('retry', signal => load(signal)))),
           error && !removing && h('p', { className: 't3-ssh-feedback t3-ssh-error', role: 'alert' }, error),
