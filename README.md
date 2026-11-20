@@ -14,7 +14,7 @@ Manage local sessions and sessions on multiple SSH devices from one DeepSeek Har
 
 ## Install
 
-**Plugin v0.2.12** supports DeepSeek Harness `0.2.2-rc.3` and `0.2.2-rc.5`.
+**Plugin v0.2.13** supports DeepSeek Harness `0.2.2-rc.3` and `0.2.2-rc.5`.
 
 1. Open **Plugins** in the DSH sidebar and select **Add plugin**.
 2. Enter the package name under **Package name or address**, then select **Install**.

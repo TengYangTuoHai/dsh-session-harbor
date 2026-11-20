@@ -264,6 +264,58 @@ test('the embedded layout owns its navigation and never redirects the page', () 
   layout.dispose();
 });
 
+test('remote rightbar width stays within the conversation bounds and restores the device preference', () => {
+  const values = new Map();
+  const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
+  const layout = createRuntimeLayout({ storage });
+  const width = () => layout.geometry.getSnapshot().rightbarWidth;
+  assert.equal(width(), 320);
+
+  layout.openRightbar(true, false);
+  layout.previewRightbarWidth(200);
+  assert.equal(width(), 300);
+  layout.previewRightbarWidth(850);
+  assert.equal(width(), 600, 'the conversation keeps at least 400px');
+  layout.finishRightbarResize(320);
+
+  layout.openRightbar(true, true);
+  layout.previewRightbarWidth(350);
+  assert.equal(width(), 600, 'fullscreen cannot change the docked width');
+  layout.closeRightbar();
+  layout.setViewportWidth(760);
+  assert.equal(width(), 360);
+  layout.previewRightbarWidth(310);
+  assert.equal(width(), 360, 'a hidden track cannot be resized');
+  layout.setViewportWidth(1000);
+  layout.openRightbar(true, false);
+  assert.equal(width(), 600, 'narrow and fullscreen modes preserve the preference');
+  assert.equal(createRuntimeLayout({ storage }).geometry.getSnapshot().rightbarWidth, 600);
+  assert.equal(createRuntimeLayout().geometry.getSnapshot().rightbarWidth, 320);
+
+  layout.setViewportWidth(2000);
+  layout.previewRightbarWidth(1800);
+  assert.equal(width(), 1400, 'the panel uses at most 70% of a wide frame');
+});
+
+test('a remote rightbar gesture with no net change leaves saved widths intact', () => {
+  let saved = '600';
+  const storage = { getItem: () => saved, setItem: (_, value) => { saved = value; } };
+  const layout = createRuntimeLayout({ storage });
+
+  layout.openRightbar(true, false);
+  layout.setViewportWidth(900);
+  assert.equal(layout.geometry.getSnapshot().rightbarWidth, 500);
+  layout.previewRightbarWidth(450);
+  layout.previewRightbarWidth(500);
+  layout.finishRightbarResize(500);
+  layout.setViewportWidth(1000);
+  assert.equal(layout.geometry.getSnapshot().rightbarWidth, 600);
+
+  saved = '550';
+  layout.finishRightbarResize(600);
+  assert.equal(saved, '550', 'a stationary click does not overwrite a newer preference');
+});
+
 test('connection identities replace a ready runtime even when the down snapshot was coalesced', async () => {
   let generation = 1;
   const f = fixture({ describe: id => descriptor(id, generation) });

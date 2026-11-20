@@ -1225,6 +1225,23 @@ const LOCALE_PACKAGE = OFFICIAL + 'dsh-client-locale';
 const CORE_SLOTS = new Set([
   'root', 'main', 'main.conversation', 'conversation.composer.bar', 'factory:conversation.content',
 ]);
+const RIGHTBAR_MIN = 300;
+const CENTER_MIN = 400;
+const RIGHTBAR_MAX_RATIO = 0.7;
+const RIGHTBAR_BREAKPOINT = 768;
+const RIGHTBAR_WIDTH_KEY = 'rightbar.width';
+const EMBEDDED_RIGHTBAR_CSS = `
+  .t3-native-right [data-sidebar-right-panel="fullscreen"]{max-width:100%;--dsh-sidebar-width:100%!important}
+  .t3-native-right-resize{position:absolute;top:0;bottom:0;width:8px;margin-right:-4px;z-index:11;cursor:col-resize;touch-action:none;-webkit-app-region:no-drag}
+  .t3-native-right-resize:is(:hover,[data-dragging])::after{content:"";position:absolute;inset:0 3px;background:var(--dsw-alias-border-l2);pointer-events:none}
+`;
+
+function rightbarWidths(viewportWidth, preference) {
+  const maxRightbarWidth = Math.max(0, Math.min(viewportWidth - CENTER_MIN, Math.floor(viewportWidth * RIGHTBAR_MAX_RATIO)));
+  const defaultWidth = Math.min(380, Math.round(viewportWidth * .32));
+  const rightbarWidth = Math.min(maxRightbarWidth, Math.max(RIGHTBAR_MIN, preference ?? defaultWidth));
+  return { rightbarWidth, maxRightbarWidth };
+}
 
 function nativeRosterOf(graph) {
   return (graph?.entries ?? []).filter(row => row.id.startsWith(OFFICIAL)
@@ -1274,9 +1291,16 @@ function observable(initial) {
   };
 }
 
-function createRuntimeLayout({ sidebar, hasPanel = () => true } = {}) {
+function createRuntimeLayout({ sidebar, hasPanel = () => true, storage } = {}) {
   const panelInfo = observable({ activePanelId: null });
-  const geometry = observable({ track: false, fullscreen: false, viewportWidth: 1000 });
+  let rightbarPreference;
+  // A drag can return to a viewport-clamped width without replacing the saved width.
+  let rightbarPreview;
+  try {
+    const saved = Number(storage?.getItem(RIGHTBAR_WIDTH_KEY));
+    if (Number.isFinite(saved) && saved >= RIGHTBAR_MIN) rightbarPreference = saved;
+  } catch { /* The current runtime can still remember the width. */ }
+  const geometry = observable({ track: false, fullscreen: false, viewportWidth: 1000, ...rightbarWidths(1000, rightbarPreference) });
   let navigation = new AbortController();
   return {
     panelInfo,
@@ -1295,8 +1319,31 @@ function createRuntimeLayout({ sidebar, hasPanel = () => true } = {}) {
     openRightbar(track, fullscreen) { geometry.set({ ...geometry.getSnapshot(), track, fullscreen }); },
     closeRightbar() { geometry.set({ ...geometry.getSnapshot(), track: false, fullscreen: false }); },
     setViewportWidth(viewportWidth) {
-      if (Math.abs(geometry.getSnapshot().viewportWidth - viewportWidth) < 1) return;
-      geometry.set({ ...geometry.getSnapshot(), viewportWidth });
+      const current = geometry.getSnapshot();
+      if (Math.abs(current.viewportWidth - viewportWidth) < 1) return;
+      geometry.set({ ...current, viewportWidth, ...rightbarWidths(viewportWidth, rightbarPreview ?? rightbarPreference) });
+    },
+    previewRightbarWidth(width) {
+      const current = geometry.getSnapshot();
+      if (!Number.isFinite(width) || !current.track || current.fullscreen || current.viewportWidth < RIGHTBAR_BREAKPOINT) return;
+      const nextWidth = Math.min(current.maxRightbarWidth, Math.max(RIGHTBAR_MIN, Math.round(width)));
+      if (nextWidth === current.rightbarWidth) return;
+      rightbarPreview = nextWidth;
+      geometry.set({ ...current, rightbarWidth: nextWidth });
+    },
+    finishRightbarResize(startWidth) {
+      const preview = rightbarPreview;
+      rightbarPreview = undefined;
+      if (preview === undefined) return;
+      if (preview === startWidth) {
+        const current = geometry.getSnapshot();
+        const widths = rightbarWidths(current.viewportWidth, rightbarPreference);
+        if (widths.rightbarWidth !== current.rightbarWidth) geometry.set({ ...current, ...widths });
+        return;
+      }
+      rightbarPreference = preview;
+      try { storage?.setItem(RIGHTBAR_WIDTH_KEY, String(preview)); }
+      catch { /* The current runtime can still remember the width. */ }
     },
     dispose() { navigation.abort(); },
   };
@@ -1454,10 +1501,64 @@ function createDeviceRuntimePool({
     owners.delete(instance);
   }
 
+  function RightbarResizeHandle({ width, layout }) {
+    const drag = React.useRef(null);
+    const [dragging, setDragging] = React.useState(false);
+
+    const clearDrag = () => {
+      const active = drag.current;
+      drag.current = null;
+      if (active?.frame != null) pageGlobal.cancelAnimationFrame(active.frame);
+      return active;
+    };
+    React.useLayoutEffect(() => () => {
+      const active = clearDrag();
+      if (active) layout.finishRightbarResize(active.width);
+    }, [layout]);
+
+    const resize = (active, x) => {
+      if (x === active.appliedX) return;
+      active.appliedX = x;
+      layout.previewRightbarWidth(active.width + active.startX - x);
+    };
+    const endDrag = (event, commit) => {
+      if (drag.current?.id !== event.pointerId) return;
+      const active = clearDrag();
+      if (commit) resize(active, event.clientX);
+      layout.finishRightbarResize(active.width);
+      setDragging(false);
+    };
+
+    return h('div', {
+      className: 't3-native-right-resize', style: { right: width }, 'data-dragging': dragging || undefined,
+      onPointerDown(event) {
+        if (event.button !== 0 || drag.current) return;
+        event.preventDefault();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        const x = event.clientX;
+        drag.current = { id: event.pointerId, width, startX: x, x, appliedX: x, frame: null };
+        setDragging(true);
+      },
+      onPointerMove(event) {
+        const active = drag.current;
+        if (active?.id !== event.pointerId) return;
+        active.x = event.clientX;
+        active.frame ??= pageGlobal.requestAnimationFrame(() => {
+          active.frame = null;
+          resize(active, active.x);
+        });
+      },
+      onPointerUp: event => endDrag(event, true),
+      onPointerCancel: event => endDrag(event, false),
+      onLostPointerCapture: event => endDrag(event, false),
+    });
+  }
+
   function installEmbeddedRoot(instance) {
     const device = instance.ctx;
     const layout = createRuntimeLayout({
       sidebar: context.layout,
+      storage: instance.realm.localStorage,
       hasPanel: key => device.slots.entries('main').some(entry => entry.options.key === key),
     });
     instance.layout = layout;
@@ -1490,15 +1591,16 @@ function createDeviceRuntimePool({
         if (element.current) observer?.observe(element.current);
         return () => { observer?.disconnect(); instance.realm.rootElement = null; };
       }, []);
-      const { viewportWidth } = geometry;
-      const rightWidth = Math.min(380, Math.max(300, viewportWidth * .32), Math.max(0, viewportWidth - 400));
-      const trackWidth = geometry.track && viewportWidth >= 768 ? rightWidth : 0;
+      const { viewportWidth, rightbarWidth, maxRightbarWidth, track, fullscreen } = geometry;
+      const trackWidth = track && viewportWidth >= RIGHTBAR_BREAKPOINT ? rightbarWidth : 0;
+      const canResize = trackWidth > 0 && !fullscreen && maxRightbarWidth > RIGHTBAR_MIN;
       return h('div', { className: 't3-native-region', ref: element, 'data-device': instance.descriptor.targetId },
-        h('style', null, '.t3-native-right [data-sidebar-right-panel="fullscreen"]{max-width:100%;--dsh-sidebar-width:100%!important}'),
+        h('style', null, EMBEDDED_RIGHTBAR_CSS),
         portal && h('div', { className: 't3-native-body', style: { position: 'relative' } },
           h('div', { className: 't3-native-conversation' }, renderSlot('main', {}, { entryKey: panel ?? 'conversation' })),
           h('div', { className: 't3-native-right', style: { width: trackWidth, flexBasis: trackWidth } },
-            renderSlot('rightbar', { width: rightWidth, viewportWidth, canShow: rightWidth >= 300 }))),
+            renderSlot('rightbar', { width: rightbarWidth, viewportWidth, canShow: rightbarWidth >= RIGHTBAR_MIN })),
+          canResize && h(RightbarResizeHandle, { width: rightbarWidth, layout })),
         portal && renderSlot('shell.bottom', {}),
         // First-run onboarding is owned by the desktop shell. Its backdrop
         // hides the workbench, which also contains the embedded portal.
