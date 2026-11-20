@@ -248,6 +248,34 @@ test('require.asset maps only trusted package assets to the selected device moun
   }
 });
 
+test('an embedded Client exposes an idle release notice store', async t => {
+  const { realm } = fixture();
+  t.after(() => realm.dispose());
+  const entries = realm.modules.entries;
+  assert.equal(entries.releaseChange.getSnapshot(), undefined);
+  const unsubscribe = entries.releaseChange.subscribe(() => assert.fail('the embedded graph is fixed'));
+  entries.dismissRelease();
+  unsubscribe();
+});
+
+test('browser fetch routes native deliverables to the device and preserves browser sources', async t => {
+  const requests = [];
+  const pageGlobal = { location: new URL('dsh-app://app/'), fetch: () => assert.fail('unscoped fetch') };
+  const { realm } = fixture({ pageGlobal, fetch: async input => { requests.push(input); return new Response(); } });
+  t.after(() => realm.dispose());
+  await realm.window.fetch('api/changes.summary?sessionId=remote&seq=1042');
+  const request = new Request('dsh-app://app/api/changes.open?seq=1042', { method: 'POST', body: 'form' });
+  await realm.globalThis.fetch(request);
+  await realm.window.fetch('blob:dsh-app://app/file');
+  await assert.rejects(realm.window.fetch('/api/a/../changes.summary'), /path/);
+  assert.equal(requests.length, 3);
+  assert.equal(requests[0], '/t3-remote/ssh/connection-device-a/api/changes.summary?sessionId=remote&seq=1042');
+  assert.equal(requests[1].url, 'dsh-app://app/t3-remote/ssh/connection-device-a/api/changes.open?seq=1042');
+  assert.equal(requests[1].method, 'POST');
+  assert.equal(await requests[1].text(), 'form');
+  assert.equal(requests[2], 'blob:dsh-app://app/file');
+});
+
 test('private transport and raw-upload hooks always map paths into the same environment', async t => {
   const calls = [];
   const sockets = [];
@@ -429,7 +457,7 @@ test('external dispatcher mode skips private window/native keyboard input but pr
   assert.deepEqual(windowRemoved, ['paste']);
 });
 
-test('device locale, theme, and native window closing leave workbench presentation owned by the shell', async t => {
+test('device locale, theme, root lookup, and window closing leave workbench presentation owned by the shell', async t => {
   const inserted = [];
   const makeElement = tagName => ({
     tagName, dataset: {}, children: [],
@@ -438,16 +466,22 @@ test('device locale, theme, and native window closing leave workbench presentati
     cloneNode() { return { ...makeElement(tagName), lang: this.lang }; },
     remove() {},
   });
+  const appRoot = makeElement('div');
+  const otherElement = makeElement('div');
   const document = {
     documentElement: { ...makeElement('html'), lang: 'en' },
     body: makeElement('body'),
     head: { appendChild(child) { inserted.push(child); return child; } },
+    getElementById(id) { return id === 'root' ? appRoot : otherElement; },
     createElement: makeElement,
   };
   const { realm } = fixture({ externalKeyboard: true, pageGlobal: {
     document, dshDesktop: { keyboard: { closeWindow() { assert.fail('closed workbench'); } } },
   } });
   t.after(() => realm.dispose());
+  assert.equal(realm.document.getElementById('root'), null);
+  assert.equal(realm.document.getElementById('other'), otherElement);
+  assert.equal(document.getElementById('root'), appRoot);
   realm.document.documentElement.lang = 'ja';
   realm.document.body.append(makeElement('sprite'));
   const theme = { ...makeElement('style'), dataset: { pluginCss: '@deepseek-ai/dsh-client-ui-theme/base.css' } };

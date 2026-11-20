@@ -6,7 +6,7 @@ window.__ModuleLoader__.load({
     const {
       Button, Input, Menu, Modal, IconCheckOutlineRegular, IconChevronDownOutlineRegular,
       IconChevronRightOutlineRegular, IconEditOutlineRegular, IconFolderCloseRegular,
-      IconFolderOpenRegular, IconPlusOutlineRegular,
+      IconFolderOpenRegular, IconPlusOutlineRegular, IconWarningOutlineRegular,
     } = require('@deepseek-ai/dsh-client-ui-primitives');
     const h = React.createElement;
     const NS = 't3-session-sidebar';
@@ -21,6 +21,7 @@ window.__ModuleLoader__.load({
         pin: 'Pin', unpin: 'Unpin', settle: 'Settle', unsettle: 'Unsettle', untitled: 'Untitled session',
         empty: 'No sessions', loading: 'Loading sessions…', syncing: 'Session placement unavailable. Retrying…',
         actionFailed: 'Action failed. Check the current state and retry.', openFailed: 'Could not open session.',
+        sessionInUse: 'This session is in use in another window or terminal. Close it there and retry.',
         expand: 'Open sidebar',
         menuDone: 'Session marked as settled.', menuRestored: 'Session reactivated.', more: 'Session actions',
         timeNow: 'now', timeMinutes: '{n}min', timeHours: '{n}h', timeDays: '{n}d', timeMonths: '{n}mo', timeYears: '{n}y',
@@ -68,6 +69,7 @@ window.__ModuleLoader__.load({
         syncing: 'セッションの分類を同期できません。再試行中…',
         actionFailed: '操作に失敗しました。現在の状態を確認して再試行してください。',
         openFailed: 'セッションを開けませんでした。',
+        sessionInUse: '別のウィンドウまたはターミナルで使用中です。そちらで閉じてから再試行してください。',
         expand: 'サイドバーを開く',
         menuDone: 'セッションを完了にしました。',
         menuRestored: 'セッションをアクティブに戻しました。',
@@ -163,6 +165,7 @@ window.__ModuleLoader__.load({
         syncing: 'No se pudo sincronizar la agrupación de sesiones. Reintentando…',
         actionFailed: 'La acción falló. Comprueba el estado actual y vuelve a intentarlo.',
         openFailed: 'No se pudo abrir la sesión.',
+        sessionInUse: 'Esta sesión está en uso en otra ventana o terminal. Ciérrala allí y vuelve a intentarlo.',
         expand: 'Abrir barra lateral',
         menuDone: 'Sesión marcada como completada.',
         menuRestored: 'Sesión reactivada.',
@@ -258,6 +261,7 @@ window.__ModuleLoader__.load({
         syncing: 'Impossible de synchroniser le classement des sessions. Nouvelle tentative…',
         actionFailed: 'L’action a échoué. Vérifiez l’état actuel et réessayez.',
         openFailed: 'Impossible d’ouvrir la session.',
+        sessionInUse: 'Cette session est utilisée dans une autre fenêtre ou un autre terminal. Fermez-la, puis réessayez.',
         expand: 'Ouvrir la barre latérale',
         menuDone: 'Session marquée comme terminée.',
         menuRestored: 'Session réactivée.',
@@ -353,6 +357,7 @@ window.__ModuleLoader__.load({
         syncing: 'Sitzungsgruppierung konnte nicht synchronisiert werden. Neuer Versuch…',
         actionFailed: 'Aktion fehlgeschlagen. Prüfen Sie den aktuellen Status und versuchen Sie es erneut.',
         openFailed: 'Die Sitzung konnte nicht geöffnet werden.',
+        sessionInUse: 'Diese Sitzung wird in einem anderen Fenster oder Terminal verwendet. Schließe sie dort und versuche es erneut.',
         expand: 'Seitenleiste öffnen',
         menuDone: 'Sitzung als abgeschlossen markiert.',
         menuRestored: 'Sitzung reaktiviert.',
@@ -448,6 +453,7 @@ window.__ModuleLoader__.load({
         syncing: 'Не удалось синхронизировать группы сеансов. Повторная попытка…',
         actionFailed: 'Не удалось выполнить действие. Проверьте текущее состояние и повторите попытку.',
         openFailed: 'Не удалось открыть сеанс.',
+        sessionInUse: 'Сеанс используется в другом окне или терминале. Закройте его там и повторите попытку.',
         expand: 'Открыть боковую панель',
         menuDone: 'Сеанс отмечен как завершённый.',
         menuRestored: 'Сеанс снова активен.',
@@ -543,6 +549,7 @@ window.__ModuleLoader__.load({
         syncing: 'Falha ao sincronizar os grupos de sessões. Tentando novamente…',
         actionFailed: 'A ação falhou. Verifique o estado atual e tente novamente.',
         openFailed: 'Não foi possível abrir a sessão.',
+        sessionInUse: 'Esta sessão está em uso em outra janela ou terminal. Feche-a lá e tente novamente.',
         expand: 'Abrir barra lateral',
         menuDone: 'Sessão marcada como concluída.',
         menuRestored: 'Sessão reativada.',
@@ -625,6 +632,7 @@ window.__ModuleLoader__.load({
         pin: '置顶', unpin: '取消置顶', settle: '完成', unsettle: '重新激活', untitled: '未命名会话',
         empty: '暂无会话', loading: '正在加载会话…', syncing: '无法同步会话状态，正在重试…',
         actionFailed: '操作失败，请检查当前状态后重试。', openFailed: '无法打开会话。',
+        sessionInUse: '此会话正在其他窗口或终端中使用。关闭后可重试。',
         expand: '展开侧边栏',
         menuDone: '会话已标记为完成。', menuRestored: '会话已重新激活。', more: '会话操作',
         timeNow: '刚刚', timeMinutes: '{n}分钟', timeHours: '{n}小时', timeDays: '{n}天', timeMonths: '{n}个月', timeYears: '{n}年',
@@ -1052,6 +1060,11 @@ window.__ModuleLoader__.load({
           describe: (targetId, { signal } = {}) => remoteCall('t3-remote/runtime', { targetId }, signal),
           onChooseDevice: chooseDeviceProject,
           installWorkspacePicker: installDeviceWorkspacePicker,
+          installSessionOpenNotice(device) {
+            const disposeLocale = device.locale.register(NS, dictionaries);
+            const disposeNotice = installSessionOpenNotice(device);
+            return () => { disposeNotice(); disposeLocale(); };
+          },
           onStatusChange: () => publishRuntime({}),
         });
         stopPool = pool.state.subscribe(() => {
@@ -1218,6 +1231,86 @@ window.__ModuleLoader__.load({
         }
       }, [remote.snapshot]);
       return null;
+    }
+    function sessionWriterConflict(session) {
+      const openError = session.openError;
+      if (openError?.code === 'session/writer-held') return openError;
+      const promptError = session.promptError?.error;
+      if (promptError?.code === 'session/writer-held') return promptError;
+      // Background Agent activation reports only a message; history can already be open.
+      const message = session.lastAgentError;
+      return message === `session "${session.sessionId}" is already owned by an active write handle` ? message : null;
+    }
+    function SessionOpenNotice({ t, sessionId, useSession, retryOpen }) {
+      const conflict = useSession(sessionWriterConflict);
+      return conflict ? h(SessionInUseNotice, { key: sessionId, t, conflict, retryOpen }) : null;
+    }
+    function SessionInUseNotice({ t, conflict, retryOpen }) {
+      const [result, setResult] = React.useState(null);
+      const pending = React.useRef(null);
+      React.useEffect(() => () => pending.current?.abort(), []);
+      const retry = async () => {
+        if (pending.current) return;
+        const controller = new AbortController();
+        pending.current = controller;
+        setResult({ status: 'pending' });
+        try {
+          const outcome = await retryOpen(controller.signal);
+          if (controller.signal.aborted) return;
+          if (outcome.ok) setResult({ status: 'open', conflict });
+          else setResult(outcome.error?.code === 'session/writer-held' ? null : { status: 'error' });
+        } catch {
+          if (!controller.signal.aborted) setResult({ status: 'error' });
+        } finally {
+          pending.current = null;
+        }
+      };
+      if (result?.conflict === conflict) return null;
+      return h('div', { className: 't3-session-open-notice', 'aria-busy': result?.status === 'pending' },
+        h('style', null, `
+          .t3-session-open-notice {
+            box-sizing: border-box;
+            width: calc(100% - 2 * var(--dsh-composer-side-clearance, 16px));
+            max-width: var(--dsh-composer-card-max-width, 952px);
+            margin-inline: auto;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 4px 8px;
+            border-radius: var(--dsw-radius-md);
+            background: var(--dsw-alias-interactive-bg-hover);
+            color: var(--dsw-alias-label-secondary);
+            font-size: 12px;
+            line-height: 18px;
+          }
+          .t3-session-open-notice > svg {
+            flex: none;
+            width: 14px;
+            height: 14px;
+            color: var(--dsw-alias-state-warn-label);
+          }
+          .t3-session-open-notice > p { flex: 1; min-width: 0; margin: 0; overflow-wrap: anywhere; }
+          .t3-session-open-notice > button { flex: none; }
+        `),
+        h(IconWarningOutlineRegular, { 'aria-hidden': true }),
+        h('p', { role: 'alert' }, result?.status === 'error' ? t('openFailed') + ' ' : null, t('sessionInUse')),
+        h(Button, { type: 'button', size: 'sm', variant: 'ghost', disabled: result?.status === 'pending', onClick: retry }, t('retry')));
+    }
+    function installSessionOpenNotice(context) {
+      const name = 'conversation.input.dock';
+      const commands = context.get('remote.commands');
+      return context.slots.inject(name, () => context.slots.register({
+        name, id: 't3-session-open-notice', order: -100, locale: NS,
+        inject: sessionId => ({
+          async retryOpen(signal) {
+            // Reading the command list uses DSH's normal Agent resolver without sending a prompt.
+            const result = await commands.list(sessionId);
+            signal.throwIfAborted();
+            if (result.ok) context.uiWorkspace.openSession(sessionId);
+            return result;
+          },
+        }),
+      }, SessionOpenNotice));
     }
     function DeviceOpening({ t }) {
       const [visible, setVisible] = React.useState(false);
@@ -2715,7 +2808,7 @@ window.__ModuleLoader__.load({
     }
 
     return {
-      inject: ['slots', 'locale', 'connection', 'uiWorkspace', 'contextMenus', 'workspaces', 'loader', 'modules', 'layout', 'sessions', 'uiSession', 'shortcuts'],
+      inject: ['slots', 'locale', 'connection', 'uiWorkspace', 'contextMenus', 'workspaces', 'loader', 'modules', 'layout', 'sessions', 'uiSession', 'shortcuts', 'remote.commands'],
       apply(ctx) {
         Sidebar.context = ctx;
         runtimeClosed = false;
@@ -2823,6 +2916,7 @@ window.__ModuleLoader__.load({
           yield ctx.slots.register({ name: 'shell.overlay', id: 't3-device-rename', locale: NS }, RemoteRenameOverlay);
         }), 'session-harbor: device overlays');
         ctx.effect(() => installDeviceWorkspacePicker(ctx), 'session-harbor: device before project');
+        ctx.effect(() => installSessionOpenNotice(ctx), 'session-harbor: session open notice');
         ctx.effect(() => async () => {
           runtimeClosed = true;
           navigation++;

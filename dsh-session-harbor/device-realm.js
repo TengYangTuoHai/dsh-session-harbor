@@ -10,6 +10,12 @@ const aborted = () => new DOMException('Device realm disposed', 'AbortError');
 const isRecord = value => typeof value === 'object' && value !== null && !Array.isArray(value);
 const thenable = value => value != null && typeof value.then === 'function';
 
+// Embedded Clients stay on their boot graph. The workbench owns release prompts and reloads.
+const fixedEntries = Object.freeze({
+  releaseChange: Object.freeze({ getSnapshot: () => undefined, subscribe: () => () => {} }),
+  dismissRelease() {},
+});
+
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -78,6 +84,23 @@ function transportMapper(baseUrl) {
       throw new TypeError('invalid device realm transport path');
     }
     return baseUrl + relative;
+  };
+}
+
+function createBrowserFetch(send, location, mapTransport, assertLive) {
+  return async (input, init) => {
+    assertLive();
+    const request = input instanceof Request ? input : null;
+    const value = request?.url ?? String(input);
+    if (!/^[A-Za-z][A-Za-z\d+.-]*:|^\/\//.test(value)) return send(mapTransport(value), init);
+
+    // Browser sources such as blob URLs still use the browser. Absolute URLs
+    // on the desktop origin address the same device as relative API requests.
+    const url = new URL(value, location?.href);
+    if (url.protocol !== location?.protocol || url.host !== location?.host) return send(input, init);
+    const path = mapTransport(url.pathname + url.search + url.hash);
+    const mapped = request ? new Request(new URL(path, location.href), request) : path;
+    return send(mapped, init);
   };
 }
 
@@ -397,6 +420,10 @@ export function createDeviceRealm({ descriptor, platformImport, loadScript, page
       if (property === 'body') return realm.portalElement ?? detachedBody ?? target.body;
       if (property === 'documentElement' && detachedRoot) return detachedRoot;
       if (property === 'defaultView') return realm.window;
+      // The workbench's #root contains both the conversation and its portals.
+      // Embedded overlays must never make that background inert or invisible.
+      if (property === 'getElementById') return id => String(id) === 'root'
+        ? null : target.getElementById(id);
       if (property === 'addEventListener' && documentEvents) return documentEvents.add;
       if (property === 'removeEventListener' && documentEvents) return documentEvents.remove;
       const value = Reflect.get(target, property, target);
@@ -460,11 +487,12 @@ export function createDeviceRealm({ descriptor, platformImport, loadScript, page
   const windowEvents = typeof pageGlobal.addEventListener === 'function' ? wrapEvents(pageGlobal) : null;
   const mappedFetch = typeof doFetch === 'function' ? (input, init) => { assertLive(); return doFetch(mapTransport(input), init); } : undefined;
   const mappedSocket = typeof createWebSocket === 'function' ? input => { assertLive(); return createWebSocket(mapTransport(input)); } : undefined;
+  const browserFetch = mappedFetch && createBrowserFetch(doFetch, pageGlobal.location, mapTransport, assertLive);
   Object.assign(ownGlobals, {
     __DSH_BOOT__: cloneData(descriptor.graph), __ModuleLoader__: { mode: 'live', load: register },
     __DSH_TRANSPORT__: { ...(mappedFetch ? { fetch: mappedFetch } : {}), ...(mappedSocket ? { createWebSocket: mappedSocket } : {}) },
     __DSH_FILE_UPLOAD__: mappedFetch ? { fetch: mappedFetch } : undefined,
-    localStorage, sessionStorage, document: documentFacade, dshDesktop: desktopFacade,
+    localStorage, sessionStorage, document: documentFacade, dshDesktop: desktopFacade, fetch: browserFetch,
   });
   const windowFacade = new Proxy(ownGlobals, {
     get(target, property) {
@@ -485,7 +513,7 @@ export function createDeviceRealm({ descriptor, platformImport, loadScript, page
     plugins: [...rows.values()].map(row => ({ id: row.id, inject: [...row.inject], immediately: !!row.immediately })),
   };
   const modules = {
-    version: 'client', manifest, loadCache: cache, import: importModule,
+    version: 'client', manifest, entries: fixedEntries, loadCache: cache, import: importModule,
     async prefetch(specifier) { assertLive(); const id = stripClient(specifier); if (!rows.has(id)) throw new Error('device prefetch is outside trusted graph'); await arriveGraph(id); },
     importError: specifier => errors.get(stripClient(specifier)),
     invalidate(specifier) {

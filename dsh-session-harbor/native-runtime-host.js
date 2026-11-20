@@ -231,7 +231,7 @@ export function createNativeRuntimeBroker({ ssh, bridge, webServer, connection }
     live(targetId, connectionId);
     if (records.get(targetId) !== record) throw failure('connection-changed', 'The device runtime changed while loading its Client resource.');
     const key = JSON.stringify(record.descriptor.runtimeKey);
-    const wrapped = `;(function(realm){\nif(!realm)throw new Error('Device runtime is not registered');\n(function(window,globalThis,localStorage,sessionStorage,document){\n${source}\n})(realm.window,realm.globalThis,realm.localStorage,realm.sessionStorage,realm.document);\n})(globalThis.__T3_DEVICE_REALMS__.get(${key}));\n`;
+    const wrapped = `;(function(realm){\nif(!realm)throw new Error('Device runtime is not registered');\n(function(window,globalThis,localStorage,sessionStorage,document,fetch){\n${source}\n})(realm.window,realm.globalThis,realm.localStorage,realm.sessionStorage,realm.document,realm.window.fetch);\n})(globalThis.__T3_DEVICE_REALMS__.get(${key}));\n`;
     return new Response(wrapped, { headers: {
       'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store',
       'x-content-type-options': 'nosniff',

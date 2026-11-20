@@ -187,6 +187,7 @@ function waitForSource(source, predicate, signal, timeoutMs = 15000) {
 /** Keeps the local application resident while native Client trees address devices. */
 export function createDeviceRuntimePool({
   context, React, platformRequire, describe, onChooseDevice, installWorkspacePicker,
+  installSessionOpenNotice,
   onStatusChange = () => {}, pageGlobal = globalThis, fetch: suppliedFetch,
   loadScript: suppliedScriptLoader, buildRuntime: suppliedBuilder,
 }) {
@@ -252,9 +253,14 @@ export function createDeviceRuntimePool({
     device.provide('layout', layout);
     device.slots.provideRoot({ hooks: { panelInfo: layout.panelInfo, t3DeviceGeometry: layout.geometry } });
 
+    const overlaySlot = 'shell.overlay';
+    const subscribeOverlays = listener => device.slots.subscribe(overlaySlot, listener);
+    const readOverlayEntries = () => device.slots.entries(overlaySlot);
+
     function Root({ renderSlot, usePanelInfo, useT3DeviceGeometry }) {
       const panel = usePanelInfo(value => value.activePanelId);
       const geometry = useT3DeviceGeometry(value => value);
+      const overlays = React.useSyncExternalStore(subscribeOverlays, readOverlayEntries);
       const element = React.useRef(null);
       const [portal, setPortal] = React.useState(null);
       const bindPortal = React.useCallback(node => {
@@ -283,7 +289,13 @@ export function createDeviceRuntimePool({
           h('div', { className: 't3-native-right', style: { width: trackWidth, flexBasis: trackWidth } },
             renderSlot('rightbar', { width: rightWidth, viewportWidth, canShow: rightWidth >= 300 }))),
         portal && renderSlot('shell.bottom', {}),
-        portal && renderSlot('shell.overlay', {}),
+        // First-run onboarding is owned by the desktop shell. Its backdrop
+        // hides the workbench, which also contains the embedded portal.
+        portal && [...new Set(overlays.slice()
+          .sort((a, b) => (a.options.order ?? 0) - (b.options.order ?? 0))
+          .map(entry => entry.options.id))]
+          .filter(id => id !== 'desktop-onboarding')
+          .map(id => h(React.Fragment, { key: id }, renderSlot(overlaySlot, {}, { only: id }))),
         h('div', { className: 't3-native-portals', ref: bindPortal }));
     }
 
@@ -424,6 +436,7 @@ export function createDeviceRuntimePool({
           throw new Error(`The device conversation is missing ${service}${failures.length ? ': ' + failures.join('; ') : ''}`);
         }
       }
+      if (installSessionOpenNotice) instance.subscriptions.push(installSessionOpenNotice(device));
       const shortcuts = device.shortcuts;
       instance.shortcuts = shortcuts;
       if (typeof shortcuts.registry?.configure !== 'function' || typeof shortcuts.registry.dispatch !== 'function'

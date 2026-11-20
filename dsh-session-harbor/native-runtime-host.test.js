@@ -98,6 +98,24 @@ test('wrapped official source registers only in its lexical device realm', async
   assert.deepEqual(h.calls.find(([name]) => name === 'resource').slice(1), [`/plugins/??${chatId}/client.js&rev=rev1`, h.peer]);
 });
 
+test('wrapped native factories use the device fetch when they call fetch directly', async () => {
+  const h = harness({ source: 'window.__ModuleLoader__.load({id:"fixture",factory(){return fetch("api/changes.summary?seq=1042");}});' });
+  const descriptor = await h.broker.describe('target-1');
+  const response = await h.broker.resource('target-1', resourceRequest);
+  const requests = [];
+  let registration;
+  const realm = { window: {
+    __ModuleLoader__: { load: value => { registration = value; } },
+    fetch: async url => { requests.push(url); return new Response('device'); },
+  } };
+  vm.runInNewContext(await response.text(), {
+    __T3_DEVICE_REALMS__: new Map([[descriptor.runtimeKey, realm]]),
+    fetch: () => assert.fail('native device code reached the desktop fetch'),
+  });
+  assert.equal(await (await registration.factory()).text(), 'device');
+  assert.deepEqual(requests, ['api/changes.summary?seq=1042']);
+});
+
 test('chunk resources stay in the prepared package and revision', async () => {
   const h = harness();
   await h.broker.describe('target-1');

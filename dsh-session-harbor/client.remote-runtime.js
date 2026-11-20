@@ -477,6 +477,12 @@ const aborted = () => new DOMException('Device realm disposed', 'AbortError');
 const isRecord = value => typeof value === 'object' && value !== null && !Array.isArray(value);
 const thenable = value => value != null && typeof value.then === 'function';
 
+// Embedded Clients stay on their boot graph. The workbench owns release prompts and reloads.
+const fixedEntries = Object.freeze({
+  releaseChange: Object.freeze({ getSnapshot: () => undefined, subscribe: () => () => {} }),
+  dismissRelease() {},
+});
+
 function cloneData(value) {
   return JSON.parse(JSON.stringify(value));
 }
@@ -545,6 +551,23 @@ function transportMapper(baseUrl) {
       throw new TypeError('invalid device realm transport path');
     }
     return baseUrl + relative;
+  };
+}
+
+function createBrowserFetch(send, location, mapTransport, assertLive) {
+  return async (input, init) => {
+    assertLive();
+    const request = input instanceof Request ? input : null;
+    const value = request?.url ?? String(input);
+    if (!/^[A-Za-z][A-Za-z\d+.-]*:|^\/\//.test(value)) return send(mapTransport(value), init);
+
+    // Browser sources such as blob URLs still use the browser. Absolute URLs
+    // on the desktop origin address the same device as relative API requests.
+    const url = new URL(value, location?.href);
+    if (url.protocol !== location?.protocol || url.host !== location?.host) return send(input, init);
+    const path = mapTransport(url.pathname + url.search + url.hash);
+    const mapped = request ? new Request(new URL(path, location.href), request) : path;
+    return send(mapped, init);
   };
 }
 
@@ -864,6 +887,10 @@ function createDeviceRealm({ descriptor, platformImport, loadScript, pageGlobal 
       if (property === 'body') return realm.portalElement ?? detachedBody ?? target.body;
       if (property === 'documentElement' && detachedRoot) return detachedRoot;
       if (property === 'defaultView') return realm.window;
+      // The workbench's #root contains both the conversation and its portals.
+      // Embedded overlays must never make that background inert or invisible.
+      if (property === 'getElementById') return id => String(id) === 'root'
+        ? null : target.getElementById(id);
       if (property === 'addEventListener' && documentEvents) return documentEvents.add;
       if (property === 'removeEventListener' && documentEvents) return documentEvents.remove;
       const value = Reflect.get(target, property, target);
@@ -927,11 +954,12 @@ function createDeviceRealm({ descriptor, platformImport, loadScript, pageGlobal 
   const windowEvents = typeof pageGlobal.addEventListener === 'function' ? wrapEvents(pageGlobal) : null;
   const mappedFetch = typeof doFetch === 'function' ? (input, init) => { assertLive(); return doFetch(mapTransport(input), init); } : undefined;
   const mappedSocket = typeof createWebSocket === 'function' ? input => { assertLive(); return createWebSocket(mapTransport(input)); } : undefined;
+  const browserFetch = mappedFetch && createBrowserFetch(doFetch, pageGlobal.location, mapTransport, assertLive);
   Object.assign(ownGlobals, {
     __DSH_BOOT__: cloneData(descriptor.graph), __ModuleLoader__: { mode: 'live', load: register },
     __DSH_TRANSPORT__: { ...(mappedFetch ? { fetch: mappedFetch } : {}), ...(mappedSocket ? { createWebSocket: mappedSocket } : {}) },
     __DSH_FILE_UPLOAD__: mappedFetch ? { fetch: mappedFetch } : undefined,
-    localStorage, sessionStorage, document: documentFacade, dshDesktop: desktopFacade,
+    localStorage, sessionStorage, document: documentFacade, dshDesktop: desktopFacade, fetch: browserFetch,
   });
   const windowFacade = new Proxy(ownGlobals, {
     get(target, property) {
@@ -952,7 +980,7 @@ function createDeviceRealm({ descriptor, platformImport, loadScript, pageGlobal 
     plugins: [...rows.values()].map(row => ({ id: row.id, inject: [...row.inject], immediately: !!row.immediately })),
   };
   const modules = {
-    version: 'client', manifest, loadCache: cache, import: importModule,
+    version: 'client', manifest, entries: fixedEntries, loadCache: cache, import: importModule,
     async prefetch(specifier) { assertLive(); const id = stripClient(specifier); if (!rows.has(id)) throw new Error('device prefetch is outside trusted graph'); await arriveGraph(id); },
     importError: specifier => errors.get(stripClient(specifier)),
     invalidate(specifier) {
@@ -1368,6 +1396,7 @@ function waitForSource(source, predicate, signal, timeoutMs = 15000) {
 /** Keeps the local application resident while native Client trees address devices. */
 function createDeviceRuntimePool({
   context, React, platformRequire, describe, onChooseDevice, installWorkspacePicker,
+  installSessionOpenNotice,
   onStatusChange = () => {}, pageGlobal = globalThis, fetch: suppliedFetch,
   loadScript: suppliedScriptLoader, buildRuntime: suppliedBuilder,
 }) {
@@ -1433,9 +1462,14 @@ function createDeviceRuntimePool({
     device.provide('layout', layout);
     device.slots.provideRoot({ hooks: { panelInfo: layout.panelInfo, t3DeviceGeometry: layout.geometry } });
 
+    const overlaySlot = 'shell.overlay';
+    const subscribeOverlays = listener => device.slots.subscribe(overlaySlot, listener);
+    const readOverlayEntries = () => device.slots.entries(overlaySlot);
+
     function Root({ renderSlot, usePanelInfo, useT3DeviceGeometry }) {
       const panel = usePanelInfo(value => value.activePanelId);
       const geometry = useT3DeviceGeometry(value => value);
+      const overlays = React.useSyncExternalStore(subscribeOverlays, readOverlayEntries);
       const element = React.useRef(null);
       const [portal, setPortal] = React.useState(null);
       const bindPortal = React.useCallback(node => {
@@ -1464,7 +1498,13 @@ function createDeviceRuntimePool({
           h('div', { className: 't3-native-right', style: { width: trackWidth, flexBasis: trackWidth } },
             renderSlot('rightbar', { width: rightWidth, viewportWidth, canShow: rightWidth >= 300 }))),
         portal && renderSlot('shell.bottom', {}),
-        portal && renderSlot('shell.overlay', {}),
+        // First-run onboarding is owned by the desktop shell. Its backdrop
+        // hides the workbench, which also contains the embedded portal.
+        portal && [...new Set(overlays.slice()
+          .sort((a, b) => (a.options.order ?? 0) - (b.options.order ?? 0))
+          .map(entry => entry.options.id))]
+          .filter(id => id !== 'desktop-onboarding')
+          .map(id => h(React.Fragment, { key: id }, renderSlot(overlaySlot, {}, { only: id }))),
         h('div', { className: 't3-native-portals', ref: bindPortal }));
     }
 
@@ -1605,6 +1645,7 @@ function createDeviceRuntimePool({
           throw new Error(`The device conversation is missing ${service}${failures.length ? ': ' + failures.join('; ') : ''}`);
         }
       }
+      if (installSessionOpenNotice) instance.subscriptions.push(installSessionOpenNotice(device));
       const shortcuts = device.shortcuts;
       instance.shortcuts = shortcuts;
       if (typeof shortcuts.registry?.configure !== 'function' || typeof shortcuts.registry.dispatch !== 'function'
