@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session Harbor",
+    "description": "Agrupa las sesiones locales y las de dispositivos SSH en un mismo espacio de trabajo. Elige un dispositivo y un proyecto para usar la vista de conversación nativa en el área principal."
+  }
+}

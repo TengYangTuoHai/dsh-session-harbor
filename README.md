@@ -1,55 +1,61 @@
 # Session Harbor
 
+English · [简体中文](README.zh-CN.md)
+
 [![CI](https://github.com/TengYangTuoHai/dsh-session-harbor/actions/workflows/ci.yml/badge.svg)](https://github.com/TengYangTuoHai/dsh-session-harbor/actions/workflows/ci.yml)
 
-在一个 DeepSeek Harness 窗口里管理本机和多台 SSH 设备的会话。侧栏按「已置顶」「活跃」「工作中」「已完成」分组，点开远端会话就能在主区域继续对话。
+Manage local sessions and sessions on multiple SSH devices from one DeepSeek Harness window. The sidebar groups sessions into Pinned, Active, Working, and Settled. Select a remote session to continue it in the main area.
 
-[直接安装](#直接安装) · [连接 SSH 设备](#连接-ssh-设备) · [版本发布](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest) · [报告问题](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
+[Install](#install) · [Connect SSH devices](#connect-ssh-devices) · [Releases](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest) · [Report an issue](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
 
-![Session Harbor 在 DeepSeek Harness 中混排本机和 SSH 会话，按状态分组，并在右侧展示对话](docs/session-harbor.png)
+![Session Harbor groups local and SSH sessions in the DeepSeek Harness sidebar, with the selected conversation on the right](docs/session-harbor.png)
 
-*实机界面，使用示例会话和设备。*
+*Screenshot of the running app with sample sessions and devices.*
 
-## 直接安装
+## Install
 
-**插件 v0.2.7** 支持 DeepSeek Harness `0.2.2-rc.3` 和 `0.2.2-rc.5`。
+**Plugin v0.2.8** supports DeepSeek Harness `0.2.2-rc.3` and `0.2.2-rc.5`.
 
-1. 在 DSH 左侧打开「插件」，点击「添加插件」。
-2. 在「包名或地址」输入以下包名，点击「安装」。
+1. Open **Plugins** in the DSH sidebar and select **Add plugin**.
+2. Enter the package name under **Package name or address**, then select **Install**.
 
    ```text
    dsh-session-harbor
    ```
 
-3. 安装完成后点「立即启用」。如果 DSH 提示重启，重启后再打开工作台。
+3. Once installation finishes, select **Enable now**. If prompted, restart DSH and reopen the workbench.
 
-如果镜像还没同步，在「安装源 → 自定义地址」填入 `https://registry.npmjs.org/`，再按包名安装。也可以在同一个输入框使用 GitHub Release 的 `.tgz` 下载链接。[npm 包](https://www.npmjs.com/package/dsh-session-harbor) · [Release 安装包](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
+If your registry mirror has yet to sync, choose **Registry → Custom address**, enter `https://registry.npmjs.org/`, and install by package name. You can also paste the GitHub Release `.tgz` download URL into the package field. [npm package](https://www.npmjs.com/package/dsh-session-harbor) · [Release downloads](https://github.com/TengYangTuoHai/dsh-session-harbor/releases/latest)
 
-从旧版「T3 会话侧边栏」升级时，先在「插件」页卸载旧版，再安装 Session Harbor。现有会话、置顶、已完成状态和已保存的 SSH 主机可继续使用。
+If you're upgrading from T3 Session Sidebar, uninstall it from **Plugins** before installing Session Harbor. Your sessions, pins, settled state, and saved SSH hosts carry over.
 
-更新 Session Harbor 时，在插件详情中使用 DSH 提供的「更新」。如果当前版本通过 `.tgz` 安装且 DSH 未提供更新入口，先卸载，再用包名重新安装。
+To update Session Harbor, select **Update** in the plugin details. If you installed from a `.tgz` and DSH offers no update, uninstall the package and reinstall it by name.
 
-## 管理会话
+## Manage sessions
 
-- **切换会话。** 点击列表中的本机或 SSH 会话继续对话。远端会话右上角显示设备名。
-- **查看待处理事项。** 等待审批或问答的会话排在「活跃」组顶部，展开「工作中」可查看正在运行的任务。
-- **整理会话。** 右键置顶、重命名或标为已完成。新建会话在首轮对话开始后进入列表。
+- **Switch sessions.** Select a local or SSH session to continue the conversation. The device name appears in the upper right of remote sessions.
+- **See what needs your attention.** Sessions awaiting approval or an answer appear at the top of Active. Expand Working to see running tasks.
+- **Organize sessions.** Right-click to pin, rename, or mark a session as settled. A new session appears in the list after its first turn begins.
 
-用侧栏底部的「切换至原生」按钮可切回 DSH 原生列表。
+Select **Use native** at the bottom of the sidebar to switch back to the built-in DSH list.
 
-## 连接 SSH 设备
+## Connect SSH devices
 
-1. 在「设置 → Session Harbor SSH」点击「添加主机」，从本机 SSH 配置选择主机，或输入 `user@host`。
-2. 点击「添加并连接」。连接就绪后，该设备的会话会出现在侧栏。
-3. 点击已有会话继续对话，或点 DeepSeek Harness 左上角的「新会话」，在输入区上方选择设备和项目。
+1. Go to **Settings → Session Harbor SSH**, select **Add host**, and choose a host from your local SSH config or enter `user@host`.
+2. Select **Add and connect**. The device's sessions appear in the sidebar once the connection is ready.
+3. Select an existing session to continue it. To start a new one, select **New session** in the upper left of DeepSeek Harness, then choose a device and project above the composer.
 
-SSH 登录沿用本机 OpenSSH 配置和 SSH agent。**打开远端原生会话需要远端安装与本机相同版本的 DSH。** 要在本机标记远端会话为「已完成」并同步该状态，也请在远端安装本插件。
+SSH uses your local OpenSSH configuration and SSH agent. **Opening a remote session requires the same DSH version on both devices.** Install Session Harbor on the remote device too if you want to mark remote sessions as settled from the local sidebar and sync that state.
 
-安装或连接遇到问题时，可以附上版本信息和复现步骤。[报告问题](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
+If installation or connection fails, include your version information and steps to reproduce it. [Report an issue](https://github.com/TengYangTuoHai/dsh-session-harbor/issues/new?template=bug-report.yml)
 
-## 从源码安装
+## Interface languages
 
-在仓库根目录执行以下命令安装依赖、构建及验证。
+Session Harbor follows **Settings → General → Language** in DSH. It supports English, Simplified Chinese, Japanese, Spanish, French, German, Russian, and Brazilian Portuguese.
+
+## Install from source
+
+Run these commands from the repository root to install dependencies, build, and verify the plugin.
 
 ```sh
 npm --prefix dsh-session-harbor ci
@@ -58,10 +64,10 @@ node tools/build-client.mjs --check
 node --test dsh-session-harbor/*.test.js
 ```
 
-在 DSH「添加插件」里输入 `dsh-session-harbor/` 的绝对路径并启用。
+In DSH, open **Add plugin**, enter the absolute path to `dsh-session-harbor/`, and enable it.
 
-[插件说明](dsh-session-harbor/README.md) · [远端会话设计](docs/remote-aggregation-design.md) · [维护者发版流程](docs/releasing.md)
+[Plugin documentation](dsh-session-harbor/README.md) · [Remote session design](docs/remote-aggregation-design.md) · [Release process](docs/releasing.md)
 
-## 许可
+## License
 
-本项目采用 MIT 许可。侧栏分组和会话行参考 T3 Code 的 `095611d1` 实现（MIT，© T3 Tools Inc.）。[LICENSE](LICENSE) · [T3 Code](https://github.com/pingdotgg/t3code/tree/095611d1)
+Session Harbor is licensed under MIT. Sidebar grouping and session rows draw from T3 Code at `095611d1` (MIT, © T3 Tools Inc.). [License](LICENSE) · [T3 Code](https://github.com/pingdotgg/t3code/tree/095611d1)

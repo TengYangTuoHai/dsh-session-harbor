@@ -1,46 +1,49 @@
 # Session Harbor
 
-本机与 SSH 远端会话放在同一工作台的 Pinned、Active、Working、Settled 四组中。点击远端行，在当前主区域打开该设备的原生会话界面；本机侧栏和外壳保留。新会话先选择设备，再选择该设备的项目。
+English · [简体中文](https://github.com/TengYangTuoHai/dsh-session-harbor/blob/main/dsh-session-harbor/README.zh-CN.md)
 
-## 使用
+Session Harbor brings local and SSH sessions into one workbench, grouped under Pinned, Active, Working, and Settled. Select a remote row to open that device's native session view in the main area. The local sidebar and shell stay in place. When starting a session, choose a device first, then a project on that device.
 
-- 打开「设置 → Session Harbor SSH」，从本机 SSH 配置选择主机或输入 `user@host`。这里可以重连、断开和移除已保存的设备。SSH 认证使用本机 OpenSSH 配置和 SSH agent，远端需要安装 DSH。
-- 在同一份会话列表中直接切换本机和远端会话。分组折叠、整行打开和键盘操作适用于两种会话。时间显示在会话标题右侧，远端会话的主机名显示在右上。
-- 设备选择本身不创建会话。选定项目后，在所属设备创建或复用空会话，并打开返回的 ID。
-- 「添加工作区」在本机和 SSH 设备上共用双栏目录弹窗。可以使用面包屑或直接输入路径，查看隐藏文件夹，并在所选设备上新建文件夹。
-- 原生正文、输入、模型、附件、审批与用户问答由该设备独立的官方 DSH Client 运行时装配。界面语言跟随本机工作台，会话操作发送到所属设备。
-- 置顶使用所属设备的 DSH 状态，完成使用该设备插件的持久状态。等待审批或问答的普通会话列在 Active 顶部，该组标题会显示待操作数量。普通运行结束保留两秒缓冲，再回到 Active。Pinned 和 Settled 优先于 Working。
-- 会话菜单提供打开、置顶、完成、重命名、分叉、复制 ID 与归档。离线写操作禁用。项目管理在独立入口中进行，会话右键不删除项目。
-- Pinned 和 Active 在列表上方，Working 和 Settled 固定在底部。Pinned 无会话可显示时隐藏。各组可以折叠，行数较多时在组内滚动。Working 从空组变为有会话时自动展开，Settled 默认收起。深浅主题使用宿主主题变量，减弱动态效果时停止状态图标旋转。底部按钮可切回原生侧栏。
+## Usage
 
-## 版本与依赖
+- Open **Settings → Session Harbor SSH** and choose a host from your local SSH config or enter `user@host`. You can reconnect, disconnect, and remove saved devices here. SSH authentication uses your local OpenSSH config and SSH agent. The remote device needs DSH installed.
+- Switch between local and remote sessions in the same list. Both support collapsing groups, opening a session by clicking anywhere in its row, and keyboard navigation. The time appears to the right of the session title. Remote sessions show the host name in the upper right.
+- Selecting a device prepares the project picker. Selecting a project creates or reuses an empty session on that device and opens it.
+- **Add workspace** uses the same two-column folder picker for local and SSH devices. Navigate with breadcrumbs or enter a path directly. You can show hidden folders and create a folder on the selected device.
+- Each device runs its own official DSH Client runtime for the native conversation, composer, model picker, attachments, approvals, and questions. The interface follows the local workbench language, and session actions go to the device that owns the session.
+- Pins use the owning device's DSH state, and settled sessions use its plugin state. Ordinary sessions awaiting approval or an answer appear at the top of Active, with a pending count in the group header. After a run finishes, the session remains in Working for two seconds before returning to Active. Pinned and Settled take priority over Working.
+- The session menu offers Open, Pin, Settle, Rename, Fork session, Copy session ID, and Archive. Actions that write changes are disabled while the device is offline. Project management has a separate entry point.
+- Pinned and Active sit at the top of the list, with Working and Settled at the bottom. Pinned appears when it contains visible sessions. Groups collapse and scroll independently when they have many rows. Working opens automatically when its first session appears, and Settled starts collapsed. The sidebar uses the host's light and dark theme variables, and status icons stop spinning when reduced motion is enabled. **Use native** switches back to the built-in sidebar.
 
-旧版「T3 会话侧边栏」使用另一包名。升级时先从 DSH 插件管理器卸载旧版，再安装 Session Harbor。原有会话、置顶、已完成状态和 SSH 主机设置可继续使用。
+## Versions and dependencies
 
-本版本为 `0.2.7`，支持 DSH `0.2.2-rc.3` 和 `0.2.2-rc.5`。工作台会为已就绪的 SSH 连接在后台初始化远端客户端，切换会话时复用该客户端。侧栏使用宿主导航下方的可用高度，空间不足时切换为整份列表滚动。活动远端会话接收其自己的快捷键，左栏继续由本机窗口控制。
+The earlier T3 Session Sidebar used a different package name. Uninstall it in DSH's plugin manager before installing Session Harbor. Existing sessions, pins, settled state, and SSH host settings carry over.
 
-插件启动后会自动尝试连接在「设置 → Session Harbor SSH」里保存的设备。侧栏保留这些设备的最近一次同步数据，移除设备时清除相应的本地缓存。远端会话的 Settled 与实时 placement 同步需要远端也安装本侧栏插件。远端原生会话需要与本机匹配的 DSH 版本。
+Version `0.2.8` supports DSH `0.2.2-rc.3` and `0.2.2-rc.5`. The workbench initializes remote clients in the background for ready SSH connections and reuses them when switching sessions. The sidebar fills the space below the host navigation. The entire list scrolls when space is limited. An active remote session receives its own shortcuts while the local window handles the left sidebar.
 
-远端首次安装时，既有非空、未归档、未运行的普通会话会执行一次 Settled 迁移；已有迁移记录会保留。置顶与完成横跨两个存储服务，失败后重新读取实际状态。对于远端已创建而回包丢失的跨连接重试，无法保证分布式 exactly-once。
+At startup, the plugin connects to devices saved in **Settings → Session Harbor SSH**. The sidebar keeps the last sync for each device and clears that cache when you remove it. Settled state and live placement updates for remote sessions require Session Harbor on the remote device. The native remote session view requires matching DSH versions on both devices.
 
-## 构建与验证
+On a first remote installation, existing ordinary sessions that are nonempty, unarchived, and idle are migrated to Settled once. Existing migration records are preserved. Pinning and settling span two storage services. After a failure, the plugin rereads the actual state. If the remote device creates a session but the response is lost, a retry across connections cannot guarantee distributed exactly-once creation.
 
-在仓库根目录运行：
+## Build and verification
+
+Run these commands from the repository root.
 
 ```sh
+npm --prefix dsh-session-harbor ci
 node tools/build-client.mjs
 node tools/build-client.mjs --check
 node --test dsh-session-harbor/*.test.js
 ```
 
-构建生成包内的 `client.remote-runtime.js`。测试覆盖连接世代、协议、认证资源路由、存储隔离、状态合并、创建幂等、导航生命周期及快捷键所有权。旧 jsdom 行结构脚本已停用：它曾把远端点击无效果当成成功，不能验证当前原生运行时。
+The build generates `client.remote-runtime.js` in the package. Tests cover connection generations, protocol handling, authenticated resource routing, storage isolation, state merging, creation idempotency, navigation lifecycle, and shortcut ownership. The old jsdom row script is retired because it treated a remote click with no visible effect as a pass.
 
-已在现有 Desktop `0.2.2-rc.5` 工作台通过只读探针加载 `wsl` 和 `2060` 各一条已有会话，确认两台设备的原生对话与可编辑输入框均挂载。发送目标使用官方客户端和隔离传输验证。真实远端消息、审批、附件以及右栏的视觉效果仍需对应操作验收。
+A read-only probe on Desktop `0.2.2-rc.5` loaded one existing session on each of `wsl` and `2060`. It confirmed that each native conversation and editable composer mounted. Send routing was checked with the official client and an isolated transport. Sending a real remote message, handling approvals and attachments, and reviewing the right panel still require hands-on verification.
 
-更新本机已加载的 Host 模块时，按插件管理器的应用结果重启 DSH。通过当前页面的 Client Inspect 可以确认已连接工作台上的入口注册。
+When updating a loaded local Host module, follow the plugin manager's restart prompt. Use Client Inspect to confirm that the connected workbench has registered the plugin entries.
 
-完整设计与验收范围见仓库的 `docs/remote-aggregation-design.md`。
+See the [remote session design](../docs/remote-aggregation-design.md) for the full design and acceptance criteria.
 
-## 许可
+## License
 
-分组规则与会话行呈现参考 [T3 Code](https://github.com/pingdotgg/t3code) 的 `095611d1` 版本（MIT，© T3 Tools Inc.）。本仓库使用 MIT 许可。DSH 原生组件在运行时从已安装的可信官方资源加载。
+Sidebar grouping and session rows draw from T3 Code at `095611d1` (MIT, © T3 Tools Inc.). This repository uses the MIT license. DSH native components load at runtime from trusted official resources in the installation. [T3 Code](https://github.com/pingdotgg/t3code/tree/095611d1)
